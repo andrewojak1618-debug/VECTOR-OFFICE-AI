@@ -33,6 +33,25 @@ def get_int_setting(
     return value
 
 
+def get_bool_setting(name: str, default: bool) -> bool:
+    raw_value = os.getenv(name)
+
+    if raw_value is None:
+        return default
+
+    normalized_value = raw_value.strip().lower()
+
+    if normalized_value in {"1", "true", "yes", "on"}:
+        return True
+
+    if normalized_value in {"0", "false", "no", "off"}:
+        return False
+
+    raise ValueError(
+        f"{name} must be true/false, yes/no, on/off, or 1/0."
+    )
+
+
 class Settings:
     APP_NAME = "Vector Office AI"
     VERSION = "0.1.0"
@@ -56,6 +75,23 @@ class Settings:
         default=50,
         minimum=0,
         maximum=100,
+    )
+
+    INPUT_MODE = os.getenv(
+        "INPUT_MODE",
+        "console",
+    )
+
+    VOICE_LISTEN_TIMEOUT = get_int_setting(
+        "VOICE_LISTEN_TIMEOUT",
+        default=120,
+        minimum=10,
+        maximum=600,
+    )
+
+    VOICE_ALLOW_CLOUD = get_bool_setting(
+        "VOICE_ALLOW_CLOUD",
+        default=False,
     )
 
     LLM_PROVIDER = os.getenv(

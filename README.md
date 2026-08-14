@@ -246,6 +246,10 @@ WIREPOD_HOST=http://127.0.0.1:8080
 TTS_VOICE=Microsoft Stefan
 TTS_VOLUME=90
 
+INPUT_MODE=console
+VOICE_LISTEN_TIMEOUT=120
+VOICE_ALLOW_CLOUD=false
+
 LLM_PROVIDER=openai
 LLM_FALLBACK_PROVIDER=ollama
 OPENAI_API_KEY=dein_api_key
@@ -293,6 +297,29 @@ Verfügung gestellt. Die lokale Datenbank unter `data/` wird nicht eingecheckt.
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+### WirePod-Spracheingabe diagnostizieren
+
+Der erste Voice-Input-Baustein wartet auf ein neues deutsches Transkript aus
+WirePods lokaler Log-Schnittstelle:
+
+```powershell
+.venv\Scripts\python.exe -m voice.wirepod_input --timeout 60
+```
+
+Nach dem Start innerhalb des Zeitfensters einen normalen Befehl mit
+„Hey Vector“ sprechen. Der Diagnosemodus liest nur das nächste erkannte
+Transkript und führt noch keine KI-Antwort oder Robot-Aktion aus.
+
+Für die vollständige Sprachpipeline kann anschließend in `.env`
+`INPUT_MODE=wirepod` gesetzt werden. Dann läuft jede erkannte Äußerung durch
+Agent, gemeinsames Memory, Provider-Fallback und deutsche Vector-TTS. Der
+Konsolenmodus bleibt mit `INPUT_MODE=console` verfügbar.
+
+Sprachtranskripte bleiben mit `VOICE_ALLOW_CLOUD=false` vollständig lokal und
+werden direkt mit Ollama verarbeitet. Erst `VOICE_ALLOW_CLOUD=true` erlaubt im
+WirePod-Modus die Übergabe erkannter Sprache an den konfigurierten
+Cloud-Provider.
 
 ## 🔐 Sicherheit und Secrets
 
@@ -349,7 +376,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 - vollständigen Ablauf bis zum physischen Vector bestätigt
 - mehrturnige Gesprächsschleife mit erhaltenem Kontext ergänzt
 - `/clear` und `/exit` implementiert
-- einundzwanzig automatisierte Tests erfolgreich ausgeführt
+- einunddreißig automatisierte Tests erfolgreich ausgeführt
 
 ## 🏷️ Versions- und Commit-Historie
 
@@ -384,7 +411,8 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ kontextbezogener Abruf für OpenAI und Ollama
 - ✅ Anzeigen und Löschen gespeicherter Erinnerungen
 - ✅ automatisierte Tests
-- ⏳ Spracheingabe über Vector/WirePod
+- ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
+- 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
 - ⏳ semantische Memory-Suche und Dokumentbibliothek
 - ⏳ Tool Registry und Berechtigungsmodell
 - ⏳ Robot-Aktionen und kontextabhängige Animationen

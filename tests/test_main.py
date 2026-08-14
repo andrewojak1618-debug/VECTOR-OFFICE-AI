@@ -3,7 +3,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from main import run_conversation
+from main import run_conversation, run_voice_conversation
 
 
 class FakeContext:
@@ -49,6 +49,21 @@ class FakeMemoryStore:
     def forget(self, memory_id):
         self.deleted.append(memory_id)
         return True
+
+
+class FakeVoiceListener:
+    def __init__(self, texts):
+        self.events = iter(
+            SimpleNamespace(text=text)
+            for text in texts
+        )
+        self.prime_count = 0
+
+    def prime(self):
+        self.prime_count += 1
+
+    def wait_for_transcript(self, timeout):
+        return next(self.events)
 
 
 class ConversationLoopTests(unittest.TestCase):
@@ -104,6 +119,38 @@ class ConversationLoopTests(unittest.TestCase):
         )
         self.assertEqual([3], agent.memory_store.deleted)
         self.assertIn("Memory 3 saved", output.getvalue())
+        self.assertEqual([], speech.spoken)
+
+    def test_voice_loop_sends_transcript_to_agent_and_speech(self):
+        agent = FakeAgent()
+        speech = FakeSpeech()
+        listener = FakeVoiceListener(["wie geht es dir heute"])
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                agent,
+                speech,
+                listener,
+                listen_timeout=1,
+                max_turns=1,
+            )
+
+        self.assertEqual(1, listener.prime_count)
+        self.assertEqual(["wie geht es dir heute"], agent.requests)
+        self.assertEqual(
+            ["Antwort auf: wie geht es dir heute"],
+            speech.spoken,
+        )
+
+    def test_voice_loop_can_end_with_spoken_command(self):
+        agent = FakeAgent()
+        speech = FakeSpeech()
+        listener = FakeVoiceListener(["vector beenden"])
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(agent, speech, listener)
+
+        self.assertEqual([], agent.requests)
         self.assertEqual([], speech.spoken)
 
 

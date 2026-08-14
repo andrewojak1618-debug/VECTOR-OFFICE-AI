@@ -1,11 +1,41 @@
 from brain.agent import Agent
 from brain.ollama_runtime import OllamaRuntime
-from brain.providers import create_language_model
+from brain.providers import OllamaProvider, create_language_model
 from config.settings import settings
 from memory.database import SQLiteMemoryStore
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
+from voice.wirepod_input import WirePodTranscriptListener
+
+
+VOICE_EXIT_PHRASES = {
+    "gespräch beenden",
+    "programm beenden",
+    "vector beenden",
+}
+
+
+def respond_and_speak(
+    agent: Agent,
+    speech: VectorSpeech,
+    user_text: str,
+) -> bool:
+    print("Thinking...")
+
+    try:
+        answer = agent.respond(user_text)
+    except (RuntimeError, ValueError) as exc:
+        print(f"Brain request failed: {exc}")
+        return False
+
+    print(f"Vector: {answer}")
+
+    if not speech.say(answer):
+        print("Vector could not play the response.")
+        return False
+
+    return True
 
 
 def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
@@ -77,18 +107,46 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
                 print(f"Memory {memory_id} was not found.")
             continue
 
-        print("Thinking...")
+        respond_and_speak(agent, speech, user_text)
+
+
+def run_voice_conversation(
+    agent: Agent,
+    speech: VectorSpeech,
+    listener: WirePodTranscriptListener,
+    listen_timeout: float = 120.0,
+    max_turns: int | None = None,
+) -> None:
+    print()
+    print("WirePod voice conversation started.")
+    print("Say 'Hey Vector' followed by your question.")
+    print("Say 'Vector beenden' to end the session.")
+    listener.prime()
+    completed_turns = 0
+
+    while max_turns is None or completed_turns < max_turns:
+        print()
+        print("Listening...")
 
         try:
-            answer = agent.respond(user_text)
-        except (RuntimeError, ValueError) as exc:
-            print(f"Brain request failed: {exc}")
+            event = listener.wait_for_transcript(listen_timeout)
+        except RuntimeError as exc:
+            print(f"Voice input failed: {exc}")
+            return
+
+        if event is None:
+            print("No speech recognized before the timeout.")
             continue
 
-        print(f"Vector: {answer}")
+        user_text = event.text.strip()
+        print(f"Du: {user_text}")
 
-        if not speech.say(answer):
-            print("Vector could not play the response.")
+        if user_text.casefold() in VOICE_EXIT_PHRASES:
+            print("Conversation ended.")
+            return
+
+        respond_and_speak(agent, speech, user_text)
+        completed_turns += 1
 
 
 def main():
@@ -101,9 +159,16 @@ def main():
 
     provider = settings.LLM_PROVIDER.lower().strip()
     fallback_provider = settings.LLM_FALLBACK_PROVIDER.lower().strip()
+    input_mode = settings.INPUT_MODE.lower().strip()
+    local_voice_required = (
+        input_mode == "wirepod"
+        and provider == "openai"
+        and not settings.VOICE_ALLOW_CLOUD
+    )
     needs_ollama = (
         provider == "ollama"
         or (provider == "openai" and fallback_provider == "ollama")
+        or local_voice_required
     )
 
     if needs_ollama:
@@ -114,7 +179,7 @@ def main():
             executable=settings.OLLAMA_EXECUTABLE,
         ).ensure_available()
 
-        if not ollama_ready and provider == "ollama":
+        if not ollama_ready and (provider == "ollama" or local_voice_required):
             print("Ollama is required as the active LLM provider. [ERROR]")
             return
 
@@ -147,12 +212,32 @@ def main():
             volume=settings.TTS_VOLUME,
         )
         memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
+        if local_voice_required:
+            print("Voice privacy: using local Ollama (cloud disabled).")
+            language_model = OllamaProvider(
+                base_url=settings.OLLAMA_HOST,
+                model=settings.OLLAMA_MODEL,
+            )
+        else:
+            language_model = create_language_model(settings)
+
         agent = Agent(
-            create_language_model(settings),
+            language_model,
             memory_store=memory_store,
             memory_context_limit=settings.MEMORY_CONTEXT_LIMIT,
         )
-        run_conversation(agent, speech)
+
+        if input_mode == "console":
+            run_conversation(agent, speech)
+        elif input_mode == "wirepod":
+            run_voice_conversation(
+                agent,
+                speech,
+                WirePodTranscriptListener(settings.WIREPOD_HOST),
+                listen_timeout=settings.VOICE_LISTEN_TIMEOUT,
+            )
+        else:
+            print("INPUT_MODE must be either 'console' or 'wirepod'.")
 
 
 if __name__ == "__main__":
