@@ -17,8 +17,9 @@ fest.
 - OpenAI ist als Cloud-Provider vorbereitet.
 - Ollama mit `llama3.2:3b` arbeitet als lokaler Provider und Fallback.
 - SQLite speichert ausschließlich ausdrücklich bestätigte Erinnerungen.
+- Dokumentwissen wird lokal automatisch indexiert und hybrid durchsucht.
 - Spracheingaben bleiben standardmäßig lokal.
-- 85 automatisierte Tests sichern Funktion und Codequalität ab.
+- 130 automatisierte Tests sichern Funktion und Codequalität ab.
 
 ## Schnellstart
 

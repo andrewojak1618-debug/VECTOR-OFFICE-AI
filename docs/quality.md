@@ -27,9 +27,15 @@ sinnlosen Kleinstfunktionen, verhindert aber erneut entstehende Monolithen.
 
 `tests/test_code_quality.py` prüft:
 
-- fehlende Docstrings an öffentlichen Python-APIs,
+- fehlende Verantwortungs-Docstrings an Produktivmodulen,
+- fehlende Docstrings an öffentlichen synchronen und asynchronen Python-APIs,
 - Funktionen oberhalb der harten Größenbegrenzung,
-- versehentlich eingecheckte Git-Konfliktmarker.
+- versehentlich eingecheckte Git-Konfliktmarker,
+- ignorierte private Laufzeitdaten,
+- dokumentierte Verweise für reservierte Architekturmodule.
+
+Die Dateisuche erfolgt rekursiv, damit dieselben Leitplanken auch für später
+ergänzte Unterpakete gelten.
 
 Die vollständige Abnahme erfolgt mit:
 

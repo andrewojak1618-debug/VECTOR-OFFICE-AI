@@ -237,8 +237,9 @@ VECTOR OFFICE AI CORE/
 
 `main.py` bleibt ein schlanker Einstiegspunkt. Die `application/`-Schicht
 enthält Startlogik, Betriebsmodus, Befehle und Gesprächsschleifen. Die aktuell
-noch leeren Module in `tools/` und `vector/actions.py` sind bewusst
-als nächste Architekturbereiche vorbereitet. `memory/` enthält inzwischen das
+reservierten Module in `tools/` und `vector/actions.py` sind bewusst als nächste
+Architekturbereiche vorbereitet und dokumentieren ihren vorgesehenen Zweck,
+ohne Laufzeitverhalten bereitzustellen. `memory/` enthält inzwischen das
 lokale SQLite-Langzeitgedächtnis.
 
 ## ⚙️ Installation
@@ -301,6 +302,9 @@ OLLAMA_EMBEDDING_TIMEOUT=60
 MEMORY_DB_PATH=data/vector_memory.db
 MEMORY_CONTEXT_LIMIT=5
 KNOWLEDGE_ALLOW_CLOUD=false
+KNOWLEDGE_LEXICAL_WEIGHT=0.45
+KNOWLEDGE_SEMANTIC_WEIGHT=0.55
+KNOWLEDGE_MIN_SIMILARITY=0.35
 ```
 
 OpenAI bleibt damit der bevorzugte Anbieter. Ist OpenAI nicht erreichbar,
@@ -321,7 +325,8 @@ Dimension von 768; ein positiver Wert aktiviert eine zusätzliche Vorgabe. Die
 Dokumentvektoren werden kompakt und versioniert in SQLite gespeichert.
 `/learn` indexiert neue und geänderte Abschnitte automatisch; unveränderte
 Abschnitte werden anhand von SHA-256 und Modellidentität übersprungen. Die
-produktive Suche verwendet die Vektoren erst in der nächsten Phase.
+Dokumentensuche kombiniert lexikalische Treffer mit lokaler Kosinus-Ähnlichkeit.
+Ist Ollama nicht verfügbar, bleibt die lexikalische Suche automatisch aktiv.
 
 ### Programm starten
 
@@ -349,6 +354,13 @@ Importierte Dokumente werden in nachvollziehbare Abschnitte zerlegt und über
 ihre SHA-256-Prüfsumme aktualisiert. Standardmäßig stehen ihre Inhalte nur dem
 lokalen Ollama-Modell zur Verfügung. Erst `KNOWLEDGE_ALLOW_CLOUD=true` erlaubt
 die Übergabe relevanter Auszüge an OpenAI.
+
+Diese Freigabe betrifft ausschließlich die für eine Anfrage ausgewählten
+Auszüge. SQLite-Bibliothek und Embeddings bleiben lokal; auch die semantische
+Auswahl erfolgt weiterhin über Ollama. Jeder Auszug wird im Modellkontext als
+JSON-kodierte `UNVERTRAUENSWÜRDIGE_DOKUMENTDATEN` gekennzeichnet. Enthaltene
+Befehle gelten niemals als Anweisungen. Mehrere Dokumentquellen erhalten einen
+sichtbaren Hinweis auf einen möglichen Quellenkonflikt.
 
 ### Tests ausführen
 
@@ -380,6 +392,14 @@ Vektoren lokal und lädt sie aus einer temporären SQLite-Datenbank zurück:
 
 ```powershell
 .venv\Scripts\python.exe -m diagnostics.embedding_store_ollama
+```
+
+Der vollständige physische Wissenspfad zeigt Quelle und Trefferbewertung,
+antwortet ausschließlich mit Ollama in höchstens zwei Sätzen und spielt die
+deutsche TTS-Antwort über Vector ab:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.knowledge_vector
 ```
 
 Der physische Diagnosepfad importiert die öffentliche Projekt-README in eine
@@ -527,10 +547,14 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ effiziente Batch-Embeddings ohne Protokollierung sensibler Inhalte
 - ✅ kompakte und versionierte Dokument-Embeddings in SQLite
 - ✅ automatische Schemaerweiterung, Duplikatschutz und Cascade-Löschung
+- ✅ hybride semantische und lexikalische Dokumentensuche mit Fallback
+- ✅ lokale Datenschutzgrenze und Prompt-Injection-Schutz für Dokumentwissen
+- ✅ reale Paraphrasen-Suche mit Störinformationen und 0 Falschtreffern geprüft
+- ✅ semantisches Projektwissen lokal bis zur physischen Vector-TTS getestet
 - ✅ automatisierte Tests
 - ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
 - 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
-- ⏳ hybride semantische und lexikalische Suche
+- ✅ hybride semantische und lexikalische Suche
 - ⏳ Tool Registry und Berechtigungsmodell
 - ⏳ Robot-Aktionen und kontextabhängige Animationen
 
@@ -562,7 +586,7 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ lokales Embedding-Modell prüfen und real über Ollama testen
 - ✅ mehrere Dokumentabschnitte in einem Batch vektorisieren
 - ✅ Embedding-Vektoren nachvollziehbar in SQLite speichern
-- hybride semantische und lexikalische Suche ergänzen
+- ✅ hybride semantische und lexikalische Suche ergänzen
 
 ### Version 0.5 – Tools und Sicherheit
 

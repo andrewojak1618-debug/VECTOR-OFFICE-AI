@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Protocol
 
 from memory.embedding_store import (
     ChunkEmbedding,
@@ -9,7 +10,12 @@ from memory.embedding_store import (
 )
 from memory.embeddings import EmbeddingModelInfo, EmbeddingProvider, EmbeddingText
 from memory.library import SQLiteKnowledgeLibrary
-from memory.models import DocumentImportResult, IndexingResult, KnowledgeChunk
+from memory.models import (
+    DocumentImportResult,
+    IndexingResult,
+    KnowledgeChunk,
+    KnowledgeDocument,
+)
 
 
 DEFAULT_INDEX_BATCH_SIZE = 32
@@ -24,6 +30,14 @@ class IndexProgress:
 
 
 ProgressCallback = Callable[[IndexProgress], None]
+
+
+class KnowledgeSearch(Protocol):
+    """Provide ranked document sections for a normalized query."""
+
+    def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
+        """Return at most ``limit`` ranked document sections."""
+        ...
 
 
 class DocumentEmbeddingIndexer:
@@ -127,10 +141,12 @@ class IndexedKnowledgeLibrary:
         library: SQLiteKnowledgeLibrary,
         indexer: DocumentEmbeddingIndexer,
         progress: ProgressCallback | None = None,
+        search_engine: KnowledgeSearch | None = None,
     ):
         self.library = library
         self.indexer = indexer
         self.progress = progress
+        self.search_engine = search_engine
         self.last_indexing_result: IndexingResult | None = None
 
     def import_document(self, source_path: str) -> DocumentImportResult:
@@ -152,11 +168,13 @@ class IndexedKnowledgeLibrary:
         self.last_indexing_result = result
         return result
 
-    def search(self, query: str, limit: int = 5):
-        """Delegate lexical retrieval until semantic retrieval is introduced."""
-        return self.library.search(query, limit)
+    def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
+        """Use hybrid retrieval when configured, otherwise lexical retrieval."""
+        if self.search_engine is None:
+            return self.library.search(query, limit)
+        return self.search_engine.search(query, limit)
 
-    def list_documents(self, limit: int = 50):
+    def list_documents(self, limit: int = 50) -> tuple[KnowledgeDocument, ...]:
         """Return imported document metadata."""
         return self.library.list_documents(limit)
 

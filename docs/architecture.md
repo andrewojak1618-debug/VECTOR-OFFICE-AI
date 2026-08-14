@@ -46,15 +46,26 @@ Folgende Inhalte bleiben lokal und werden von Git ignoriert:
 Ungeprüfte Modellantworten werden nicht automatisch als Fakten oder Training
 gespeichert.
 
+Dokumentauszüge erscheinen im Systemkontext als JSON-kodierte
+`UNVERTRAUENSWÜRDIGE_DOKUMENTDATEN`. Der Systemtext verbietet die Ausführung
+eingebetteter Aufforderungen. Treffer aus mehreren Dateien erhalten einen
+sichtbaren Hinweis auf mögliche Quellenkonflikte. Die vollständigen Regeln und
+die genaue Bedeutung einer Cloud-Freigabe stehen unter [Datenschutz](privacy.md).
+
 ## Embedding-Grenze
 
 `memory/embeddings.py` definiert den neutralen `EmbeddingProvider`-Vertrag und
 klare Datentypen für Texte und Zahlenvektoren. Der einzige konkrete Adapter
 verwendet Ollama lokal; ein Cloud-Embedding-Fallback existiert bewusst nicht.
-Die produktive Suche bleibt bis zur separaten Ähnlichkeitsbewertung lexikalisch.
+Die produktive Dokumentensuche kombiniert die bestehende lexikalische Rangfolge
+mit lokal berechneter Kosinus-Ähnlichkeit. Bestätigte Erinnerungen behalten ihre
+transparente lexikalische Suche; der Agent führt beide Quellen im Kontext
+zusammen.
 
 Die SQLite-Integration liegt in `memory/embedding_store.py`. Jeder Vektor
 verweist auf genau einen Dokumentabschnitt. Dokument, Abschnitte und Vektoren
 bilden eine durchgehende Fremdschlüsselkette mit Löschweitergabe. Der Indexer in
-`memory/indexing.py` koordiniert Batch-Erzeugung und atomare Speicherung, ohne
-die lexikalische Suche bereits zu ersetzen.
+`memory/indexing.py` koordiniert Batch-Erzeugung und atomare Speicherung.
+`memory/search.py` lädt nur aktuelle Vektoren der aktiven Modellversion, führt
+lexikalische und semantische Treffer nach Chunk-ID zusammen und fällt bei einer
+nicht verfügbaren lokalen Embedding-Grenze automatisch auf Lexik zurück.

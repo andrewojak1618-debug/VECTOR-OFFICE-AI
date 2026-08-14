@@ -13,6 +13,7 @@ from memory.embeddings import (
     EmbeddingResult,
     EmbeddingVector,
 )
+from memory.models import KnowledgeChunk
 
 
 EMBEDDING_SCHEMA = """
@@ -58,6 +59,14 @@ class StoredEmbedding:
     vector: EmbeddingVector
     created_at: str
     updated_at: str
+
+
+@dataclass(frozen=True)
+class EmbeddedKnowledgeChunk:
+    """Pair a sourced document section with its current local vector."""
+
+    chunk: KnowledgeChunk
+    vector: EmbeddingVector
 
 
 def initialize_embedding_schema(connection: sqlite3.Connection) -> None:
@@ -226,6 +235,33 @@ class SQLiteEmbeddingStore:
             ).fetchone()
         return row is not None
 
+    def list_current_chunks(
+        self,
+        model: EmbeddingModelInfo,
+    ) -> tuple[EmbeddedKnowledgeChunk, ...]:
+        """Return all sections with a valid embedding for one model identity."""
+        self._validate_model(model)
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT e.vector, e.dimension, e.content_hash,
+                       c.id AS chunk_id, c.document_id, c.chunk_index,
+                       c.content, d.source_path, d.title
+                FROM knowledge_embeddings AS e
+                JOIN knowledge_chunks AS c ON c.id = e.chunk_id
+                JOIN knowledge_documents AS d ON d.id = c.document_id
+                WHERE e.model_name = ? AND e.model_version = ?
+                  AND e.dimension = ?
+                ORDER BY d.id, c.chunk_index
+                """,
+                (model.model_name, model.model_version, model.dimension),
+            ).fetchall()
+        current = (
+            row for row in rows
+            if row["content_hash"] == self._content_hash(row["content"])
+        )
+        return tuple(self._to_embedded_chunk(row) for row in current)
+
     def _upsert(
         self,
         connection: sqlite3.Connection,
@@ -355,3 +391,16 @@ class SQLiteEmbeddingStore:
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
+
+    @staticmethod
+    def _to_embedded_chunk(row: sqlite3.Row) -> EmbeddedKnowledgeChunk:
+        chunk = KnowledgeChunk(
+            id=row["chunk_id"],
+            document_id=row["document_id"],
+            source_path=row["source_path"],
+            title=row["title"],
+            chunk_index=row["chunk_index"],
+            content=row["content"],
+        )
+        vector = Float32VectorCodec.decode(row["vector"], row["dimension"])
+        return EmbeddedKnowledgeChunk(chunk, vector)

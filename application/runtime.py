@@ -14,6 +14,7 @@ from memory.indexing import (
     IndexProgress,
 )
 from memory.library import SQLiteKnowledgeLibrary
+from memory.search import HybridKnowledgeSearch, HybridSearchConfig
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
@@ -128,7 +129,22 @@ def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:
     store = SQLiteEmbeddingStore(settings.MEMORY_DB_PATH)
     provider = create_embedding_provider(settings)
     indexer = DocumentEmbeddingIndexer(library, store, provider)
-    return IndexedKnowledgeLibrary(library, indexer, _print_index_progress)
+    search = HybridKnowledgeSearch(
+        library,
+        store,
+        provider,
+        HybridSearchConfig(
+            lexical_weight=settings.KNOWLEDGE_LEXICAL_WEIGHT,
+            semantic_weight=settings.KNOWLEDGE_SEMANTIC_WEIGHT,
+            minimum_similarity=settings.KNOWLEDGE_MIN_SIMILARITY,
+        ),
+    )
+    return IndexedKnowledgeLibrary(
+        library,
+        indexer,
+        _print_index_progress,
+        search,
+    )
 
 
 def _print_index_progress(progress: IndexProgress) -> None:

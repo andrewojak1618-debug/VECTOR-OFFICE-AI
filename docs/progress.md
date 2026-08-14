@@ -107,3 +107,56 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Batch-Fortschritt ohne Ausgabe sensibler Inhalte sichtbar gemacht
 - Persistenz bis zum Erfolg aller Provider-Batches zurückgestellt
 - Import-, Delta-, Modellwechsel-, Rollback- und Fortschrittsfälle getestet
+
+## Hybride Dokument- und Memory-Suche
+
+- bestehende lexikalische Suche für Dokumente und Erinnerungen bewahrt
+- Suchanfragen ausschließlich lokal mit `embeddinggemma` vektorisiert
+- Kosinus-Ähnlichkeit für alle aktuellen Dokumentabschnitte berechnet
+- lexikalische Rangfolge und semantische Ähnlichkeit gewichtet kombiniert
+- konfigurierbaren Mindestwert für semantische Treffer eingeführt
+- doppelte Chunk-Treffer über stabile IDs zusammengeführt
+- Ergebnislimit des Agent-Kontexts durchgehend beachtet
+- Quellen und Abschnittsnummern unverändert erhalten
+- kombinierte Bewertung mit stabilen Tie-Breakern sortiert
+- alte Modellversionen von der aktuellen Suche ausgeschlossen
+- automatischen lexikalischen Fallback bei Ollama-Fehlern abgesichert
+- reale lokale Hybridsuche mit temporären Daten vorbereitet
+
+## Datenschutz und Kontextschutz
+
+- Ollama als einzigen zulässigen Embedding-Anbieter und sicheren Default fixiert
+- `KNOWLEDGE_ALLOW_CLOUD=false` als expliziten sicheren Default hinterlegt
+- OpenAI-Dokumentkontext ohne bewusste Cloud-Freigabe getestet gesperrt
+- lokale Dokumentnutzung für Ollama und privaten Voice-Modus getestet
+- Dokumentabschnitte als JSON-kodierte unvertrauenswürdige Daten gekapselt
+- eingebettete Befehle und Rollenwechsel im Systemtext ausdrücklich untersagt
+- Mehrquellenkontext als möglichen Quellenkonflikt sichtbar markiert
+- Suchpfad auf Freiheit von Dokument-, Anfrage- und Vektorlogs getestet
+- `.env` und `data/` über automatisierte Gitignore-Leitplanke geschützt
+
+## Semantische Suche mit Paraphrasen
+
+- eindeutiges Testwissen mit Ziel-, ähnlichem und fachfremdem Abschnitt erstellt
+- direkte Frage mit identischen Fachbegriffen erfolgreich gefunden
+- lexikalisch überschneidungsfreie Paraphrase semantisch erfolgreich gefunden
+- Paraphrase trotz irrelevanter Wetter- und Kaffeeangaben stabil gerankt
+- ähnliche Dokumentabschnitte nach semantischer Nähe verglichen
+- lexikalische und semantische Gewichtung gegeneinander getestet
+- Mindestwert `0,50` als zu streng für den verrauschten Fall erkannt
+- produktiven Mindestwert `0,35` mit drei relevanten Fällen bestätigt
+- fachfremde Kontrollfrage mit 0 Falschtreffern abgeschlossen
+- leere Bibliothek und nicht erreichbares Ollama automatisiert abgesichert
+
+## Vollständiger Wissenspfad mit Ollama und Vector
+
+- ungefährliches Projektdokument in eine temporäre Bibliothek importiert
+- drei Abschnitte lokal mit `embeddinggemma` indexiert
+- frei formulierte Frage semantisch auf Abschnitt 2 gerankt
+- Quelle, kombinierten Wert `0,683` und Ähnlichkeit `0,423` ausgegeben
+- Antwort ausschließlich mit lokalem `llama3.2:3b` erzeugt
+- erwarteten Wissenswert `0,35` automatisch bestätigt
+- Antwort erfolgreich auf zwei kurze Sätze begrenzt
+- deutsche TTS mit Microsoft Stefan und Lautstärke 90 erzeugt
+- Vector-SDK bei `4,04 V` verbunden und Audiostream vollständig abgespielt
+- wiederholbaren Befehl und verbleibende subjektive Hörprüfung dokumentiert

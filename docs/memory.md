@@ -21,15 +21,18 @@ Inhalte werden nicht mehrfach angelegt.
 
 ## Abruf
 
-Die aktuelle Grundlage verwendet eine transparente lexikalische Suche. Nur
-passende Einträge werden als lokale Wissensbasis in den Systemkontext der
-aktuellen Anfrage aufgenommen.
+Bestätigte Erinnerungen verwenden weiterhin eine transparente lexikalische
+Suche. Dokumentabschnitte kombinieren ihre bestehende lexikalische Rangfolge mit
+lokaler semantischer Kosinus-Ähnlichkeit. Der Agent führt beide Ergebnisgruppen
+als klar getrennte lokale Kontextabschnitte zusammen.
 
 Eine providerunabhängige Embedding-Schnittstelle und ein lokaler Ollama-Adapter
 sind in `memory/embeddings.py` umgesetzt. Einzeltexte und mehrere Abschnitte
 können real mit `embeddinggemma` vektorisiert und über
-`memory/embedding_store.py` dauerhaft in SQLite gespeichert werden. Die
-produktive Suche verwendet die Vektoren noch nicht.
+`memory/embedding_store.py` dauerhaft in SQLite gespeichert werden.
+`memory/search.py` nutzt ausschließlich aktuelle Vektoren der aktiven
+Modellversion. Ist Ollama nicht verfügbar, bleibt die lexikalische Suche
+automatisch funktionsfähig.
 
 ## Persistente Dokumentvektoren
 
@@ -65,8 +68,8 @@ reduziert.
 - Nicht mehr vorhandene Abschnitte und ihre Vektoren werden automatisch
   entfernt.
 
-Quellpfad, Titel, Prüfsumme und Importzeit bleiben nachvollziehbar. Die aktuelle
-Suche ist bewusst transparent und lexikalisch.
+Quellpfad, Titel, Prüfsumme und Importzeit bleiben nachvollziehbar. Auch hybride
+Treffer behalten Quelle und Abschnittsnummer.
 
 ## Datenschutzgrenze
 
@@ -75,8 +78,15 @@ Bei OpenAI bleiben sie gesperrt, solange `KNOWLEDGE_ALLOW_CLOUD=false` gesetzt
 ist. Erst eine ausdrückliche Änderung auf `true` erlaubt die Übergabe passender
 Dokumentauszüge an den Cloud-Anbieter.
 
+Diese Freigabe überträgt nur die für eine konkrete Anfrage ausgewählten
+Auszüge. Bibliotheksdatenbank und Embeddings bleiben lokal; auch die semantische
+Auswahl läuft weiterhin über Ollama. Details stehen unter
+[Datenschutz und Kontextschutz](privacy.md).
+
 Auch freigegebene Dokumentauszüge werden im Modellkontext ausdrücklich als
-Daten und nicht als ausführbare Anweisungen markiert.
+Daten und nicht als ausführbare Anweisungen markiert. Sie werden JSON-kodiert
+und als `UNVERTRAUENSWÜRDIGE_DOKUMENTDATEN` gekennzeichnet. Mehrere Quellen
+erzeugen zusätzlich einen transparenten Hinweis auf mögliche Konflikte.
 
 ## Lokaler Integrationstest
 
@@ -105,7 +115,7 @@ temporäres Wissen bis zur deutschen Sprachausgabe auf Vector getestet werden:
 - ✅ Embedding-Vektoren versioniert und kompakt in SQLite speichern
 - ✅ Duplikate, Aktualität und Cascade-Löschung absichern
 - ✅ automatische differentielle Indexierung und manuelle Reindexierung
-- hybride semantische und lexikalische Suche integrieren
+- ✅ hybride semantische und lexikalische Suche integrieren
 - Vertrauensstatus und erweiterte Versionshistorie
 - Export- und vollständige Löschfunktionen
 - bestätigtes Feedback für beide Provider

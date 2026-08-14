@@ -35,10 +35,13 @@ nav:
   - Start: index.md
   - Entwicklung: progress.md
   - Architektur: architecture.md
+  - Datenschutz: privacy.md
   - Codequalität: quality.md
   - Spracheingabe: voice.md
   - Gedächtnis: memory.md
   - Lokale Embeddings: embeddings.md
+  - Paraphrasen-Test: paraphrase-evaluation.md
+  - Physischer Wissenstest: physical-knowledge-test.md
   - Persönlichkeit: personality.md
   - Roadmap: roadmap.md
   - API-Referenz:

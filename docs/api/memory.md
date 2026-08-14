@@ -30,6 +30,12 @@
     options:
       members: true
 
+## Hybride Suche
+
+::: memory.search
+    options:
+      members: true
+
 ## Dokumentbibliothek
 
 ::: memory.library

@@ -20,7 +20,10 @@
 - ✅ Embedding-Vektoren für Dokumentabschnitte in SQLite speichern
 - ✅ Dokumente automatisch und differentiell indexieren
 - ✅ Modellwechsel erkennen und `/reindex ID` anbieten
-- hybride semantische und lexikalische Suche ergänzen
+- ✅ hybride semantische und lexikalische Suche ergänzen
+- ✅ Datenschutz und Prompt-Injection-Schutz für Dokumentkontext absichern
+- ✅ semantische Suche mit direkten Fragen und Paraphrasen evaluieren
+- ✅ vollständigen lokalen Wissenspfad bis zur Vector-Wiedergabe testen
 - ✅ Markdown- und Textdokumente kontrolliert importieren
 - ✅ Quellen und Inhaltsprüfsummen speichern
 - Vertrauensstatus und Versionshistorie erweitern

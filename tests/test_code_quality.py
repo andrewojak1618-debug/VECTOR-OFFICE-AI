@@ -18,17 +18,30 @@ PRODUCTION_PACKAGES = (
 # Fourteen lines remain the design target; 35 is the regression hard limit.
 MAX_FUNCTION_LINES = 35
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+RESERVED_MODULE_DOCS = {
+    Path("brain/emotions.py"): Path("docs/personality.md"),
+    Path("brain/reflection.py"): Path("docs/personality.md"),
+    Path("vector/actions.py"): Path("README.md"),
+}
 
 
 def production_files() -> tuple[Path, ...]:
     files = [PROJECT_ROOT / "main.py"]
     for package in PRODUCTION_PACKAGES:
-        files.extend((PROJECT_ROOT / package).glob("*.py"))
-    return tuple(files)
+        files.extend((PROJECT_ROOT / package).rglob("*.py"))
+    return tuple(sorted(files))
 
 
 class CodeQualityTests(unittest.TestCase):
     """Prevent structural regressions that are cheap to detect statically."""
+
+    def test_modules_describe_their_responsibility(self):
+        missing = [
+            str(path.relative_to(PROJECT_ROOT))
+            for path in production_files()
+            if ast.get_docstring(self._tree(path)) is None
+        ]
+        self.assertEqual([], missing)
 
     def test_public_apis_have_docstrings(self):
         missing = []
@@ -56,6 +69,27 @@ class CodeQualityTests(unittest.TestCase):
                 affected.append(str(path.relative_to(PROJECT_ROOT)))
         self.assertEqual([], affected)
 
+    def test_private_runtime_artifacts_are_gitignored(self):
+        ignored = {
+            line.strip()
+            for line in (PROJECT_ROOT / ".gitignore").read_text(
+                encoding="utf-8"
+            ).splitlines()
+        }
+
+        self.assertIn(".env", ignored)
+        self.assertIn("data/", ignored)
+
+    def test_reserved_modules_keep_documented_architecture_paths(self):
+        missing = []
+        for module_path, documentation_path in RESERVED_MODULE_DOCS.items():
+            documentation = (PROJECT_ROOT / documentation_path).read_text(
+                encoding="utf-8"
+            )
+            if module_path.as_posix() not in documentation:
+                missing.append(module_path.as_posix())
+        self.assertEqual([], missing)
+
     @staticmethod
     def _tree(path: Path) -> ast.Module:
         return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -63,7 +97,7 @@ class CodeQualityTests(unittest.TestCase):
     @staticmethod
     def _is_public_api(node) -> bool:
         return (
-            isinstance(node, (ast.FunctionDef, ast.ClassDef))
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
             and not node.name.startswith("_")
         )
 

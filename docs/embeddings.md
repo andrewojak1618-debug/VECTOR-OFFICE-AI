@@ -110,7 +110,26 @@ eine temporäre Datenbank:
 .venv\Scripts\python.exe -m diagnostics.embedding_store_ollama
 ```
 
-## Nächster Integrationsschritt
+## Hybride Suche
 
-Als nächster Schritt kann die lexikalische Suche durch eine kontrollierte
-hybride Suche aus Texttreffern und semantischer Ähnlichkeit ergänzt werden.
+`memory/search.py` erzeugt für jede Anfrage lokal einen Vektor und vergleicht
+ihn per Kosinus-Ähnlichkeit mit allen aktuellen Dokumentabschnitten der aktiven
+Modellversion. Semantische Treffer unterhalb des konfigurierten Mindestwerts
+werden verworfen. Die bestehende lexikalische Rangfolge bleibt erhalten und
+wird gewichtet mit den semantischen Treffern zusammengeführt.
+
+Doppelte Treffer werden über die Chunk-ID vereinigt. Die kombinierte Bewertung,
+danach semantische und lexikalische Teilbewertung sowie Quelle und
+Abschnittsnummer ergeben eine stabile Sortierung. Schlägt der lokale
+Embedding-Dienst fehl, liefert dieselbe Schnittstelle automatisch ausschließlich
+die lexikalischen Ergebnisse.
+
+Der reale Diagnosepfad arbeitet mit temporären Dokumenten und SQLite-Daten:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.hybrid_search_ollama
+```
+
+Direkte Fragen, echte Paraphrasen, irrelevante Zusätze und Falschtreffer werden
+separat unter [Evaluation semantischer Paraphrasen](paraphrase-evaluation.md)
+dokumentiert.

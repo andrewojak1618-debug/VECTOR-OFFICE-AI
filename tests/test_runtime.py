@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from application.runtime import get_runtime_mode
+from application.runtime import _knowledge_enabled, get_runtime_mode
 
 
 def make_settings(**overrides):
@@ -11,6 +11,7 @@ def make_settings(**overrides):
         "INPUT_MODE": "console",
         "VOICE_ALLOW_CLOUD": False,
         "EMBEDDING_PROVIDER": "ollama",
+        "KNOWLEDGE_ALLOW_CLOUD": False,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -41,6 +42,26 @@ class RuntimeModeTests(unittest.TestCase):
         mode = get_runtime_mode(make_settings(LLM_FALLBACK_PROVIDER="none"))
 
         self.assertTrue(mode.needs_ollama)
+
+    def test_openai_blocks_document_context_by_default(self):
+        settings = make_settings()
+
+        self.assertFalse(_knowledge_enabled(settings, get_runtime_mode(settings)))
+
+    def test_openai_uses_documents_only_after_explicit_cloud_release(self):
+        settings = make_settings(KNOWLEDGE_ALLOW_CLOUD=True)
+
+        self.assertTrue(_knowledge_enabled(settings, get_runtime_mode(settings)))
+
+    def test_ollama_can_use_local_documents_without_cloud_release(self):
+        settings = make_settings(LLM_PROVIDER="ollama")
+
+        self.assertTrue(_knowledge_enabled(settings, get_runtime_mode(settings)))
+
+    def test_private_wirepod_mode_keeps_document_context_local(self):
+        settings = make_settings(INPUT_MODE="wirepod")
+
+        self.assertTrue(_knowledge_enabled(settings, get_runtime_mode(settings)))
 
 
 if __name__ == "__main__":

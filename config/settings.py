@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_EMBEDDING_PROVIDER = "ollama"
+DEFAULT_KNOWLEDGE_ALLOW_CLOUD = False
 
 load_dotenv(BASE_DIR / ".env", override=True)
 
@@ -54,6 +56,25 @@ def get_bool_setting(name: str, default: bool) -> bool:
     raise ValueError(
         f"{name} must be true/false, yes/no, on/off, or 1/0."
     )
+
+
+def get_float_setting(
+    name: str,
+    default: float,
+    minimum: float,
+    maximum: float,
+) -> float:
+    """Read one bounded floating-point setting or return its default."""
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    try:
+        value = float(raw_value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a number.") from exc
+    if not minimum <= value <= maximum:
+        raise ValueError(f"{name} must be between {minimum} and {maximum}.")
+    return value
 
 
 class Settings:
@@ -134,7 +155,7 @@ class Settings:
 
     EMBEDDING_PROVIDER = os.getenv(
         "EMBEDDING_PROVIDER",
-        "ollama",
+        DEFAULT_EMBEDDING_PROVIDER,
     )
 
     OLLAMA_EMBEDDING_MODEL = os.getenv(
@@ -172,7 +193,28 @@ class Settings:
 
     KNOWLEDGE_ALLOW_CLOUD = get_bool_setting(
         "KNOWLEDGE_ALLOW_CLOUD",
-        default=False,
+        default=DEFAULT_KNOWLEDGE_ALLOW_CLOUD,
+    )
+
+    KNOWLEDGE_LEXICAL_WEIGHT = get_float_setting(
+        "KNOWLEDGE_LEXICAL_WEIGHT",
+        default=0.45,
+        minimum=0.0,
+        maximum=1.0,
+    )
+
+    KNOWLEDGE_SEMANTIC_WEIGHT = get_float_setting(
+        "KNOWLEDGE_SEMANTIC_WEIGHT",
+        default=0.55,
+        minimum=0.0,
+        maximum=1.0,
+    )
+
+    KNOWLEDGE_MIN_SIMILARITY = get_float_setting(
+        "KNOWLEDGE_MIN_SIMILARITY",
+        default=0.35,
+        minimum=-1.0,
+        maximum=1.0,
     )
 
 settings = Settings()
