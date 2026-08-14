@@ -96,13 +96,59 @@ class OllamaProvider:
         return content
 
 
+class FallbackProvider:
+    def __init__(
+        self,
+        primary: LanguageModel,
+        fallback: LanguageModel,
+    ):
+        self.primary = primary
+        self.fallback = fallback
+
+    def generate(self, messages: Sequence[ChatMessage]) -> str:
+        try:
+            content = self.primary.generate(messages)
+
+            if content.strip():
+                return content
+        except RuntimeError:
+            pass
+
+        print("OpenAI unavailable. Using local Ollama fallback.")
+
+        try:
+            return self.fallback.generate(messages)
+        except RuntimeError:
+            raise RuntimeError(
+                "OpenAI and the local Ollama fallback both failed."
+            ) from None
+
+
 def create_language_model(settings) -> LanguageModel:
     provider = settings.LLM_PROVIDER.lower().strip()
 
     if provider == "openai":
-        return OpenAIProvider(
+        primary = OpenAIProvider(
             api_key=settings.OPENAI_API_KEY,
             model=settings.OPENAI_MODEL,
+        )
+
+        fallback_provider = settings.LLM_FALLBACK_PROVIDER.lower().strip()
+
+        if fallback_provider == "none":
+            return primary
+
+        if fallback_provider == "ollama":
+            return FallbackProvider(
+                primary=primary,
+                fallback=OllamaProvider(
+                    base_url=settings.OLLAMA_HOST,
+                    model=settings.OLLAMA_MODEL,
+                ),
+            )
+
+        raise ValueError(
+            "LLM_FALLBACK_PROVIDER must be either 'ollama' or 'none'."
         )
 
     if provider == "ollama":

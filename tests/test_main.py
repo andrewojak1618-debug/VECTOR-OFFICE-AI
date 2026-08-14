@@ -1,5 +1,6 @@
 import io
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from main import run_conversation
@@ -16,6 +17,7 @@ class FakeContext:
 class FakeAgent:
     def __init__(self):
         self.context = FakeContext()
+        self.memory_store = None
         self.requests = []
 
     def respond(self, user_text):
@@ -29,6 +31,23 @@ class FakeSpeech:
 
     def say(self, text):
         self.spoken.append(text)
+        return True
+
+
+class FakeMemoryStore:
+    def __init__(self):
+        self.saved = []
+        self.deleted = []
+
+    def remember(self, content):
+        self.saved.append(content)
+        return SimpleNamespace(id=3, content=content)
+
+    def list_memories(self):
+        return (SimpleNamespace(id=3, content=self.saved[-1]),)
+
+    def forget(self, memory_id):
+        self.deleted.append(memory_id)
         return True
 
 
@@ -61,6 +80,30 @@ class ConversationLoopTests(unittest.TestCase):
             run_conversation(agent, speech)
 
         self.assertIn("Brain request failed", output.getvalue())
+        self.assertEqual([], speech.spoken)
+
+    def test_loop_manages_confirmed_memories(self):
+        agent = FakeAgent()
+        agent.memory_store = FakeMemoryStore()
+        speech = FakeSpeech()
+
+        with patch(
+            "builtins.input",
+            side_effect=[
+                "/remember Vector Office AI ist mein Lieblingsprojekt.",
+                "/memories",
+                "/forget 3",
+                "/exit",
+            ],
+        ), patch("sys.stdout", new_callable=io.StringIO) as output:
+            run_conversation(agent, speech)
+
+        self.assertEqual(
+            ["Vector Office AI ist mein Lieblingsprojekt."],
+            agent.memory_store.saved,
+        )
+        self.assertEqual([3], agent.memory_store.deleted)
+        self.assertIn("Memory 3 saved", output.getvalue())
         self.assertEqual([], speech.spoken)
 
 

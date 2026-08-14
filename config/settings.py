@@ -63,6 +63,11 @@ class Settings:
         "openai",
     )
 
+    LLM_FALLBACK_PROVIDER = os.getenv(
+        "LLM_FALLBACK_PROVIDER",
+        "ollama",
+    )
+
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
     OPENAI_MODEL = os.getenv(
@@ -77,7 +82,26 @@ class Settings:
 
     OLLAMA_MODEL = os.getenv(
         "OLLAMA_MODEL",
-        "qwen3:8b",
+        "llama3.2:3b",
+    )
+
+    OLLAMA_EXECUTABLE = os.getenv(
+        "OLLAMA_EXECUTABLE",
+        "",
+    )
+
+    MEMORY_DB_PATH = Path(
+        os.getenv(
+            "MEMORY_DB_PATH",
+            str(BASE_DIR / "data" / "vector_memory.db"),
+        )
+    )
+
+    MEMORY_CONTEXT_LIMIT = get_int_setting(
+        "MEMORY_CONTEXT_LIMIT",
+        default=5,
+        minimum=1,
+        maximum=20,
     )
 
 settings = Settings()

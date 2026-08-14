@@ -61,8 +61,10 @@ Der aktuelle Prototyp unterstützt bereits:
 - konfigurierbare TTS-Stimme und Lautstärke
 - providerunabhängigen Agent- und Conversation-Core
 - OpenAI-Adapter über die Responses API
-- vorbereiteten lokalen Ollama-Adapter
+- lokal getesteten Ollama-Adapter mit automatischem Offline-Fallback
 - mehrere Gesprächsrunden mit erhaltenem Kontext
+- kontrolliertes SQLite-Langzeitgedächtnis für beide Provider
+- `/remember`, `/memories` und `/forget` zur Memory-Verwaltung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
 - automatisierte Tests für Agent, Kontext, Provider und Gesprächsschleife
@@ -103,7 +105,7 @@ Alle Provider implementieren dieselbe `LanguageModel`-Schnittstelle.
 Aktuell vorgesehen:
 
 - **OpenAI:** Cloud-Modell über die Responses API; live getestet
-- **Ollama:** lokales Modell über `/api/chat`; Adapter und Mock-Tests vorhanden
+- **Ollama:** lokales `llama3.2:3b` über `/api/chat`; live mit Vector getestet
 
 Der aktive Provider wird über `.env` ausgewählt:
 
@@ -201,8 +203,9 @@ VECTOR OFFICE AI CORE/
 └── requirements.txt
 ```
 
-Die aktuell noch leeren Module in `memory/`, `tools/` und `vector/actions.py`
-sind bewusst als nächste Architekturbereiche vorbereitet.
+Die aktuell noch leeren Module in `tools/` und `vector/actions.py` sind bewusst
+als nächste Architekturbereiche vorbereitet. `memory/` enthält inzwischen das
+lokale SQLite-Langzeitgedächtnis.
 
 ## ⚙️ Installation
 
@@ -244,12 +247,28 @@ TTS_VOICE=Microsoft Stefan
 TTS_VOLUME=90
 
 LLM_PROVIDER=openai
+LLM_FALLBACK_PROVIDER=ollama
 OPENAI_API_KEY=dein_api_key
 OPENAI_MODEL=gpt-5.6-luna
 
 OLLAMA_HOST=http://127.0.0.1:11434
-OLLAMA_MODEL=qwen3:8b
+OLLAMA_MODEL=llama3.2:3b
+OLLAMA_EXECUTABLE=
+
+MEMORY_DB_PATH=data/vector_memory.db
+MEMORY_CONTEXT_LIMIT=5
 ```
+
+OpenAI bleibt damit der bevorzugte Anbieter. Ist OpenAI nicht erreichbar,
+erhält das lokale Ollama-Modell automatisch denselben Gesprächskontext und
+übernimmt die Antwort. Mit `LLM_FALLBACK_PROVIDER=none` lässt sich der Fallback
+abschalten.
+
+Wenn Ollama als Anbieter oder Fallback konfiguriert ist, prüft das Programm den
+lokalen Dienst beim Start und startet ihn bei Bedarf unsichtbar. Die ausführbare
+Datei wird über den `PATH` und die üblichen Windows-Installationsordner gesucht.
+Nur bei einer abweichenden Installation muss `OLLAMA_EXECUTABLE` als absoluter
+Pfad gesetzt werden.
 
 ### Programm starten
 
@@ -259,8 +278,15 @@ OLLAMA_MODEL=qwen3:8b
 
 Kommandos während einer Sitzung:
 
+- `/remember TEXT` – eine bestätigte Erinnerung lokal speichern
+- `/memories` – gespeicherte Erinnerungen mit IDs anzeigen
+- `/forget ID` – eine bestimmte Erinnerung dauerhaft löschen
 - `/clear` – aktuellen Gesprächskontext löschen
 - `/exit` – Programm sauber beenden
+
+Nur explizit mit `/remember` bestätigte Inhalte werden dauerhaft gespeichert.
+Passende Erinnerungen werden OpenAI und Ollama über denselben Agent-Kontext zur
+Verfügung gestellt. Die lokale Datenbank unter `data/` wird nicht eingecheckt.
 
 ### Tests ausführen
 
@@ -323,7 +349,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 - vollständigen Ablauf bis zum physischen Vector bestätigt
 - mehrturnige Gesprächsschleife mit erhaltenem Kontext ergänzt
 - `/clear` und `/exit` implementiert
-- zehn automatisierte Tests erfolgreich ausgeführt
+- einundzwanzig automatisierte Tests erfolgreich ausgeführt
 
 ## 🏷️ Versions- und Commit-Historie
 
@@ -333,7 +359,8 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | Core-Grundlage | `cdaf906` | Projektstruktur, WirePod-/SDK-Tests und WAV-Wiedergabe |
 | German TTS | `b85e5ed` | Konfigurierbare deutsche TTS-Pipeline |
 | AI Conversation Core | `15ea79a` | Providerunabhängiger Agent, OpenAI/Ollama und Tests |
-| Aktueller Arbeitsstand | noch nicht committed | Mehrturnige Gesprächsschleife und erweiterte README |
+| Conversation Loop & README | `d4a3d5e` | Mehrturnige Gesprächsschleife und Projektdokumentation |
+| Aktueller Arbeitsstand | noch nicht committed | Ollama-Fallback und kontrolliertes SQLite-Memory |
 
 Die Anwendung befindet sich weiterhin in Version **0.1.0**. Die Historie wird
 bewusst über kleine, überprüfbare Meilensteine aufgebaut.
@@ -350,12 +377,15 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ Lautheitsnormalisierung und Sprachkompression
 - ✅ providerunabhängiger Brain-Core
 - ✅ OpenAI-Live-Integration
-- ✅ vorbereiteter Ollama-Adapter
+- ✅ lokal getestetes Ollama-Modell `llama3.2:3b`
+- ✅ automatischer Ollama-Fallback bei OpenAI-Ausfall
 - ✅ mehrturniger Gesprächskontext
+- ✅ kontrolliertes SQLite-Langzeitgedächtnis
+- ✅ kontextbezogener Abruf für OpenAI und Ollama
+- ✅ Anzeigen und Löschen gespeicherter Erinnerungen
 - ✅ automatisierte Tests
-- ⏳ lokale Ollama-Installation und Hardwaretest
 - ⏳ Spracheingabe über Vector/WirePod
-- ⏳ langfristiges Memory-System
+- ⏳ semantische Memory-Suche und Dokumentbibliothek
 - ⏳ Tool Registry und Berechtigungsmodell
 - ⏳ Robot-Aktionen und kontextabhängige Animationen
 
@@ -378,10 +408,11 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 
 ### Version 0.4 – Memory
 
-- SQLite-basiertes Langzeitgedächtnis entwickeln
-- Benutzerpräferenzen und Erinnerungen speichern
-- relevante Erinnerungen kontextbezogen abrufen
-- Datenschutz- und Löschfunktionen integrieren
+- ✅ SQLite-basiertes Langzeitgedächtnis als Grundlage entwickelt
+- ✅ bestätigte Benutzerpräferenzen und Erinnerungen speicherbar
+- ✅ relevante Erinnerungen kontextbezogen abrufbar
+- ✅ Erinnerungen können angezeigt und einzeln gelöscht werden
+- semantische Suche und kontrollierten Dokumentimport ergänzen
 
 ### Version 0.5 – Tools und Sicherheit
 

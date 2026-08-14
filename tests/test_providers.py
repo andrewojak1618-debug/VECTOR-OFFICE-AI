@@ -5,6 +5,7 @@ import httpx
 
 from brain.context import ChatMessage
 from brain.providers import (
+    FallbackProvider,
     OllamaProvider,
     OpenAIProvider,
     create_language_model,
@@ -32,6 +33,25 @@ class FakeOpenAIClient:
 
 
 class ProviderTests(unittest.TestCase):
+    def test_fallback_provider_uses_primary_when_available(self):
+        primary = SimpleNamespace(generate=lambda messages: "Cloud-Antwort")
+        fallback = SimpleNamespace(generate=lambda messages: "Lokal-Antwort")
+
+        provider = FallbackProvider(primary, fallback)
+
+        self.assertEqual("Cloud-Antwort", provider.generate(MESSAGES))
+
+    def test_fallback_provider_uses_ollama_after_primary_failure(self):
+        def fail(messages):
+            raise RuntimeError("OpenAI unavailable")
+
+        primary = SimpleNamespace(generate=fail)
+        fallback = SimpleNamespace(generate=lambda messages: "Lokal-Antwort")
+
+        provider = FallbackProvider(primary, fallback)
+
+        self.assertEqual("Lokal-Antwort", provider.generate(MESSAGES))
+
     def test_openai_provider_maps_messages(self):
         client = FakeOpenAIClient()
         provider = OpenAIProvider(

@@ -1,0 +1,107 @@
+import os
+import shutil
+import subprocess
+import time
+from pathlib import Path
+from typing import Callable
+
+import httpx
+
+
+class OllamaRuntime:
+    def __init__(
+        self,
+        base_url: str,
+        executable: str = "",
+        startup_timeout: float = 15.0,
+        poll_interval: float = 0.5,
+        client: httpx.Client | None = None,
+        process_launcher: Callable[..., object] | None = None,
+    ):
+        self.base_url = base_url.rstrip("/")
+        self.executable = executable.strip()
+        self.startup_timeout = startup_timeout
+        self.poll_interval = poll_interval
+        self.client = client or httpx.Client(timeout=1.5)
+        self.process_launcher = process_launcher or subprocess.Popen
+
+    def ensure_available(self) -> bool:
+        if self.is_available():
+            print("Ollama is online. [OK]")
+            return True
+
+        executable = self._resolve_executable()
+
+        if executable is None:
+            print("Ollama executable was not found. [WARNING]")
+            return False
+
+        print(f"Starting local Ollama: {executable}")
+
+        try:
+            self.process_launcher(
+                [str(executable), "serve"],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=self._creation_flags(),
+            )
+        except OSError as exc:
+            print(f"Ollama could not be started: {exc}")
+            return False
+
+        deadline = time.monotonic() + self.startup_timeout
+
+        while time.monotonic() < deadline:
+            time.sleep(self.poll_interval)
+
+            if self.is_available():
+                print("Ollama started successfully. [OK]")
+                return True
+
+        print("Ollama did not become ready in time. [WARNING]")
+        return False
+
+    def is_available(self) -> bool:
+        try:
+            response = self.client.get(f"{self.base_url}/api/version")
+            response.raise_for_status()
+            return True
+        except httpx.HTTPError:
+            return False
+
+    def _resolve_executable(self) -> Path | None:
+        if self.executable:
+            configured_path = Path(self.executable).expanduser()
+
+            if configured_path.is_file():
+                return configured_path
+
+            return None
+
+        path_executable = shutil.which("ollama")
+
+        if path_executable:
+            return Path(path_executable)
+
+        local_app_data = os.getenv("LOCALAPPDATA")
+
+        if not local_app_data:
+            return None
+
+        candidates = (
+            Path(local_app_data) / "Programs" / "Ollama" / "ollama.exe",
+            Path(local_app_data) / "Programs" / "OllamaArm64" / "ollama.exe",
+        )
+
+        return next((path for path in candidates if path.is_file()), None)
+
+    @staticmethod
+    def _creation_flags() -> int:
+        if os.name != "nt":
+            return 0
+
+        return (
+            getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            | getattr(subprocess, "DETACHED_PROCESS", 0)
+        )
