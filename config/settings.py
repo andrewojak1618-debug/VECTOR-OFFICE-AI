@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env", override=True)
 
 
 def get_int_setting(
@@ -56,6 +56,28 @@ class Settings:
         default=50,
         minimum=0,
         maximum=100,
+    )
+
+    LLM_PROVIDER = os.getenv(
+        "LLM_PROVIDER",
+        "openai",
+    )
+
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+    OPENAI_MODEL = os.getenv(
+        "OPENAI_MODEL",
+        "gpt-5.6-luna",
+    )
+
+    OLLAMA_HOST = os.getenv(
+        "OLLAMA_HOST",
+        "http://127.0.0.1:11434",
+    )
+
+    OLLAMA_MODEL = os.getenv(
+        "OLLAMA_MODEL",
+        "qwen3:8b",
     )
 
 settings = Settings()

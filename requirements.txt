@@ -1,2 +1,4 @@
 python-dotenv
 httpx
+openai==3.0.0
+wirepod-vector-sdk==0.8.1

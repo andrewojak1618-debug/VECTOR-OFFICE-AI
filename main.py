@@ -1,3 +1,5 @@
+from brain.agent import Agent
+from brain.providers import create_language_model
 from config.settings import settings
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
@@ -30,16 +32,32 @@ def main():
 
     if vector.test_connection():
         print()
-        print("Testing German speech...")
+        print(f"LLM provider: {settings.LLM_PROVIDER}")
 
         speech = VectorSpeech(
             vector,
             voice=settings.TTS_VOICE,
             volume=settings.TTS_VOLUME,
         )
-        speech.say(
-            "Hallo. Vector Office AI Core ist jetzt mit mir verbunden."
-        )
+        agent = Agent(create_language_model(settings))
+
+        print()
+        user_text = input("Du: ").strip()
+
+        if not user_text:
+            print("No question entered.")
+            return
+
+        print("Thinking...")
+
+        try:
+            answer = agent.respond(user_text)
+        except (RuntimeError, ValueError) as exc:
+            print(f"Brain request failed: {exc}")
+            return
+
+        print(f"Vector: {answer}")
+        speech.say(answer)
 
 
 if __name__ == "__main__":
