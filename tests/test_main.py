@@ -18,6 +18,7 @@ class FakeAgent:
     def __init__(self):
         self.context = FakeContext()
         self.memory_store = None
+        self.knowledge_library = None
         self.requests = []
 
     def respond(self, user_text):
@@ -48,6 +49,33 @@ class FakeMemoryStore:
 
     def forget(self, memory_id):
         self.deleted.append(memory_id)
+        return True
+
+
+class FakeKnowledgeLibrary:
+    def __init__(self):
+        self.imported = []
+        self.deleted = []
+
+    def import_document(self, path):
+        self.imported.append(path)
+        return SimpleNamespace(
+            document=SimpleNamespace(id=4, title="projektwissen"),
+            chunk_count=2,
+            changed=True,
+        )
+
+    def list_documents(self):
+        return (
+            SimpleNamespace(
+                id=4,
+                title="projektwissen",
+                source_path="C:\\Wissen\\projektwissen.md",
+            ),
+        )
+
+    def forget_document(self, document_id):
+        self.deleted.append(document_id)
         return True
 
 
@@ -119,6 +147,31 @@ class ConversationLoopTests(unittest.TestCase):
         )
         self.assertEqual([3], agent.memory_store.deleted)
         self.assertIn("Memory 3 saved", output.getvalue())
+        self.assertEqual([], speech.spoken)
+
+    def test_loop_manages_controlled_documents(self):
+        agent = FakeAgent()
+        agent.knowledge_library = FakeKnowledgeLibrary()
+        speech = FakeSpeech()
+
+        with patch(
+            "builtins.input",
+            side_effect=[
+                "/learn C:\\Wissen\\projektwissen.md",
+                "/documents",
+                "/forget-document 4",
+                "/exit",
+            ],
+        ), patch("sys.stdout", new_callable=io.StringIO) as output:
+            run_conversation(agent, speech)
+
+        self.assertEqual(
+            ["C:\\Wissen\\projektwissen.md"],
+            agent.knowledge_library.imported,
+        )
+        self.assertEqual([4], agent.knowledge_library.deleted)
+        self.assertIn("Document 4 imported", output.getvalue())
+        self.assertIn("projektwissen", output.getvalue())
         self.assertEqual([], speech.spoken)
 
     def test_voice_loop_sends_transcript_to_agent_and_speech(self):

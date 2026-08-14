@@ -3,6 +3,7 @@ from brain.ollama_runtime import OllamaRuntime
 from brain.providers import OllamaProvider, create_language_model
 from config.settings import settings
 from memory.database import SQLiteMemoryStore
+from memory.library import SQLiteKnowledgeLibrary
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
@@ -41,7 +42,10 @@ def respond_and_speak(
 def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
     print()
     print("Conversation started.")
-    print("Commands: /remember, /memories, /forget, /clear, /exit")
+    print(
+        "Commands: /remember, /memories, /forget, /learn, "
+        "/documents, /forget-document, /clear, /exit"
+    )
 
     while True:
         print()
@@ -105,6 +109,60 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
                 print(f"Memory {memory_id} deleted.")
             else:
                 print(f"Memory {memory_id} was not found.")
+            continue
+
+        if command.startswith("/learn "):
+            library = getattr(agent, "knowledge_library", None)
+            if library is None:
+                print("Document library is unavailable.")
+                continue
+
+            try:
+                result = library.import_document(user_text[7:])
+            except (OSError, ValueError) as exc:
+                print(f"Document import failed: {exc}")
+                continue
+
+            state = "imported" if result.changed else "already current"
+            print(
+                f"Document {result.document.id} {state} "
+                f"({result.chunk_count} sections): {result.document.title}"
+            )
+            continue
+
+        if command == "/documents":
+            library = getattr(agent, "knowledge_library", None)
+            if library is None:
+                print("Document library is unavailable.")
+                continue
+
+            documents = library.list_documents()
+            if not documents:
+                print("No documents imported.")
+            else:
+                for document in documents:
+                    print(
+                        f"[{document.id}] {document.title} "
+                        f"({document.source_path})"
+                    )
+            continue
+
+        if command.startswith("/forget-document "):
+            library = getattr(agent, "knowledge_library", None)
+            if library is None:
+                print("Document library is unavailable.")
+                continue
+
+            try:
+                document_id = int(user_text[17:].strip())
+            except ValueError:
+                print("Usage: /forget-document ID")
+                continue
+
+            if library.forget_document(document_id):
+                print(f"Document {document_id} deleted.")
+            else:
+                print(f"Document {document_id} was not found.")
             continue
 
         respond_and_speak(agent, speech, user_text)
@@ -212,6 +270,7 @@ def main():
             volume=settings.TTS_VOLUME,
         )
         memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
+        knowledge_library = SQLiteKnowledgeLibrary(settings.MEMORY_DB_PATH)
         if local_voice_required:
             print("Voice privacy: using local Ollama (cloud disabled).")
             language_model = OllamaProvider(
@@ -225,6 +284,13 @@ def main():
             language_model,
             memory_store=memory_store,
             memory_context_limit=settings.MEMORY_CONTEXT_LIMIT,
+            knowledge_library=knowledge_library,
+            knowledge_context_limit=settings.MEMORY_CONTEXT_LIMIT,
+            knowledge_context_enabled=(
+                provider == "ollama"
+                or local_voice_required
+                or settings.KNOWLEDGE_ALLOW_CLOUD
+            ),
         )
 
         if input_mode == "console":

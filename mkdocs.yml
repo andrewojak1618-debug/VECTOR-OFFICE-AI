@@ -1,0 +1,45 @@
+site_name: Vector Office AI Core
+site_description: Technische Dokumentation und Entwicklungsverlauf
+repo_url: https://github.com/andrewojak1618-debug/VECTOR-OFFICE-AI
+repo_name: VECTOR-OFFICE-AI
+
+theme:
+  name: material
+  language: de
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            members_order: source
+            show_root_heading: true
+            show_source: true
+            separate_signature: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - toc:
+      permalink: true
+
+nav:
+  - Start: index.md
+  - Entwicklung: progress.md
+  - Architektur: architecture.md
+  - Spracheingabe: voice.md
+  - Gedächtnis: memory.md
+  - Persönlichkeit: personality.md
+  - Roadmap: roadmap.md
+  - API-Referenz:
+      - Brain: api/brain.md
+      - Memory: api/memory.md
+      - Vector & Voice: api/vector-voice.md

@@ -140,5 +140,10 @@ class Settings:
         maximum=20,
     )
 
+    KNOWLEDGE_ALLOW_CLOUD = get_bool_setting(
+        "KNOWLEDGE_ALLOW_CLOUD",
+        default=False,
+    )
+
 settings = Settings()
 

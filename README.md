@@ -65,6 +65,8 @@ Der aktuelle Prototyp unterstützt bereits:
 - mehrere Gesprächsrunden mit erhaltenem Kontext
 - kontrolliertes SQLite-Langzeitgedächtnis für beide Provider
 - `/remember`, `/memories` und `/forget` zur Memory-Verwaltung
+- kontrollierte lokale Bibliothek für bewusst importierte `.md`- und `.txt`-Dateien
+- Quellen-, Prüfsummen- und Abschnittsverwaltung für importiertes Wissen
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
 - automatisierte Tests für Agent, Kontext, Provider und Gesprächsschleife
@@ -183,8 +185,14 @@ VECTOR OFFICE AI CORE/
 ├── config/
 │   └── settings.py
 ├── data/
+├── docs/
+│   ├── api/
+│   ├── architecture.md
+│   ├── progress.md
+│   └── roadmap.md
 ├── memory/
 │   ├── database.py
+│   ├── library.py
 │   └── models.py
 ├── tests/
 │   ├── test_agent.py
@@ -198,10 +206,14 @@ VECTOR OFFICE AI CORE/
 │   ├── client.py
 │   ├── sdk_client.py
 │   └── speech.py
+├── voice/
+│   └── wirepod_input.py
 ├── .env.example
 ├── .gitignore
 ├── main.py
+├── mkdocs.yml
 ├── README.md
+├── requirements-docs.txt
 └── requirements.txt
 ```
 
@@ -263,6 +275,7 @@ OLLAMA_EXECUTABLE=
 
 MEMORY_DB_PATH=data/vector_memory.db
 MEMORY_CONTEXT_LIMIT=5
+KNOWLEDGE_ALLOW_CLOUD=false
 ```
 
 OpenAI bleibt damit der bevorzugte Anbieter. Ist OpenAI nicht erreichbar,
@@ -287,6 +300,9 @@ Kommandos während einer Sitzung:
 - `/remember TEXT` – eine bestätigte Erinnerung lokal speichern
 - `/memories` – gespeicherte Erinnerungen mit IDs anzeigen
 - `/forget ID` – eine bestimmte Erinnerung dauerhaft löschen
+- `/learn PFAD` – eine UTF-8-kodierte Markdown- oder Textdatei importieren
+- `/documents` – importierte Dokumente mit ID und Quelle anzeigen
+- `/forget-document ID` – ein Dokument samt Abschnitten löschen
 - `/clear` – aktuellen Gesprächskontext löschen
 - `/exit` – Programm sauber beenden
 
@@ -294,11 +310,45 @@ Nur explizit mit `/remember` bestätigte Inhalte werden dauerhaft gespeichert.
 Passende Erinnerungen werden OpenAI und Ollama über denselben Agent-Kontext zur
 Verfügung gestellt. Die lokale Datenbank unter `data/` wird nicht eingecheckt.
 
+Importierte Dokumente werden in nachvollziehbare Abschnitte zerlegt und über
+ihre SHA-256-Prüfsumme aktualisiert. Standardmäßig stehen ihre Inhalte nur dem
+lokalen Ollama-Modell zur Verfügung. Erst `KNOWLEDGE_ALLOW_CLOUD=true` erlaubt
+die Übergabe relevanter Auszüge an OpenAI.
+
 ### Tests ausführen
 
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+Der lokale End-to-End-Test der Dokumentbibliothek verwendet ausschließlich
+Ollama, eine temporäre Datenbank und ein temporäres Testdokument:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.library_ollama
+```
+
+Der physische Diagnosepfad importiert die öffentliche Projekt-README in eine
+temporäre Bibliothek, lässt Ollama daraus antworten und spielt die Antwort über
+Vectors deutsche TTS ab:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.library_vector
+```
+
+### Technische Dokumentation
+
+Die ausführliche MkDocs-Dokumentation enthält Architektur, Entwicklungsverlauf,
+Voice-, Memory- und Personality-Konzept sowie eine automatisch erzeugte
+Python-API-Referenz:
+
+```powershell
+uv pip install --python .venv\Scripts\python.exe -r requirements-docs.txt
+.venv\Scripts\python.exe -m mkdocs serve
+```
+
+Der statische Build wird mit `.venv\Scripts\python.exe -m mkdocs build`
+erzeugt. Das Ausgabe-Verzeichnis `site/` wird nicht committed.
 
 ### WirePod-Spracheingabe diagnostizieren
 
@@ -378,7 +428,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 - vollständigen Ablauf bis zum physischen Vector bestätigt
 - mehrturnige Gesprächsschleife mit erhaltenem Kontext ergänzt
 - `/clear` und `/exit` implementiert
-- einunddreißig automatisierte Tests erfolgreich ausgeführt
+- vierzig automatisierte Tests erfolgreich ausgeführt
 
 ## 🏷️ Versions- und Commit-Historie
 
@@ -389,7 +439,9 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | German TTS | `b85e5ed` | Konfigurierbare deutsche TTS-Pipeline |
 | AI Conversation Core | `15ea79a` | Providerunabhängiger Agent, OpenAI/Ollama und Tests |
 | Conversation Loop & README | `d4a3d5e` | Mehrturnige Gesprächsschleife und Projektdokumentation |
-| Aktueller Arbeitsstand | noch nicht committed | Ollama-Fallback und kontrolliertes SQLite-Memory |
+| Fallback & Memory | `7843561` | Ollama-Fallback und kontrolliertes SQLite-Memory |
+| Private Voice Pipeline | `98037bd` | Deutsche WirePod-Spracheingabe bis zur Vector-TTS |
+| Personality Architecture | `ea63def` | Emotions- und Reflexionspfade reserviert |
 
 Die Anwendung befindet sich weiterhin in Version **0.1.0**. Die Historie wird
 bewusst über kleine, überprüfbare Meilensteine aufgebaut.
@@ -412,10 +464,12 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ kontrolliertes SQLite-Langzeitgedächtnis
 - ✅ kontextbezogener Abruf für OpenAI und Ollama
 - ✅ Anzeigen und Löschen gespeicherter Erinnerungen
+- ✅ kontrollierter Import und Abruf lokaler Markdown-/Textdokumente
+- ✅ Cloud-Sperre für Dokumentwissen als sichere Voreinstellung
 - ✅ automatisierte Tests
 - ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
 - 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
-- ⏳ semantische Memory-Suche und Dokumentbibliothek
+- ⏳ semantische Memory- und Dokumentensuche
 - ⏳ Tool Registry und Berechtigungsmodell
 - ⏳ Robot-Aktionen und kontextabhängige Animationen
 
@@ -442,7 +496,8 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ bestätigte Benutzerpräferenzen und Erinnerungen speicherbar
 - ✅ relevante Erinnerungen kontextbezogen abrufbar
 - ✅ Erinnerungen können angezeigt und einzeln gelöscht werden
-- semantische Suche und kontrollierten Dokumentimport ergänzen
+- ✅ kontrollierten Dokumentimport mit Quellen und Prüfsummen ergänzen
+- semantische Suche mit lokalen Embeddings ergänzen
 
 ### Version 0.5 – Tools und Sicherheit
 
