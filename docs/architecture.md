@@ -13,13 +13,19 @@
 
 | Bereich | Verantwortung |
 |---|---|
+| `application/` | Startlogik, Betriebsmodus, Befehle und Gesprächsschleifen |
 | `brain/` | Agent, Gesprächskontext, Provider und zukünftige Persönlichkeit |
 | `config/` | Validierte Konfiguration aus `.env` |
-| `memory/` | Lokales SQLite-Langzeitgedächtnis |
+| `memory/` | SQLite-Langzeitgedächtnis, Dokumente und lokale Embeddings |
 | `vector/` | WirePod-Healthcheck, SDK-Verbindung und deutsche TTS |
 | `voice/` | WirePod-Transcript-Listener und Voice-Eingabe |
 | `tools/` | Reservierter Bereich für kontrollierte Aktionen |
 | `tests/` | Automatisierte Regressionstests |
+
+`main.py` ist ausschließlich der schlanke Einstiegspunkt. Die Zusammensetzung
+der Abhängigkeiten liegt in `application/runtime.py`; Konsolen- und
+WirePod-Dialoge liegen in `application/conversation.py` und die expliziten
+Verwaltungsbefehle in `application/commands.py`.
 
 ## Providerfluss
 
@@ -39,3 +45,10 @@ Folgende Inhalte bleiben lokal und werden von Git ignoriert:
 
 Ungeprüfte Modellantworten werden nicht automatisch als Fakten oder Training
 gespeichert.
+
+## Embedding-Grenze
+
+`memory/embeddings.py` definiert den neutralen `EmbeddingProvider`-Vertrag und
+klare Datentypen für Texte und Zahlenvektoren. Der einzige konkrete Adapter
+verwendet Ollama lokal; ein Cloud-Embedding-Fallback existiert bewusst nicht.
+Die produktive Suche bleibt bis zur separaten SQLite-Integration lexikalisch.

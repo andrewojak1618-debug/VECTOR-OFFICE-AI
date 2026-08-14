@@ -35,11 +35,14 @@ nav:
   - Start: index.md
   - Entwicklung: progress.md
   - Architektur: architecture.md
+  - Codequalität: quality.md
   - Spracheingabe: voice.md
   - Gedächtnis: memory.md
+  - Lokale Embeddings: embeddings.md
   - Persönlichkeit: personality.md
   - Roadmap: roadmap.md
   - API-Referenz:
+      - Application: api/application.md
       - Brain: api/brain.md
       - Memory: api/memory.md
       - Vector & Voice: api/vector-voice.md

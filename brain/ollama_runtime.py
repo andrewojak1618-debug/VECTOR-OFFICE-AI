@@ -1,3 +1,5 @@
+"""Local Ollama service discovery and lifecycle management."""
+
 import os
 import shutil
 import subprocess
@@ -9,6 +11,8 @@ import httpx
 
 
 class OllamaRuntime:
+    """Ensure that the configured local Ollama service is reachable."""
+
     def __init__(
         self,
         base_url: str,
@@ -26,18 +30,20 @@ class OllamaRuntime:
         self.process_launcher = process_launcher or subprocess.Popen
 
     def ensure_available(self) -> bool:
+        """Return whether Ollama is online, starting it when necessary."""
         if self.is_available():
             print("Ollama is online. [OK]")
             return True
-
         executable = self._resolve_executable()
-
         if executable is None:
             print("Ollama executable was not found. [WARNING]")
             return False
-
         print(f"Starting local Ollama: {executable}")
+        if not self._start_service(executable):
+            return False
+        return self._wait_until_ready()
 
+    def _start_service(self, executable: Path) -> bool:
         try:
             self.process_launcher(
                 [str(executable), "serve"],
@@ -49,20 +55,20 @@ class OllamaRuntime:
         except OSError as exc:
             print(f"Ollama could not be started: {exc}")
             return False
+        return True
 
+    def _wait_until_ready(self) -> bool:
         deadline = time.monotonic() + self.startup_timeout
-
         while time.monotonic() < deadline:
             time.sleep(self.poll_interval)
-
             if self.is_available():
                 print("Ollama started successfully. [OK]")
                 return True
-
         print("Ollama did not become ready in time. [WARNING]")
         return False
 
     def is_available(self) -> bool:
+        """Check the local version endpoint without leaking transport errors."""
         try:
             response = self.client.get(f"{self.base_url}/api/version")
             response.raise_for_status()

@@ -25,6 +25,10 @@ Die aktuelle Grundlage verwendet eine transparente lexikalische Suche. Nur
 passende Einträge werden als lokale Wissensbasis in den Systemkontext der
 aktuellen Anfrage aufgenommen.
 
+Eine providerunabhängige Embedding-Schnittstelle und ein lokaler Ollama-Adapter
+sind bereits in `memory/embeddings.py` vorbereitet. Sie sind noch nicht mit der
+produktiven Suche oder der SQLite-Datenbank verbunden.
+
 Erinnerungen gelten für das Modell ausdrücklich als Daten, niemals als
 Anweisungen. Dadurch wird das Risiko gespeicherter Prompt-Manipulationen
 reduziert.
@@ -73,7 +77,9 @@ temporäres Wissen bis zur deutschen Sprachausgabe auf Vector getestet werden:
 
 ## Geplante Erweiterung
 
-- semantische Suche mit lokalen Embeddings
+- ✅ providerunabhängige Typen und lokale Ollama-Embeddings
+- Embedding-Vektoren versioniert in SQLite speichern
+- hybride semantische und lexikalische Suche integrieren
 - Vertrauensstatus und erweiterte Versionshistorie
 - Export- und vollständige Löschfunktionen
 - bestätigtes Feedback für beide Provider

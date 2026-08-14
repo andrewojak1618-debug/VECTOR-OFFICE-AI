@@ -19,57 +19,65 @@ TEST_QUESTION = (
 
 def run_diagnostic() -> bool:
     """Import test knowledge and verify a real local Ollama response."""
-    print("Checking local Ollama service...")
-    runtime = OllamaRuntime(
-        base_url=settings.OLLAMA_HOST,
-        executable=settings.OLLAMA_EXECUTABLE,
-    )
-    if not runtime.ensure_available():
-        print("Ollama library diagnostic failed: service unavailable. [ERROR]")
+    if not _ensure_ollama():
         return False
-
     with tempfile.TemporaryDirectory(prefix="vector-library-") as temp_dir:
-        root = Path(temp_dir)
-        document_path = root / "projektwissen.md"
-        document_path.write_text(
-            "# Kontrolliertes Projektwissen\n\n"
-            "Der interne Codename der Dokumentbibliothek lautet "
-            f"{TEST_CODE_NAME}.\n\n"
-            "Dieses Testwissen darf ausschließlich lokal mit Ollama "
-            "verarbeitet werden.\n",
-            encoding="utf-8",
-        )
-
-        library = SQLiteKnowledgeLibrary(root / "diagnostic.db")
-        imported = library.import_document(document_path)
-        print(
-            f"Imported document {imported.document.id} "
-            f"with {imported.chunk_count} section(s). [OK]"
-        )
-
-        matches = library.search(TEST_QUESTION)
-        if not matches or TEST_CODE_NAME not in matches[0].content:
-            print("Relevant library section was not found. [ERROR]")
+        library = _prepare_library(Path(temp_dir))
+        if library is None:
             return False
-        print("Relevant library section found. [OK]")
-
-        agent = Agent(
-            OllamaProvider(
-                base_url=settings.OLLAMA_HOST,
-                model=settings.OLLAMA_MODEL,
-            ),
-            knowledge_library=library,
-            knowledge_context_enabled=True,
-        )
-        answer = agent.respond(TEST_QUESTION)
-        print(f"Ollama: {answer}")
-
+        answer = _ask_ollama(library)
         if TEST_CODE_NAME.casefold() not in answer.casefold():
             print("Ollama did not reproduce the imported fact. [ERROR]")
             return False
-
     print("Local document library -> Ollama diagnostic passed. [OK]")
     return True
+
+
+def _ensure_ollama() -> bool:
+    print("Checking local Ollama service...")
+    runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
+    if runtime.ensure_available():
+        return True
+    print("Ollama library diagnostic failed: service unavailable. [ERROR]")
+    return False
+
+
+def _prepare_library(root: Path) -> SQLiteKnowledgeLibrary | None:
+    document_path = root / "projektwissen.md"
+    document_path.write_text(_test_document(), encoding="utf-8")
+    library = SQLiteKnowledgeLibrary(root / "diagnostic.db")
+    imported = library.import_document(document_path)
+    print(
+        f"Imported document {imported.document.id} "
+        f"with {imported.chunk_count} section(s). [OK]"
+    )
+    matches = library.search(TEST_QUESTION)
+    if matches and TEST_CODE_NAME in matches[0].content:
+        print("Relevant library section found. [OK]")
+        return library
+    print("Relevant library section was not found. [ERROR]")
+    return None
+
+
+def _test_document() -> str:
+    return (
+        "# Kontrolliertes Projektwissen\n\n"
+        "Der interne Codename der Dokumentbibliothek lautet "
+        f"{TEST_CODE_NAME}.\n\n"
+        "Dieses Testwissen darf ausschließlich lokal mit Ollama "
+        "verarbeitet werden.\n"
+    )
+
+
+def _ask_ollama(library: SQLiteKnowledgeLibrary) -> str:
+    agent = Agent(
+        OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL),
+        knowledge_library=library,
+        knowledge_context_enabled=True,
+    )
+    answer = agent.respond(TEST_QUESTION)
+    print(f"Ollama: {answer}")
+    return answer
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+"""Validated environment-based configuration for Vector Office AI."""
+
 import os
 from pathlib import Path
 
@@ -15,6 +17,7 @@ def get_int_setting(
     minimum: int,
     maximum: int,
 ) -> int:
+    """Read one bounded integer setting or return its default."""
     raw_value = os.getenv(name)
 
     if raw_value is None:
@@ -34,12 +37,13 @@ def get_int_setting(
 
 
 def get_bool_setting(name: str, default: bool) -> bool:
+    """Read one strict boolean setting or return its default."""
     raw_value = os.getenv(name)
 
     if raw_value is None:
         return default
 
-    normalized_value = raw_value.strip().lower()
+    normalized_value = raw_value.strip().casefold()
 
     if normalized_value in {"1", "true", "yes", "on"}:
         return True
@@ -53,6 +57,8 @@ def get_bool_setting(name: str, default: bool) -> bool:
 
 
 class Settings:
+    """Application settings loaded once from the local environment."""
+
     APP_NAME = "Vector Office AI"
     VERSION = "0.1.0"
 
@@ -124,6 +130,30 @@ class Settings:
     OLLAMA_EXECUTABLE = os.getenv(
         "OLLAMA_EXECUTABLE",
         "",
+    )
+
+    EMBEDDING_PROVIDER = os.getenv(
+        "EMBEDDING_PROVIDER",
+        "ollama",
+    )
+
+    OLLAMA_EMBEDDING_MODEL = os.getenv(
+        "OLLAMA_EMBEDDING_MODEL",
+        "embeddinggemma",
+    )
+
+    OLLAMA_EMBEDDING_DIMENSION = get_int_setting(
+        "OLLAMA_EMBEDDING_DIMENSION",
+        default=0,
+        minimum=0,
+        maximum=65536,
+    )
+
+    OLLAMA_EMBEDDING_TIMEOUT = get_int_setting(
+        "OLLAMA_EMBEDDING_TIMEOUT",
+        default=60,
+        minimum=1,
+        maximum=600,
     )
 
     MEMORY_DB_PATH = Path(

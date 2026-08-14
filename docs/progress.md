@@ -49,3 +49,24 @@ Die deutsche TTS wurde schrittweise verbessert:
 - gemeinsamer Agent-Kontext mit klarer Kennzeichnung als Daten
 - Cloud-Sperre als Standard; Ollama darf die lokale Bibliothek verwenden
 - Verwaltung über `/learn`, `/documents` und `/forget-document`
+
+## Clean-Code-Audit
+
+- monolithische Start-, Gesprächs-, Dokument- und TTS-Logik aufgeteilt
+- explizite `application/`-Schicht für Orchestrierung eingeführt
+- Provider-, Ollama-, WirePod- und Vector-SDK-Grenzen gekapselt
+- öffentliche Python-APIs einheitlich dokumentiert
+- wiederverwendete Grenzwerte in Settings oder Konstanten verschoben
+- lokale SQLite-Neben- und Journaldaten vollständig über `data/` ignoriert
+- Regressionstests für TTS, Providerwahl und Listenerfehler ergänzt
+- automatische Strukturregeln in `tests/test_code_quality.py` hinterlegt
+
+## Lokale Embedding-Grundlage
+
+- `EmbeddingText` und `EmbeddingVector` als validierte Datentypen eingeführt
+- `EmbeddingProvider` als providerunabhängigen Vertrag definiert
+- aktuellen lokalen Ollama-Endpunkt `/api/embed` angebunden
+- Modellname und tatsächliche beziehungsweise erwartete Dimension erfasst
+- Timeout, Antwortvalidierung und sichere Fehlergrenze ergänzt
+- Cloud-Embedding im Factory-Pfad ausdrücklich ausgeschlossen
+- produktive Suche bewusst noch nicht verändert

@@ -12,6 +12,12 @@
     options:
       members: true
 
+## Embeddings
+
+::: memory.embeddings
+    options:
+      members: true
+
 ## Dokumentbibliothek
 
 ::: memory.library

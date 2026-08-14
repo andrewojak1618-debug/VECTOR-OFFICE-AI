@@ -15,7 +15,9 @@
 
 ## Memory und Bibliothek
 
-- semantische Suche ergänzen
+- ✅ lokale providerunabhängige Embedding-Grundlage ergänzen
+- Embedding-Vektoren für Erinnerungen und Dokumentabschnitte speichern
+- hybride semantische und lexikalische Suche ergänzen
 - ✅ Markdown- und Textdokumente kontrolliert importieren
 - ✅ Quellen und Inhaltsprüfsummen speichern
 - Vertrauensstatus und Versionshistorie erweitern

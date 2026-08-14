@@ -173,6 +173,10 @@ Vector:   27
 
 ```text
 VECTOR OFFICE AI CORE/
+├── application/
+│   ├── commands.py
+│   ├── conversation.py
+│   └── runtime.py
 ├── assets/
 │   └── Vevtor_illustration_README.png
 ├── brain/
@@ -185,6 +189,9 @@ VECTOR OFFICE AI CORE/
 ├── config/
 │   └── settings.py
 ├── data/
+├── diagnostics/
+│   ├── library_ollama.py
+│   └── library_vector.py
 ├── docs/
 │   ├── api/
 │   ├── architecture.md
@@ -192,12 +199,18 @@ VECTOR OFFICE AI CORE/
 │   └── roadmap.md
 ├── memory/
 │   ├── database.py
+│   ├── embeddings.py
 │   ├── library.py
 │   └── models.py
 ├── tests/
 │   ├── test_agent.py
+│   ├── test_code_quality.py
+│   ├── test_embeddings.py
 │   ├── test_main.py
-│   └── test_providers.py
+│   ├── test_providers.py
+│   ├── test_runtime.py
+│   ├── test_sdk_client.py
+│   └── test_speech.py
 ├── tools/
 │   ├── permissions.py
 │   └── registry.py
@@ -217,7 +230,9 @@ VECTOR OFFICE AI CORE/
 └── requirements.txt
 ```
 
-Die aktuell noch leeren Module in `tools/` und `vector/actions.py` sind bewusst
+`main.py` bleibt ein schlanker Einstiegspunkt. Die `application/`-Schicht
+enthält Startlogik, Betriebsmodus, Befehle und Gesprächsschleifen. Die aktuell
+noch leeren Module in `tools/` und `vector/actions.py` sind bewusst
 als nächste Architekturbereiche vorbereitet. `memory/` enthält inzwischen das
 lokale SQLite-Langzeitgedächtnis.
 
@@ -273,6 +288,11 @@ OLLAMA_HOST=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.2:3b
 OLLAMA_EXECUTABLE=
 
+EMBEDDING_PROVIDER=ollama
+OLLAMA_EMBEDDING_MODEL=embeddinggemma
+OLLAMA_EMBEDDING_DIMENSION=0
+OLLAMA_EMBEDDING_TIMEOUT=60
+
 MEMORY_DB_PATH=data/vector_memory.db
 MEMORY_CONTEXT_LIMIT=5
 KNOWLEDGE_ALLOW_CLOUD=false
@@ -288,6 +308,11 @@ lokalen Dienst beim Start und startet ihn bei Bedarf unsichtbar. Die ausführbar
 Datei wird über den `PATH` und die üblichen Windows-Installationsordner gesucht.
 Nur bei einer abweichenden Installation muss `OLLAMA_EXECUTABLE` als absoluter
 Pfad gesetzt werden.
+
+Die Embedding-Grundlage verwendet ausschließlich den lokalen Ollama-Endpunkt
+`/api/embed`. `OLLAMA_EMBEDDING_DIMENSION=0` übernimmt die native Dimension des
+Modells; ein positiver Wert aktiviert eine strikte Prüfung. Die Vektoren werden
+in dieser Phase noch nicht produktiv gespeichert oder für die Suche verwendet.
 
 ### Programm starten
 
@@ -320,6 +345,11 @@ die Übergabe relevanter Auszüge an OpenAI.
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+Die Suite prüft neben dem Verhalten auch strukturelle Leitplanken: öffentliche
+APIs benötigen Docstrings, Funktionen dürfen die harte Rückfallgrenze nicht
+überschreiten und Git-Konfliktmarker dürfen nicht im Produktivcode verbleiben.
+Die ausführlichen Regeln stehen unter `docs/quality.md`.
 
 Der lokale End-to-End-Test der Dokumentbibliothek verwendet ausschließlich
 Ollama, eine temporäre Datenbank und ein temporäres Testdokument:
@@ -428,7 +458,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 - vollständigen Ablauf bis zum physischen Vector bestätigt
 - mehrturnige Gesprächsschleife mit erhaltenem Kontext ergänzt
 - `/clear` und `/exit` implementiert
-- vierzig automatisierte Tests erfolgreich ausgeführt
+- neunundsechzig automatisierte Funktions- und Qualitätstests erfolgreich ausgeführt
 
 ## 🏷️ Versions- und Commit-Historie
 
@@ -466,10 +496,11 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ Anzeigen und Löschen gespeicherter Erinnerungen
 - ✅ kontrollierter Import und Abruf lokaler Markdown-/Textdokumente
 - ✅ Cloud-Sperre für Dokumentwissen als sichere Voreinstellung
+- ✅ providerunabhängige lokale Embedding-Grundlage mit Ollama
 - ✅ automatisierte Tests
 - ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
 - 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
-- ⏳ semantische Memory- und Dokumentensuche
+- ⏳ Embedding-Speicherung und hybride semantische Suche
 - ⏳ Tool Registry und Berechtigungsmodell
 - ⏳ Robot-Aktionen und kontextabhängige Animationen
 
@@ -497,7 +528,9 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ relevante Erinnerungen kontextbezogen abrufbar
 - ✅ Erinnerungen können angezeigt und einzeln gelöscht werden
 - ✅ kontrollierten Dokumentimport mit Quellen und Prüfsummen ergänzen
-- semantische Suche mit lokalen Embeddings ergänzen
+- ✅ lokale providerunabhängige Embedding-Schnittstelle ergänzen
+- Embedding-Vektoren in SQLite speichern
+- hybride semantische und lexikalische Suche ergänzen
 
 ### Version 0.5 – Tools und Sicherheit
 

@@ -1,3 +1,5 @@
+"""Private voice transcript input from the local WirePod log endpoint."""
+
 import argparse
 import re
 import time
@@ -11,10 +13,16 @@ TRANSCRIPT_PATTERN = re.compile(
     r"Intent matched: (?P<intent>.*?), transcribed text: "
     r"'(?P<text>.*)', device: (?P<device>\S+)$"
 )
+DEFAULT_POLL_INTERVAL = 0.5
+REQUEST_TIMEOUT_SECONDS = 5.0
+MAX_SEEN_LINES = 200
+RETAINED_SEEN_LINES = 50
 
 
 @dataclass(frozen=True)
 class TranscriptEvent:
+    """One parsed WirePod speech-recognition event."""
+
     timestamp: str
     intent: str
     text: str
@@ -23,58 +31,62 @@ class TranscriptEvent:
 
 
 class WirePodTranscriptListener:
+    """Poll WirePod and emit each newly recognized transcript once."""
+
     def __init__(
         self,
         wirepod_host: str,
-        poll_interval: float = 0.5,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
         client: httpx.Client | None = None,
     ):
         self.poll_interval = poll_interval
         self.client = client or httpx.Client(
             base_url=wirepod_host.rstrip("/"),
-            timeout=5.0,
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
         self._seen_lines: set[str] = set()
         self._primed = False
 
     @staticmethod
     def parse_logs(log_text: str) -> tuple[TranscriptEvent, ...]:
-        events = []
+        """Parse supported transcript events from a WirePod log response."""
+        events = (
+            WirePodTranscriptListener._parse_line(line)
+            for line in log_text.splitlines()
+        )
+        return tuple(event for event in events if event is not None)
 
-        for line in log_text.splitlines():
-            normalized_line = line.strip()
-            match = TRANSCRIPT_PATTERN.match(normalized_line)
-
-            if match is None:
-                continue
-
-            events.append(
-                TranscriptEvent(
-                    timestamp=match.group("timestamp"),
-                    intent=match.group("intent"),
-                    text=match.group("text").strip(),
-                    device=match.group("device"),
-                    raw_line=normalized_line,
-                )
-            )
-
-        return tuple(events)
+    @staticmethod
+    def _parse_line(line: str) -> TranscriptEvent | None:
+        normalized_line = line.strip()
+        match = TRANSCRIPT_PATTERN.match(normalized_line)
+        if match is None:
+            return None
+        return TranscriptEvent(
+            timestamp=match.group("timestamp"),
+            intent=match.group("intent"),
+            text=match.group("text").strip(),
+            device=match.group("device"),
+            raw_line=normalized_line,
+        )
 
     def prime(self) -> None:
+        """Mark current log entries as seen before accepting new speech."""
         events = self._fetch_events()
         self._seen_lines = {event.raw_line for event in events}
         self._primed = True
 
     def poll(self) -> tuple[TranscriptEvent, ...]:
+        """Return only events not emitted by an earlier poll."""
         events = self._fetch_events()
         new_events = tuple(
             event for event in events if event.raw_line not in self._seen_lines
         )
         self._seen_lines.update(event.raw_line for event in events)
 
-        if len(self._seen_lines) > 200:
+        if len(self._seen_lines) > MAX_SEEN_LINES:
             self._seen_lines = {
-                event.raw_line for event in events[-50:]
+                event.raw_line for event in events[-RETAINED_SEEN_LINES:]
             }
 
         self._primed = True
@@ -84,6 +96,7 @@ class WirePodTranscriptListener:
         self,
         timeout: float = 60.0,
     ) -> TranscriptEvent | None:
+        """Wait for one meaningful transcript until the timeout expires."""
         if not self._primed:
             self.prime()
 
@@ -91,11 +104,7 @@ class WirePodTranscriptListener:
 
         while time.monotonic() < deadline:
             events = self.poll()
-            spoken_events = tuple(
-                event
-                for event in events
-                if event.text and event.intent != "intent_system_noaudio"
-            )
+            spoken_events = self._spoken_events(events)
 
             if spoken_events:
                 return spoken_events[-1]
@@ -103,6 +112,14 @@ class WirePodTranscriptListener:
             time.sleep(self.poll_interval)
 
         return None
+
+    @staticmethod
+    def _spoken_events(events) -> tuple[TranscriptEvent, ...]:
+        return tuple(
+            event
+            for event in events
+            if event.text and event.intent != "intent_system_noaudio"
+        )
 
     def _fetch_events(self) -> tuple[TranscriptEvent, ...]:
         try:
@@ -117,6 +134,7 @@ class WirePodTranscriptListener:
 
 
 def main() -> None:
+    """Wait for and print one new local WirePod transcript."""
     parser = argparse.ArgumentParser(
         description="Wait for one new transcript from the local WirePod.",
     )

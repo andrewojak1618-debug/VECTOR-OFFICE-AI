@@ -1,3 +1,5 @@
+"""Language-model adapters and provider composition."""
+
 from typing import Any, Sequence
 
 import httpx
@@ -7,7 +9,16 @@ from brain.agent import LanguageModel
 from brain.context import ChatMessage
 
 
+def _message_payload(messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
+    return [
+        {"role": message.role, "content": message.content}
+        for message in messages
+    ]
+
+
 class OpenAIProvider:
+    """Generate responses through the OpenAI Responses API."""
+
     def __init__(
         self,
         api_key: str,
@@ -16,37 +27,28 @@ class OpenAIProvider:
     ):
         if not api_key.strip():
             raise ValueError("OPENAI_API_KEY is required for the OpenAI provider.")
-
         if not model.strip():
             raise ValueError("OPENAI_MODEL must not be empty.")
-
-        if client is None:
-            client = OpenAI(api_key=api_key)
-
         self.model = model
-        self.client = client
+        self.client = client or OpenAI(api_key=api_key)
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
+        """Return one model response without exposing provider exceptions."""
         try:
             response = self.client.responses.create(
                 model=self.model,
-                input=[
-                    {
-                        "role": message.role,
-                        "content": message.content,
-                    }
-                    for message in messages
-                ],
+                input=_message_payload(messages),
             )
         except OpenAIError:
             raise RuntimeError(
                 "OpenAI request failed. Check API key, model access, and billing."
             ) from None
-
         return response.output_text
 
 
 class OllamaProvider:
+    """Generate responses through a local Ollama chat endpoint."""
+
     def __init__(
         self,
         base_url: str,
@@ -56,10 +58,8 @@ class OllamaProvider:
     ):
         if not base_url.strip():
             raise ValueError("OLLAMA_HOST must not be empty.")
-
         if not model.strip():
             raise ValueError("OLLAMA_MODEL must not be empty.")
-
         self.model = model
         self.client = client or httpx.Client(
             base_url=base_url.rstrip("/"),
@@ -67,55 +67,56 @@ class OllamaProvider:
         )
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
+        """Return one local response and sanitize transport failures."""
         try:
             response = self.client.post(
                 "/api/chat",
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {
-                            "role": message.role,
-                            "content": message.content,
-                        }
-                        for message in messages
-                    ],
-                    "stream": False,
-                },
+                json=self._request_payload(messages),
             )
             response.raise_for_status()
         except httpx.HTTPError:
             raise RuntimeError(
                 "Ollama request failed. Check service, host, and model."
             ) from None
+        return self._response_content(response)
 
+    def _request_payload(self, messages: Sequence[ChatMessage]) -> dict:
+        return {
+            "model": self.model,
+            "messages": _message_payload(messages),
+            "stream": False,
+        }
+
+    @staticmethod
+    def _response_content(response: httpx.Response) -> str:
         content = response.json().get("message", {}).get("content", "")
-
         if not isinstance(content, str):
             raise RuntimeError("Ollama returned an invalid response.")
-
         return content
 
 
 class FallbackProvider:
-    def __init__(
-        self,
-        primary: LanguageModel,
-        fallback: LanguageModel,
-    ):
+    """Use a secondary model only when the primary model is unavailable."""
+
+    def __init__(self, primary: LanguageModel, fallback: LanguageModel):
         self.primary = primary
         self.fallback = fallback
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
-        try:
-            content = self.primary.generate(messages)
-
-            if content.strip():
-                return content
-        except RuntimeError:
-            pass
-
+        """Return the primary response or deliberately use the fallback."""
+        content = self._try_primary(messages)
+        if content:
+            return content
         print("OpenAI unavailable. Using local Ollama fallback.")
+        return self._generate_fallback(messages)
 
+    def _try_primary(self, messages: Sequence[ChatMessage]) -> str:
+        try:
+            return self.primary.generate(messages).strip()
+        except RuntimeError:
+            return ""
+
+    def _generate_fallback(self, messages: Sequence[ChatMessage]) -> str:
         try:
             return self.fallback.generate(messages)
         except RuntimeError:
@@ -125,38 +126,24 @@ class FallbackProvider:
 
 
 def create_language_model(settings) -> LanguageModel:
-    provider = settings.LLM_PROVIDER.lower().strip()
-
+    """Build the configured language model and optional local fallback."""
+    provider = settings.LLM_PROVIDER.casefold().strip()
     if provider == "openai":
-        primary = OpenAIProvider(
-            api_key=settings.OPENAI_API_KEY,
-            model=settings.OPENAI_MODEL,
-        )
-
-        fallback_provider = settings.LLM_FALLBACK_PROVIDER.lower().strip()
-
-        if fallback_provider == "none":
-            return primary
-
-        if fallback_provider == "ollama":
-            return FallbackProvider(
-                primary=primary,
-                fallback=OllamaProvider(
-                    base_url=settings.OLLAMA_HOST,
-                    model=settings.OLLAMA_MODEL,
-                ),
-            )
-
-        raise ValueError(
-            "LLM_FALLBACK_PROVIDER must be either 'ollama' or 'none'."
-        )
-
+        return _create_openai_model(settings)
     if provider == "ollama":
-        return OllamaProvider(
-            base_url=settings.OLLAMA_HOST,
-            model=settings.OLLAMA_MODEL,
-        )
+        return _create_ollama_model(settings)
+    raise ValueError("LLM_PROVIDER must be either 'openai' or 'ollama'.")
 
-    raise ValueError(
-        "LLM_PROVIDER must be either 'openai' or 'ollama'."
-    )
+
+def _create_openai_model(settings) -> LanguageModel:
+    primary = OpenAIProvider(settings.OPENAI_API_KEY, settings.OPENAI_MODEL)
+    fallback = settings.LLM_FALLBACK_PROVIDER.casefold().strip()
+    if fallback == "none":
+        return primary
+    if fallback == "ollama":
+        return FallbackProvider(primary, _create_ollama_model(settings))
+    raise ValueError("LLM_FALLBACK_PROVIDER must be either 'ollama' or 'none'.")
+
+
+def _create_ollama_model(settings) -> OllamaProvider:
+    return OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL)

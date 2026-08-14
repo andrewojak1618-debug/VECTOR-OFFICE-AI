@@ -94,6 +94,14 @@ class FakeVoiceListener:
         return next(self.events)
 
 
+class FailingVoiceListener(FakeVoiceListener):
+    def __init__(self):
+        super().__init__([])
+
+    def wait_for_transcript(self, timeout):
+        raise RuntimeError("endpoint unavailable")
+
+
 class ConversationLoopTests(unittest.TestCase):
     def test_loop_responds_clears_context_and_exits(self):
         agent = FakeAgent()
@@ -203,6 +211,18 @@ class ConversationLoopTests(unittest.TestCase):
         with patch("sys.stdout", new_callable=io.StringIO):
             run_voice_conversation(agent, speech, listener)
 
+        self.assertEqual([], agent.requests)
+        self.assertEqual([], speech.spoken)
+
+    def test_voice_loop_stops_after_listener_failure(self):
+        agent = FakeAgent()
+        speech = FakeSpeech()
+        listener = FailingVoiceListener()
+
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            run_voice_conversation(agent, speech, listener)
+
+        self.assertIn("Voice input failed", output.getvalue())
         self.assertEqual([], agent.requests)
         self.assertEqual([], speech.spoken)
 
