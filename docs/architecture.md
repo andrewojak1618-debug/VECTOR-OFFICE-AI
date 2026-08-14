@@ -51,4 +51,10 @@ gespeichert.
 `memory/embeddings.py` definiert den neutralen `EmbeddingProvider`-Vertrag und
 klare Datentypen für Texte und Zahlenvektoren. Der einzige konkrete Adapter
 verwendet Ollama lokal; ein Cloud-Embedding-Fallback existiert bewusst nicht.
-Die produktive Suche bleibt bis zur separaten SQLite-Integration lexikalisch.
+Die produktive Suche bleibt bis zur separaten Ähnlichkeitsbewertung lexikalisch.
+
+Die SQLite-Integration liegt in `memory/embedding_store.py`. Jeder Vektor
+verweist auf genau einen Dokumentabschnitt. Dokument, Abschnitte und Vektoren
+bilden eine durchgehende Fremdschlüsselkette mit Löschweitergabe. Der Indexer in
+`memory/indexing.py` koordiniert Batch-Erzeugung und atomare Speicherung, ohne
+die lexikalische Suche bereits zu ersetzen.

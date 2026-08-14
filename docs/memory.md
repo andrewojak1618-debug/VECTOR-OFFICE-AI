@@ -27,8 +27,25 @@ aktuellen Anfrage aufgenommen.
 
 Eine providerunabhängige Embedding-Schnittstelle und ein lokaler Ollama-Adapter
 sind in `memory/embeddings.py` umgesetzt. Einzeltexte und mehrere Abschnitte
-können real mit `embeddinggemma` vektorisiert werden. Die Integration ist noch
-nicht mit der produktiven Suche oder der SQLite-Datenbank verbunden.
+können real mit `embeddinggemma` vektorisiert und über
+`memory/embedding_store.py` dauerhaft in SQLite gespeichert werden. Die
+produktive Suche verwendet die Vektoren noch nicht.
+
+## Persistente Dokumentvektoren
+
+Die Tabelle `knowledge_embeddings` ordnet jeden Vektor eindeutig über
+`chunk_id` einem Dokumentabschnitt zu. Gespeichert werden:
+
+- Modellname und vollständiger Ollama-Modell-Digest,
+- Vektordimension und SHA-256-Hash des Abschnittstextes,
+- kompakter Little-Endian-Float32-BLOB,
+- Erstellungs- und Aktualisierungszeitpunkt.
+
+Die Kombination aus Abschnitt, Modell und Modellversion ist eindeutig. Ein
+erneutes Indexieren aktualisiert den bestehenden Datensatz. Abweichende
+Modell-Digests, Dimensionen oder Inhaltshashes kennzeichnen veraltete Vektoren.
+Beim Löschen oder Ersetzen eines Dokuments entfernt SQLite über mehrstufiges
+`ON DELETE CASCADE` automatisch auch die betroffenen Vektoren.
 
 Erinnerungen gelten für das Modell ausdrücklich als Daten, niemals als
 Anweisungen. Dadurch wird das Risiko gespeicherter Prompt-Manipulationen
@@ -36,13 +53,17 @@ reduziert.
 
 ## Kontrollierter Dokumentimport
 
-- `/learn PFAD` importiert eine UTF-8-kodierte `.md`- oder `.txt`-Datei.
+- `/learn PFAD` importiert und indexiert eine UTF-8-kodierte `.md`- oder
+  `.txt`-Datei lokal.
 - `/documents` zeigt alle importierten Dokumente mit Quelle und ID.
+- `/reindex ID` erzeugt den lokalen semantischen Index vollständig neu.
 - `/forget-document ID` entfernt ein Dokument und sämtliche Abschnitte.
 - Dateien sind auf 2 MiB begrenzt und werden in Abschnitte zerlegt.
 - Eine SHA-256-Prüfsumme verhindert unveränderte Doppelimporte.
-- Bei einer geänderten Quelldatei werden die bisherigen Abschnitte atomar
-  ersetzt.
+- Bei einer geänderten Quelldatei bleiben identische Abschnitte samt Vektoren
+  erhalten; nur geänderte Abschnitte werden ersetzt und neu indexiert.
+- Nicht mehr vorhandene Abschnitte und ihre Vektoren werden automatisch
+  entfernt.
 
 Quellpfad, Titel, Prüfsumme und Importzeit bleiben nachvollziehbar. Die aktuelle
 Suche ist bewusst transparent und lexikalisch.
@@ -81,7 +102,9 @@ temporäres Wissen bis zur deutschen Sprachausgabe auf Vector getestet werden:
 - ✅ providerunabhängige Typen und lokale Ollama-Embeddings
 - ✅ Modellverfügbarkeit, Batch-Verarbeitung und Dimension validieren
 - ✅ realen lokalen Aufruf mit `embeddinggemma` ausführen
-- Embedding-Vektoren versioniert in SQLite speichern
+- ✅ Embedding-Vektoren versioniert und kompakt in SQLite speichern
+- ✅ Duplikate, Aktualität und Cascade-Löschung absichern
+- ✅ automatische differentielle Indexierung und manuelle Reindexierung
 - hybride semantische und lexikalische Suche integrieren
 - Vertrauensstatus und erweiterte Versionshistorie
 - Export- und vollständige Löschfunktionen

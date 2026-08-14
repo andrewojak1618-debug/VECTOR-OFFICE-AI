@@ -56,6 +56,8 @@ class FakeKnowledgeLibrary:
     def __init__(self):
         self.imported = []
         self.deleted = []
+        self.reindexed = []
+        self.last_indexing_result = None
 
     def import_document(self, path):
         self.imported.append(path)
@@ -77,6 +79,15 @@ class FakeKnowledgeLibrary:
     def forget_document(self, document_id):
         self.deleted.append(document_id)
         return True
+
+    def reindex_document(self, document_id):
+        self.reindexed.append(document_id)
+        return SimpleNamespace(
+            forced=True,
+            model_changed=False,
+            indexed_chunks=2,
+            skipped_chunks=0,
+        )
 
 
 class FakeVoiceListener:
@@ -167,6 +178,7 @@ class ConversationLoopTests(unittest.TestCase):
             side_effect=[
                 "/learn C:\\Wissen\\projektwissen.md",
                 "/documents",
+                "/reindex 4",
                 "/forget-document 4",
                 "/exit",
             ],
@@ -178,7 +190,9 @@ class ConversationLoopTests(unittest.TestCase):
             agent.knowledge_library.imported,
         )
         self.assertEqual([4], agent.knowledge_library.deleted)
+        self.assertEqual([4], agent.knowledge_library.reindexed)
         self.assertIn("Document 4 imported", output.getvalue())
+        self.assertIn("Semantic index full: 2 indexed", output.getvalue())
         self.assertIn("projektwissen", output.getvalue())
         self.assertEqual([], speech.spoken)
 

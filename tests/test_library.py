@@ -64,6 +64,32 @@ class SQLiteKnowledgeLibraryTests(unittest.TestCase):
         self.assertNotIn("alte Stimme", matches[0].content)
         self.assertIn("neue deutsche Stimme", matches[0].content)
 
+    def test_changed_document_preserves_only_identical_chunk_ids(self):
+        document_path = self.root / "abschnitte.txt"
+        first_text = "A" * 90
+        document_path.write_text(f"{first_text}\n\n{'B' * 90}", encoding="utf-8")
+        document = self.library.import_document(document_path).document
+        original = self.library.list_chunks(document.id)
+
+        document_path.write_text(f"{first_text}\n\n{'C' * 90}", encoding="utf-8")
+        self.library.import_document(document_path)
+        updated = self.library.list_chunks(document.id)
+
+        self.assertEqual(original[0].id, updated[0].id)
+        self.assertNotEqual(original[1].id, updated[1].id)
+
+    def test_removed_sections_are_deleted(self):
+        document_path = self.root / "kurzer.txt"
+        first_text = "A" * 90
+        document_path.write_text(f"{first_text}\n\n{'B' * 90}", encoding="utf-8")
+        document = self.library.import_document(document_path).document
+        self.assertEqual(2, len(self.library.list_chunks(document.id)))
+
+        document_path.write_text(first_text, encoding="utf-8")
+        self.library.import_document(document_path)
+
+        self.assertEqual(1, len(self.library.list_chunks(document.id)))
+
     def test_rejects_unsupported_file_type(self):
         document_path = self.root / "secret.json"
         document_path.write_text('{"key": "value"}', encoding="utf-8")

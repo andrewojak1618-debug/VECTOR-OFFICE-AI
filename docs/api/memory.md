@@ -18,6 +18,18 @@
     options:
       members: true
 
+## Embedding-Speicher
+
+::: memory.embedding_store
+    options:
+      members: true
+
+## Dokumentindexierung
+
+::: memory.indexing
+    options:
+      members: true
+
 ## Dokumentbibliothek
 
 ::: memory.library

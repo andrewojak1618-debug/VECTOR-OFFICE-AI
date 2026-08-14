@@ -13,6 +13,8 @@ Meilenstein bleibt über Git reproduzierbar.
 | `7843561` | Fallback & Memory | Ollama-Fallback und gemeinsames SQLite-Memory |
 | `98037bd` | Voice Pipeline | Private WirePod-Spracheingabe bis zur Vector-TTS |
 | `ea63def` | Personality Paths | Emotions- und Reflexionsarchitektur reserviert |
+| `eb055d9` | Clean Core | Strukturbereinigung und Embedding-Grundlage |
+| `1254524` | Local Embedding Model | Reales `embeddinggemma` und Batch-Verarbeitung |
 
 ## Erfolgreich verifizierte End-to-End-Pfade
 
@@ -81,3 +83,27 @@ Die deutsche TTS wurde schrittweise verbessert:
 - native Dimension 768 automatisch aus Metadaten und Ergebnis validiert
 - realen lokalen Batch-Aufruf mit drei Vektoren erfolgreich ausgeführt
 - keine Texte oder Vektorwerte im Diagnosepfad protokolliert
+
+## Persistente Dokument-Embeddings
+
+- bestehendes SQLite-Schema zerstörungsfrei um `knowledge_embeddings` erweitert
+- eindeutige Fremdschlüsselbeziehung zu `knowledge_chunks` angelegt
+- Vektoren kompakt als Little-Endian-Float32-BLOB serialisiert
+- Modellname, vollständigen Digest, Dimension und Inhaltshash gespeichert
+- wiederholte identische Embeddings über einen Unique-Index verhindert
+- veraltete Modellversionen und Inhaltsstände erkennbar gemacht
+- Dokument- und Chunk-Löschung bis zu Embeddings durchgereicht
+- echten temporären Dokument-zu-Ollama-zu-SQLite-Pfad erfolgreich geprüft
+
+## Automatische Indexierung und Reindexierung
+
+- `/learn` mit der lokalen Ollama-Embedding-Pipeline verbunden
+- unveränderte Dokumente per SHA-256 ohne neue Berechnung übersprungen
+- identische Chunk-IDs und vorhandene Vektoren bei Teiländerungen bewahrt
+- nur neue oder geänderte Abschnitte erneut indexiert
+- entfernte Abschnitte samt Embeddings per Cascade-Löschung bereinigt
+- Modellname und Digest zur automatischen Modellwechsel-Erkennung verwendet
+- manuellen Vollneuaufbau über `/reindex ID` ergänzt
+- Batch-Fortschritt ohne Ausgabe sensibler Inhalte sichtbar gemacht
+- Persistenz bis zum Erfolg aller Provider-Batches zurückgestellt
+- Import-, Delta-, Modellwechsel-, Rollback- und Fortschrittsfälle getestet

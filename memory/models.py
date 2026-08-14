@@ -44,3 +44,15 @@ class DocumentImportResult:
     document: KnowledgeDocument
     chunk_count: int
     changed: bool
+
+
+@dataclass(frozen=True)
+class IndexingResult:
+    """Summarize one incremental or forced document indexing run."""
+
+    document_id: int
+    total_chunks: int
+    indexed_chunks: int
+    skipped_chunks: int
+    model_changed: bool
+    forced: bool

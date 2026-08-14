@@ -60,21 +60,35 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
 
     def test_model_availability_reads_native_dimension(self):
         def handle_request(request):
-            self.assertEqual("/api/show", request.url.path)
-            payload = json.loads(request.content)
-            self.assertEqual("embeddinggemma", payload["model"])
-            self.assertNotIn("input", payload)
+            if request.url.path == "/api/show":
+                payload = json.loads(request.content)
+                self.assertEqual("embeddinggemma", payload["model"])
+                self.assertNotIn("input", payload)
+                return httpx.Response(
+                    200,
+                    json={"model_info": {"gemma3.embedding_length": 768}},
+                )
+            self.assertEqual("/api/tags", request.url.path)
             return httpx.Response(
                 200,
-                json={"model_info": {"gemma3.embedding_length": 768}},
+                json={
+                    "models": [
+                        {
+                            "name": "embeddinggemma:latest",
+                            "digest": "sha256-model-version",
+                        }
+                    ]
+                },
             )
 
         provider = self._provider(handle_request)
         info = provider.ensure_model_available()
 
         self.assertEqual("embeddinggemma", info.model_name)
+        self.assertEqual("sha256-model-version", info.model_version)
         self.assertEqual(768, info.dimension)
         self.assertEqual(768, provider.dimension)
+        self.assertEqual("sha256-model-version", provider.model_version)
 
     def test_missing_model_is_reported_with_install_command(self):
         provider = self._provider(

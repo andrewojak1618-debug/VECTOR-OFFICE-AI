@@ -17,7 +17,9 @@
 
 - ✅ lokale providerunabhängige Embedding-Grundlage ergänzen
 - ✅ `embeddinggemma` lokal prüfen und Batch-Embeddings integrieren
-- Embedding-Vektoren für Erinnerungen und Dokumentabschnitte speichern
+- ✅ Embedding-Vektoren für Dokumentabschnitte in SQLite speichern
+- ✅ Dokumente automatisch und differentiell indexieren
+- ✅ Modellwechsel erkennen und `/reindex ID` anbieten
 - hybride semantische und lexikalische Suche ergänzen
 - ✅ Markdown- und Textdokumente kontrolliert importieren
 - ✅ Quellen und Inhaltsprüfsummen speichern

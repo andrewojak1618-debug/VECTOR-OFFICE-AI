@@ -3,6 +3,7 @@ from typing import Protocol, Sequence
 from brain.context import ChatMessage, ConversationContext
 from memory.models import (
     DocumentImportResult,
+    IndexingResult,
     KnowledgeChunk,
     KnowledgeDocument,
     MemoryEntry,
@@ -53,6 +54,10 @@ class KnowledgeLibrary(Protocol):
 
     def forget_document(self, document_id: int) -> bool:
         """Delete one imported document and its sections."""
+        ...
+
+    def reindex_document(self, document_id: int) -> IndexingResult:
+        """Force a fresh local semantic index for one document."""
         ...
 
 

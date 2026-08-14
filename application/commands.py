@@ -46,6 +46,7 @@ class ConsoleCommandHandler:
             ("/remember ", self._remember),
             ("/forget ", self._forget_memory),
             ("/learn ", self._learn_document),
+            ("/reindex ", self._reindex_document),
             ("/forget-document ", self._forget_document),
         )
         for prefix, handler in handlers:
@@ -104,13 +105,40 @@ class ConsoleCommandHandler:
             return
         try:
             result = library.import_document(source_path)
-        except (OSError, ValueError) as exc:
+        except (OSError, RuntimeError, ValueError) as exc:
             print(f"Document import failed: {exc}")
             return
         state = "imported" if result.changed else "already current"
         print(
             f"Document {result.document.id} {state} "
             f"({result.chunk_count} sections): {result.document.title}"
+        )
+        indexing = getattr(library, "last_indexing_result", None)
+        if indexing is not None:
+            self._print_indexing_result(indexing)
+
+    def _reindex_document(self, value: str) -> None:
+        library = self.agent.knowledge_library
+        if library is None:
+            print("Document library is unavailable.")
+            return
+        document_id = self._parse_id(value, "/reindex")
+        if document_id is None:
+            return
+        try:
+            result = library.reindex_document(document_id)
+        except (RuntimeError, ValueError) as exc:
+            print(f"Document reindex failed: {exc}")
+            return
+        self._print_indexing_result(result)
+
+    @staticmethod
+    def _print_indexing_result(result) -> None:
+        mode = "full" if result.forced else "incremental"
+        model_note = ", model change detected" if result.model_changed else ""
+        print(
+            f"Semantic index {mode}: {result.indexed_chunks} indexed, "
+            f"{result.skipped_chunks} current{model_note}."
         )
 
     def _list_documents(self) -> CommandResult:

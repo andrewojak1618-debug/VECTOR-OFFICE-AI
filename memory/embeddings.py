@@ -9,6 +9,7 @@ import httpx
 
 OLLAMA_EMBED_ENDPOINT = "/api/embed"
 OLLAMA_SHOW_ENDPOINT = "/api/show"
+OLLAMA_TAGS_ENDPOINT = "/api/tags"
 
 
 class EmbeddingError(RuntimeError):
@@ -87,6 +88,7 @@ class EmbeddingModelInfo:
     """Describe one installed local embedding model."""
 
     model_name: str
+    model_version: str
     dimension: int | None
 
 
@@ -102,6 +104,11 @@ class EmbeddingProvider(Protocol):
     @property
     def dimension(self) -> int | None:
         """Return the expected or observed vector dimension."""
+        ...
+
+    @property
+    def model_version(self) -> str | None:
+        """Return the installed model digest after availability checking."""
         ...
 
     def ensure_model_available(self) -> EmbeddingModelInfo:
@@ -134,6 +141,7 @@ class OllamaEmbeddingProvider:
         self._model_name = self._require_text(model_name, "model name")
         self.expected_dimension = self._validate_dimension(expected_dimension)
         self._observed_dimension: int | None = None
+        self._model_version: str | None = None
         if timeout <= 0:
             raise ValueError("Embedding timeout must be greater than zero.")
         self.timeout = timeout
@@ -152,6 +160,11 @@ class OllamaEmbeddingProvider:
         """Return the observed dimension or its configured expectation."""
         return self._observed_dimension or self.expected_dimension
 
+    @property
+    def model_version(self) -> str | None:
+        """Return the installed Ollama model digest when known."""
+        return self._model_version
+
     def ensure_model_available(self) -> EmbeddingModelInfo:
         """Check Ollama model metadata without sending document content."""
         try:
@@ -167,7 +180,12 @@ class OllamaEmbeddingProvider:
         metadata_dimension = self._metadata_dimension(response)
         if metadata_dimension is not None:
             self._register_dimension(metadata_dimension)
-        return EmbeddingModelInfo(self.model_name, self.dimension)
+        self._model_version = self._load_model_version()
+        return EmbeddingModelInfo(
+            self.model_name,
+            self._model_version,
+            self.dimension,
+        )
 
     def embed(self, text: EmbeddingText) -> EmbeddingResult:
         """Generate one local vector through the shared batch path."""
@@ -253,6 +271,30 @@ class OllamaEmbeddingProvider:
                 f"Run: ollama pull {self.model_name}"
             )
         response.raise_for_status()
+
+    def _load_model_version(self) -> str:
+        try:
+            response = self.client.get(OLLAMA_TAGS_ENDPOINT)
+            response.raise_for_status()
+            models = response.json()["models"]
+            matching = next(
+                model for model in models if self._matches_model(model.get("name"))
+            )
+            digest = matching["digest"]
+        except (httpx.HTTPError, KeyError, StopIteration, TypeError, ValueError):
+            raise EmbeddingError(
+                "Local Ollama model version could not be determined."
+            ) from None
+        return self._require_text(digest, "model version")
+
+    def _matches_model(self, installed_name: object) -> bool:
+        if not isinstance(installed_name, str):
+            return False
+        if installed_name == self.model_name:
+            return True
+        return ":" not in self.model_name and installed_name == (
+            f"{self.model_name}:latest"
+        )
 
     @staticmethod
     def _metadata_dimension(response: httpx.Response) -> int | None:

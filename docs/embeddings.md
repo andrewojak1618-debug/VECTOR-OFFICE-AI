@@ -2,8 +2,8 @@
 
 Die semantische Grundlage ist providerunabhängig aufgebaut und verwendet
 aktuell ausschließlich einen lokalen Ollama-Adapter. Einzeltexte und mehrere
-Dokumentabschnitte können bereits real vektorisiert werden. Die Vektoren werden
-noch nicht in SQLite gespeichert; die produktive Suche bleibt daher zunächst
+Dokumentabschnitte können real vektorisiert und dauerhaft in SQLite gespeichert
+werden. Die produktive Suche bleibt bis zur Ähnlichkeitsbewertung zunächst
 lexikalisch.
 
 ## Modellauswahl
@@ -83,9 +83,34 @@ Der geprüfte Lauf mit Ollama `0.32.11` und `embeddinggemma` erzeugte drei
 Vektoren in einem Batch. Modellmetadaten und Ergebnis bestätigten konsistent die
 Dimension 768.
 
+## SQLite-Speicherung
+
+`memory/embedding_store.py` erweitert bestehende Wissensdatenbanken automatisch
+um `knowledge_embeddings`. Die Vektoren werden als Float32-BLOB mit vier Byte
+pro Dimension gespeichert. Modellname, vollständiger Modell-Digest, Dimension
+und Chunk-Inhaltshash bilden die nachvollziehbaren Metadaten.
+
+`memory/indexing.py` vergleicht jeden aktuellen Abschnitt mit Modellname,
+Modelldigest, Dimension und Inhaltshash. Nur fehlende oder veraltete Abschnitte
+werden in begrenzten Batches berechnet. Erst wenn alle Batches erfolgreich sind,
+speichert eine einzige Transaktion die Ergebnisse. Unveränderte Vektoren bleiben
+erhalten; entfernte Abschnitte verschwinden samt Vektoren per Cascade-Löschung.
+
+`/learn PFAD` startet diesen Ablauf automatisch. Ein SHA-256-identisches
+Dokument verursacht keine neue Embedding-Berechnung. Ein Modellwechsel wird
+erkannt und erzeugt einen vollständigen Index für die neue Modellidentität.
+`/reindex ID` bietet zusätzlich einen bewussten vollständigen Neuaufbau an.
+Bei größeren Dokumenten zeigt die Konsole den Fortschritt pro Batch, ohne
+Dokumenttext oder Vektorwerte auszugeben.
+
+Der reale Speicherdiagnosepfad verwendet nur ein temporäres Testdokument und
+eine temporäre Datenbank:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.embedding_store_ollama
+```
+
 ## Nächster Integrationsschritt
 
-Als nächste Karte können Vektoren gemeinsam mit Erinnerungen und
-Dokumentabschnitten in SQLite gespeichert werden. Erst danach sollte die
-lexikalische Suche durch eine kontrollierte hybride Suche aus Texttreffern und
-semantischer Ähnlichkeit ergänzt werden.
+Als nächster Schritt kann die lexikalische Suche durch eine kontrollierte
+hybride Suche aus Texttreffern und semantischer Ähnlichkeit ergänzt werden.

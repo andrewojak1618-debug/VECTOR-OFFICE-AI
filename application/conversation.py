@@ -9,7 +9,7 @@ from application.commands import CommandResult, ConsoleCommandHandler
 
 COMMAND_HELP = (
     "Commands: /remember, /memories, /forget, /learn, "
-    "/documents, /forget-document, /clear, /exit"
+    "/documents, /reindex, /forget-document, /clear, /exit"
 )
 VOICE_EXIT_PHRASES = {
     "gespräch beenden",

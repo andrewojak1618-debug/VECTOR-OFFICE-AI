@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
+from memory.embedding_store import initialize_embedding_schema
 from memory.models import (
     DocumentImportResult,
     KnowledgeChunk,
@@ -88,6 +89,7 @@ class SQLiteKnowledgeLibrary:
                 );
                 """
             )
+            initialize_embedding_schema(connection)
 
     def import_document(self, source_path: str | Path) -> DocumentImportResult:
         """Import or atomically refresh one approved UTF-8 document."""
@@ -97,7 +99,7 @@ class SQLiteKnowledgeLibrary:
             if self._is_current(existing, prepared.content_hash):
                 return self._current_result(connection, existing)
             document_id = self._write_document(connection, existing, prepared)
-            self._replace_chunks(connection, document_id, prepared.chunks)
+            self._synchronize_chunks(connection, document_id, prepared.chunks)
             row = self._find_document_by_id(connection, document_id)
         return DocumentImportResult(
             document=self._to_document(row),
@@ -214,21 +216,63 @@ class SQLiteKnowledgeLibrary:
         )
 
     @staticmethod
-    def _replace_chunks(
+    def _synchronize_chunks(
         connection: sqlite3.Connection,
         document_id: int,
         chunks: tuple[str, ...],
     ) -> None:
-        connection.execute(
-            "DELETE FROM knowledge_chunks WHERE document_id = ?",
-            (document_id,),
+        existing = SQLiteKnowledgeLibrary._load_chunk_rows(
+            connection,
+            document_id,
         )
-        connection.executemany(
+        by_index = {row["chunk_index"]: row for row in existing}
+        for index, content in enumerate(chunks, 1):
+            SQLiteKnowledgeLibrary._synchronize_chunk(
+                connection,
+                document_id,
+                index,
+                content,
+                by_index.get(index),
+            )
+        connection.execute(
+            "DELETE FROM knowledge_chunks WHERE document_id = ? AND chunk_index > ?",
+            (document_id, len(chunks)),
+        )
+
+    @staticmethod
+    def _load_chunk_rows(
+        connection: sqlite3.Connection,
+        document_id: int,
+    ) -> tuple[sqlite3.Row, ...]:
+        return tuple(connection.execute(
+            """
+            SELECT id, chunk_index, content FROM knowledge_chunks
+            WHERE document_id = ? ORDER BY chunk_index
+            """,
+            (document_id,),
+        ).fetchall())
+
+    @staticmethod
+    def _synchronize_chunk(
+        connection: sqlite3.Connection,
+        document_id: int,
+        index: int,
+        content: str,
+        existing: sqlite3.Row | None,
+    ) -> None:
+        if existing is not None and existing["content"] == content:
+            return
+        if existing is not None:
+            connection.execute(
+                "DELETE FROM knowledge_chunks WHERE id = ?",
+                (existing["id"],),
+            )
+        connection.execute(
             """
             INSERT INTO knowledge_chunks (document_id, chunk_index, content)
             VALUES (?, ?, ?)
             """,
-            ((document_id, index, chunk) for index, chunk in enumerate(chunks, 1)),
+            (document_id, index, content),
         )
 
     def list_documents(self, limit: int = 50) -> tuple[KnowledgeDocument, ...]:
@@ -241,6 +285,22 @@ class SQLiteKnowledgeLibrary:
                 (limit,),
             ).fetchall()
         return tuple(self._to_document(row) for row in rows)
+
+    def list_chunks(self, document_id: int) -> tuple[KnowledgeChunk, ...]:
+        """Return all sections belonging to one imported document."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT c.id, c.document_id, c.chunk_index, c.content,
+                       d.source_path, d.title
+                FROM knowledge_chunks AS c
+                JOIN knowledge_documents AS d ON d.id = c.document_id
+                WHERE c.document_id = ?
+                ORDER BY c.chunk_index
+                """,
+                (document_id,),
+            ).fetchall()
+        return tuple(self._to_chunk(row) for row in rows)
 
     def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
         """Return lexically relevant document chunks for a query."""

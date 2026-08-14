@@ -6,6 +6,13 @@ from brain.agent import Agent
 from brain.ollama_runtime import OllamaRuntime
 from brain.providers import OllamaProvider, create_language_model
 from memory.database import SQLiteMemoryStore
+from memory.embedding_store import SQLiteEmbeddingStore
+from memory.embeddings import create_embedding_provider
+from memory.indexing import (
+    DocumentEmbeddingIndexer,
+    IndexedKnowledgeLibrary,
+    IndexProgress,
+)
 from memory.library import SQLiteKnowledgeLibrary
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
@@ -31,6 +38,7 @@ def get_runtime_mode(settings) -> RuntimeMode:
     provider = settings.LLM_PROVIDER.casefold().strip()
     fallback = settings.LLM_FALLBACK_PROVIDER.casefold().strip()
     input_mode = settings.INPUT_MODE.casefold().strip()
+    embedding_provider = settings.EMBEDDING_PROVIDER.casefold().strip()
     local_voice = (
         input_mode == "wirepod"
         and provider == "openai"
@@ -40,6 +48,7 @@ def get_runtime_mode(settings) -> RuntimeMode:
         provider == "ollama"
         or (provider == "openai" and fallback == "ollama")
         or local_voice
+        or embedding_provider == "ollama"
     )
     return RuntimeMode(provider, fallback, input_mode, local_voice, needs_ollama)
 
@@ -102,7 +111,7 @@ def _create_agent(settings, mode: RuntimeMode) -> Agent:
     print(f"\nLLM provider: {settings.LLM_PROVIDER}")
     language_model = _create_language_model(settings, mode)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
-    library = SQLiteKnowledgeLibrary(settings.MEMORY_DB_PATH)
+    library = _create_knowledge_library(settings)
     return Agent(
         language_model,
         memory_store=memory_store,
@@ -111,6 +120,20 @@ def _create_agent(settings, mode: RuntimeMode) -> Agent:
         knowledge_context_limit=settings.MEMORY_CONTEXT_LIMIT,
         knowledge_context_enabled=_knowledge_enabled(settings, mode),
     )
+
+
+def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:
+    """Compose controlled imports with automatic local semantic indexing."""
+    library = SQLiteKnowledgeLibrary(settings.MEMORY_DB_PATH)
+    store = SQLiteEmbeddingStore(settings.MEMORY_DB_PATH)
+    provider = create_embedding_provider(settings)
+    indexer = DocumentEmbeddingIndexer(library, store, provider)
+    return IndexedKnowledgeLibrary(library, indexer, _print_index_progress)
+
+
+def _print_index_progress(progress: IndexProgress) -> None:
+    """Report counts only, never document contents or generated vectors."""
+    print(f"Semantic indexing: {progress.completed}/{progress.total} sections")
 
 
 def _create_language_model(settings, mode: RuntimeMode):

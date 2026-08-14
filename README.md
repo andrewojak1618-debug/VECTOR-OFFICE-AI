@@ -190,6 +190,7 @@ VECTOR OFFICE AI CORE/
 │   └── settings.py
 ├── data/
 ├── diagnostics/
+│   ├── embedding_store_ollama.py
 │   ├── embeddings_ollama.py
 │   ├── library_ollama.py
 │   └── library_vector.py
@@ -200,12 +201,15 @@ VECTOR OFFICE AI CORE/
 │   └── roadmap.md
 ├── memory/
 │   ├── database.py
+│   ├── embedding_store.py
 │   ├── embeddings.py
+│   ├── indexing.py
 │   ├── library.py
 │   └── models.py
 ├── tests/
 │   ├── test_agent.py
 │   ├── test_code_quality.py
+│   ├── test_embedding_store.py
 │   ├── test_embeddings.py
 │   ├── test_main.py
 │   ├── test_providers.py
@@ -314,8 +318,10 @@ Die Embedding-Integration verwendet ausschließlich den lokalen Ollama-Endpunkt
 `/api/embed`. `embeddinggemma` verarbeitet einzelne Texte und mehrere Abschnitte
 in einem Batch. `OLLAMA_EMBEDDING_DIMENSION=0` übernimmt und validiert die native
 Dimension von 768; ein positiver Wert aktiviert eine zusätzliche Vorgabe. Die
-Vektoren werden noch nicht produktiv in SQLite gespeichert oder für die Suche
-verwendet.
+Dokumentvektoren werden kompakt und versioniert in SQLite gespeichert.
+`/learn` indexiert neue und geänderte Abschnitte automatisch; unveränderte
+Abschnitte werden anhand von SHA-256 und Modellidentität übersprungen. Die
+produktive Suche verwendet die Vektoren erst in der nächsten Phase.
 
 ### Programm starten
 
@@ -330,6 +336,7 @@ Kommandos während einer Sitzung:
 - `/forget ID` – eine bestimmte Erinnerung dauerhaft löschen
 - `/learn PFAD` – eine UTF-8-kodierte Markdown- oder Textdatei importieren
 - `/documents` – importierte Dokumente mit ID und Quelle anzeigen
+- `/reindex ID` – den lokalen semantischen Index vollständig neu erzeugen
 - `/forget-document ID` – ein Dokument samt Abschnitten löschen
 - `/clear` – aktuellen Gesprächskontext löschen
 - `/exit` – Programm sauber beenden
@@ -366,6 +373,13 @@ Batch-Aufruf. Er zeigt ausschließlich Modellname, Dimension und Vektoranzahl:
 
 ```powershell
 .venv\Scripts\python.exe -m diagnostics.embeddings_ollama
+```
+
+Der persistente Diagnosepfad importiert ein temporäres Dokument, erzeugt die
+Vektoren lokal und lädt sie aus einer temporären SQLite-Datenbank zurück:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.embedding_store_ollama
 ```
 
 Der physische Diagnosepfad importiert die öffentliche Projekt-README in eine
@@ -468,7 +482,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 - vollständigen Ablauf bis zum physischen Vector bestätigt
 - mehrturnige Gesprächsschleife mit erhaltenem Kontext ergänzt
 - `/clear` und `/exit` implementiert
-- fünfundsiebzig automatisierte Funktions- und Qualitätstests erfolgreich ausgeführt
+- fünfundachtzig automatisierte Funktions- und Qualitätstests erfolgreich ausgeführt
 
 ## 🏷️ Versions- und Commit-Historie
 
@@ -482,6 +496,8 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | Fallback & Memory | `7843561` | Ollama-Fallback und kontrolliertes SQLite-Memory |
 | Private Voice Pipeline | `98037bd` | Deutsche WirePod-Spracheingabe bis zur Vector-TTS |
 | Personality Architecture | `ea63def` | Emotions- und Reflexionspfade reserviert |
+| Clean Core & Embedding Architecture | `eb055d9` | Clean-Code-Audit und lokaler Embedding-Vertrag |
+| Local Embedding Model | `1254524` | Reales `embeddinggemma`-Modell und Batch-Verarbeitung |
 
 Die Anwendung befindet sich weiterhin in Version **0.1.0**. Die Historie wird
 bewusst über kleine, überprüfbare Meilensteine aufgebaut.
@@ -509,10 +525,12 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ providerunabhängige lokale Embedding-Grundlage mit Ollama
 - ✅ `embeddinggemma` lokal installiert und mit 768 Dimensionen getestet
 - ✅ effiziente Batch-Embeddings ohne Protokollierung sensibler Inhalte
+- ✅ kompakte und versionierte Dokument-Embeddings in SQLite
+- ✅ automatische Schemaerweiterung, Duplikatschutz und Cascade-Löschung
 - ✅ automatisierte Tests
 - ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
 - 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
-- ⏳ Embedding-Speicherung und hybride semantische Suche
+- ⏳ hybride semantische und lexikalische Suche
 - ⏳ Tool Registry und Berechtigungsmodell
 - ⏳ Robot-Aktionen und kontextabhängige Animationen
 
@@ -543,7 +561,7 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ lokale providerunabhängige Embedding-Schnittstelle ergänzen
 - ✅ lokales Embedding-Modell prüfen und real über Ollama testen
 - ✅ mehrere Dokumentabschnitte in einem Batch vektorisieren
-- Embedding-Vektoren in SQLite speichern
+- ✅ Embedding-Vektoren nachvollziehbar in SQLite speichern
 - hybride semantische und lexikalische Suche ergänzen
 
 ### Version 0.5 – Tools und Sicherheit
