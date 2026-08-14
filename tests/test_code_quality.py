@@ -12,16 +12,23 @@ PRODUCTION_PACKAGES = (
     "config",
     "diagnostics",
     "memory",
+    "tools",
     "vector",
     "voice",
 )
 # Fourteen lines remain the design target; 35 is the regression hard limit.
 MAX_FUNCTION_LINES = 35
+MAX_MODULE_LINES = 399
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
-RESERVED_MODULE_DOCS = {
+ARCHITECTURE_MODULE_DOCS = {
     Path("brain/emotions.py"): Path("docs/personality.md"),
     Path("brain/reflection.py"): Path("docs/personality.md"),
+    Path("memory/document_text.py"): Path("docs/architecture.md"),
+    Path("memory/embedding_schema.py"): Path("docs/architecture.md"),
+    Path("memory/knowledge_schema.py"): Path("docs/architecture.md"),
+    Path("tools/registry.py"): Path("docs/progress.md"),
     Path("vector/actions.py"): Path("README.md"),
+    Path("vector/behavior_control.py"): Path("docs/robot-actions.md"),
 }
 
 
@@ -61,6 +68,14 @@ class CodeQualityTests(unittest.TestCase):
                         oversized.append(f"{path.name}:{node.name}:{lines}")
         self.assertEqual([], oversized)
 
+    def test_modules_stay_below_hard_size_limit(self):
+        oversized = []
+        for path in production_files():
+            lines = len(path.read_text(encoding="utf-8").splitlines())
+            if lines > MAX_MODULE_LINES:
+                oversized.append(f"{path.relative_to(PROJECT_ROOT)}:{lines}")
+        self.assertEqual([], oversized)
+
     def test_production_files_have_no_merge_markers(self):
         affected = []
         for path in production_files():
@@ -80,9 +95,9 @@ class CodeQualityTests(unittest.TestCase):
         self.assertIn(".env", ignored)
         self.assertIn("data/", ignored)
 
-    def test_reserved_modules_keep_documented_architecture_paths(self):
+    def test_architecture_modules_keep_documented_paths(self):
         missing = []
-        for module_path, documentation_path in RESERVED_MODULE_DOCS.items():
+        for module_path, documentation_path in ARCHITECTURE_MODULE_DOCS.items():
             documentation = (PROJECT_ROOT / documentation_path).read_text(
                 encoding="utf-8"
             )

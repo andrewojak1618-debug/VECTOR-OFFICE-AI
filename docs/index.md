@@ -19,7 +19,8 @@ fest.
 - SQLite speichert ausschließlich ausdrücklich bestätigte Erinnerungen.
 - Dokumentwissen wird lokal automatisch indexiert und hybrid durchsucht.
 - Spracheingaben bleiben standardmäßig lokal.
-- 130 automatisierte Tests sichern Funktion und Codequalität ab.
+- 212 automatisierte Tests sichern Funktion und Codequalität ab.
+- Sechs allowlist-basierte Robot-Aktionen wurden physisch geprüft.
 
 ## Schnellstart
 

@@ -34,6 +34,19 @@ lokalen Ollama-Embedding-Dienst.
 Die Freigabe sollte nur für Dokumente aktiviert werden, deren Übertragung an den
 konfigurierten Cloud-Anbieter bewusst akzeptiert wurde.
 
+## Erinnerungen und Stilfeedback
+
+Bestätigte Erinnerungen und Einträge aus `/feedback` gehören nicht zur
+Dokumentbibliothek und werden deshalb nicht durch `KNOWLEDGE_ALLOW_CLOUD`
+gesteuert. Nutzt eine Sitzung OpenAI, können die für den Kontext ausgewählten
+Erinnerungen sowie die bestätigten Stilhinweise an OpenAI übertragen werden.
+Im erzwungen lokalen Voice-Modus und bei Ollama bleiben sie lokal.
+
+Stilfeedback wird JSON-kodiert, von der Faktensuche ausgeschlossen und darf
+keine Berechtigungen erteilen. Dennoch sollten weder Secrets noch vertrauliche
+Inhalte über `/remember` oder `/feedback` gespeichert werden, wenn später ein
+Cloud-Provider verwendet werden kann.
+
 ## Schutz des Modellkontexts
 
 Jeder Dokumentabschnitt wird mit Quelle, Titel und Abschnittsnummer als

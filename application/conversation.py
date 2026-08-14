@@ -8,8 +8,9 @@ from application.commands import CommandResult, ConsoleCommandHandler
 
 
 COMMAND_HELP = (
-    "Commands: /remember, /memories, /forget, /learn, "
-    "/documents, /reindex, /forget-document, /clear, /exit"
+    "Commands: /remember, /feedback, /memories, /forget, /learn, "
+    "/documents, /versions, /stale-vectors, /reindex, /reindex-all, "
+    "/export-library, /export-memories, /forget-document, /clear, /exit"
 )
 VOICE_EXIT_PHRASES = {
     "gespräch beenden",

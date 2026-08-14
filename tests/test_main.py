@@ -1,5 +1,6 @@
 import io
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -38,10 +39,14 @@ class FakeSpeech:
 class FakeMemoryStore:
     def __init__(self):
         self.saved = []
+        self.feedback = []
         self.deleted = []
+        self.exported = []
 
-    def remember(self, content):
+    def remember(self, content, category="fact", source="user-confirmed"):
         self.saved.append(content)
+        if category == "feedback":
+            self.feedback.append((content, source))
         return SimpleNamespace(id=3, content=content)
 
     def list_memories(self):
@@ -51,12 +56,17 @@ class FakeMemoryStore:
         self.deleted.append(memory_id)
         return True
 
+    def export_confirmed_memories(self, destination):
+        self.exported.append(destination)
+        return Path(destination)
+
 
 class FakeKnowledgeLibrary:
     def __init__(self):
         self.imported = []
         self.deleted = []
         self.reindexed = []
+        self.exported = []
         self.last_indexing_result = None
 
     def import_document(self, path):
@@ -67,12 +77,22 @@ class FakeKnowledgeLibrary:
             changed=True,
         )
 
-    def list_documents(self):
+    def list_document_statuses(self):
         return (
             SimpleNamespace(
-                id=4,
-                title="projektwissen",
-                source_path="C:\\Wissen\\projektwissen.md",
+                document=SimpleNamespace(
+                    id=4,
+                    title="projektwissen",
+                    source_path="C:\\Wissen\\projektwissen.md",
+                    imported_at="2026-08-14 12:00:00",
+                    content_hash="a" * 64,
+                ),
+                version_count=2,
+                model_name="embeddinggemma",
+                model_version="version-one",
+                dimension=768,
+                current_vectors=2,
+                stale_vectors=0,
             ),
         )
 
@@ -88,6 +108,26 @@ class FakeKnowledgeLibrary:
             indexed_chunks=2,
             skipped_chunks=0,
         )
+
+    def reindex_all(self):
+        return (self.reindex_document(4),)
+
+    def list_document_versions(self, document_id):
+        return (
+            SimpleNamespace(
+                version_number=2,
+                imported_at="2026-08-14 12:00:00",
+                content_hash="a" * 64,
+                chunk_count=2,
+            ),
+        )
+
+    def list_stale_vectors(self):
+        return ()
+
+    def export_library_metadata(self, destination):
+        self.exported.append(destination)
+        return Path(destination)
 
 
 class FakeVoiceListener:
@@ -154,6 +194,7 @@ class ConversationLoopTests(unittest.TestCase):
             side_effect=[
                 "/remember Vector Office AI ist mein Lieblingsprojekt.",
                 "/memories",
+                "/export-memories C:\\Backup\\memories.json",
                 "/forget 3",
                 "/exit",
             ],
@@ -165,7 +206,29 @@ class ConversationLoopTests(unittest.TestCase):
             agent.memory_store.saved,
         )
         self.assertEqual([3], agent.memory_store.deleted)
+        self.assertEqual(
+            ["C:\\Backup\\memories.json"],
+            agent.memory_store.exported,
+        )
         self.assertIn("Memory 3 saved", output.getvalue())
+        self.assertEqual([], speech.spoken)
+
+    def test_loop_saves_explicit_style_feedback_separately(self):
+        agent = FakeAgent()
+        agent.memory_store = FakeMemoryStore()
+        speech = FakeSpeech()
+
+        with patch(
+            "builtins.input",
+            side_effect=["/feedback Bitte antworte ruhiger.", "/exit"],
+        ), patch("sys.stdout", new_callable=io.StringIO) as output:
+            run_conversation(agent, speech)
+
+        self.assertEqual(
+            [("Bitte antworte ruhiger.", "user-confirmed-feedback")],
+            agent.memory_store.feedback,
+        )
+        self.assertIn("Feedback 3 saved", output.getvalue())
         self.assertEqual([], speech.spoken)
 
     def test_loop_manages_controlled_documents(self):
@@ -178,7 +241,11 @@ class ConversationLoopTests(unittest.TestCase):
             side_effect=[
                 "/learn C:\\Wissen\\projektwissen.md",
                 "/documents",
+                "/versions 4",
+                "/stale-vectors",
                 "/reindex 4",
+                "/reindex-all",
+                "/export-library C:\\Backup\\library.json",
                 "/forget-document 4",
                 "/exit",
             ],
@@ -190,9 +257,18 @@ class ConversationLoopTests(unittest.TestCase):
             agent.knowledge_library.imported,
         )
         self.assertEqual([4], agent.knowledge_library.deleted)
-        self.assertEqual([4], agent.knowledge_library.reindexed)
+        self.assertEqual([4, 4], agent.knowledge_library.reindexed)
+        self.assertEqual(
+            ["C:\\Backup\\library.json"],
+            agent.knowledge_library.exported,
+        )
         self.assertIn("Document 4 imported", output.getvalue())
         self.assertIn("Semantic index full: 2 indexed", output.getvalue())
+        self.assertIn("Full library reindex completed", output.getvalue())
+        self.assertIn("SHA-256", output.getvalue())
+        self.assertIn("embeddinggemma@version-one", output.getvalue())
+        self.assertIn("Document 4 v2", output.getvalue())
+        self.assertIn("No stale vectors found", output.getvalue())
         self.assertIn("projektwissen", output.getvalue())
         self.assertEqual([], speech.spoken)
 

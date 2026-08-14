@@ -26,6 +26,18 @@ class KnowledgeDocument:
 
 
 @dataclass(frozen=True)
+class KnowledgeDocumentVersion:
+    """One immutable metadata revision of an imported document."""
+
+    id: int
+    document_id: int
+    version_number: int
+    content_hash: str
+    chunk_count: int
+    imported_at: str
+
+
+@dataclass(frozen=True)
 class KnowledgeChunk:
     """One searchable text section belonging to a knowledge document."""
 
@@ -56,3 +68,29 @@ class IndexingResult:
     skipped_chunks: int
     model_changed: bool
     forced: bool
+
+
+@dataclass(frozen=True)
+class DocumentIndexStatus:
+    """Summarize current and stale vectors for one document."""
+
+    document: KnowledgeDocument
+    version_count: int
+    chunk_count: int
+    model_name: str
+    model_version: str
+    dimension: int | None
+    current_vectors: int
+    stale_vectors: int
+
+
+@dataclass(frozen=True)
+class StaleEmbeddingStatus:
+    """Identify stale vector metadata without exposing vector values."""
+
+    document_id: int
+    chunk_id: int
+    model_name: str
+    model_version: str
+    dimension: int
+    updated_at: str

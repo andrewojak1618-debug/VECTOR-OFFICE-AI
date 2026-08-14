@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from brain.agent import Agent
 from brain.ollama_runtime import OllamaRuntime
 from brain.providers import OllamaProvider, create_language_model
+from brain.reflection import ReflectionPolicy
 from memory.database import SQLiteMemoryStore
 from memory.embedding_store import SQLiteEmbeddingStore
 from memory.embeddings import create_embedding_provider
@@ -15,6 +16,10 @@ from memory.indexing import (
 )
 from memory.library import SQLiteKnowledgeLibrary
 from memory.search import HybridKnowledgeSearch, HybridSearchConfig
+from tools.registry import ToolRegistry
+from tools.vector_actions import register_vector_action_tools
+from vector.actions import VectorActions
+from vector.behavior_control import BehaviorControl
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
@@ -60,11 +65,14 @@ def run_application(settings) -> None:
     mode = get_runtime_mode(settings)
     if not _ensure_ollama(settings, mode):
         return
-    vector = _connect_vector(settings)
+    behavior_control = BehaviorControl()
+    vector = _connect_vector(settings, behavior_control)
     if vector is None:
         return
     speech = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
-    agent = _create_agent(settings, mode)
+    actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
+    registry = _create_tool_registry(actions)
+    agent = _create_agent(settings, mode, registry)
     _run_input_mode(settings, mode, agent, speech)
 
 
@@ -97,18 +105,25 @@ def _handle_unavailable_ollama(mode: RuntimeMode) -> bool:
     return True
 
 
-def _connect_vector(settings) -> VectorSDKClient | None:
+def _connect_vector(
+    settings,
+    behavior_control: BehaviorControl | None = None,
+) -> VectorSDKClient | None:
     print("\nChecking WirePod connection...")
     if not VectorClient(settings.WIREPOD_HOST).check_wirepod():
         print("WirePod is not reachable. [ERROR]")
         return None
     print("WirePod is online. [OK]\n")
     print("Starting Vector SDK test...")
-    vector = VectorSDKClient(settings.VECTOR_SERIAL)
+    vector = VectorSDKClient(settings.VECTOR_SERIAL, behavior_control)
     return vector if vector.test_connection() else None
 
 
-def _create_agent(settings, mode: RuntimeMode) -> Agent:
+def _create_agent(
+    settings,
+    mode: RuntimeMode,
+    tool_registry: ToolRegistry | None = None,
+) -> Agent:
     print(f"\nLLM provider: {settings.LLM_PROVIDER}")
     language_model = _create_language_model(settings, mode)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
@@ -120,7 +135,16 @@ def _create_agent(settings, mode: RuntimeMode) -> Agent:
         knowledge_library=library,
         knowledge_context_limit=settings.MEMORY_CONTEXT_LIMIT,
         knowledge_context_enabled=_knowledge_enabled(settings, mode),
+        tool_registry=tool_registry or ToolRegistry(),
+        reflection_policy=ReflectionPolicy(settings.REFLECTION_ENABLED),
     )
+
+
+def _create_tool_registry(actions: VectorActions) -> ToolRegistry:
+    """Register only explicitly reviewed production robot tools."""
+    registry = ToolRegistry()
+    register_vector_action_tools(registry, actions)
+    return registry
 
 
 def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:

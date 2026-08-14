@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import httpx
 
-from brain.context import ChatMessage
+from brain.context import ChatMessage, ConversationContext
 from brain.providers import (
     FallbackProvider,
     OllamaProvider,
@@ -91,6 +91,29 @@ class ProviderTests(unittest.TestCase):
         )
 
         self.assertEqual("Guten Tag!", provider.generate(MESSAGES))
+
+    def test_openai_and_ollama_receive_identical_personality_rules(self):
+        messages = ConversationContext().messages()
+        openai_client = FakeOpenAIClient()
+        captured = {}
+
+        def handle_request(request):
+            payload = __import__("json").loads(request.content)
+            captured["messages"] = payload["messages"]
+            return httpx.Response(200, json={"message": {"content": "Okay"}})
+
+        ollama_client = httpx.Client(
+            base_url="http://test",
+            transport=httpx.MockTransport(handle_request),
+        )
+        OpenAIProvider("key", "model", openai_client).generate(messages)
+        OllamaProvider("http://test", "model", client=ollama_client).generate(
+            messages
+        )
+
+        openai_messages = openai_client.responses.request["input"]
+        self.assertEqual(openai_messages, captured["messages"])
+        self.assertIn("C1-Niveau", openai_messages[0]["content"])
 
     def test_factory_rejects_unknown_provider(self):
         settings = SimpleNamespace(LLM_PROVIDER="unknown")

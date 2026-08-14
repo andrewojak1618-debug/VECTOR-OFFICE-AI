@@ -4,6 +4,7 @@ from pathlib import Path
 
 from memory.embedding_store import SQLiteEmbeddingStore
 from memory.embeddings import (
+    EmbeddingError,
     EmbeddingModelInfo,
     EmbeddingResult,
     EmbeddingVector,
@@ -25,6 +26,7 @@ class TrackingEmbeddingProvider:
         self.fail_on_call = fail_on_call
         self.calls = 0
         self.embedded_texts: list[str] = []
+        self.unavailable = False
 
     @property
     def model_name(self):
@@ -39,6 +41,8 @@ class TrackingEmbeddingProvider:
         return self.model.dimension
 
     def ensure_model_available(self):
+        if self.unavailable:
+            raise EmbeddingError("local service unavailable")
         return self.model
 
     def embed(self, text):
@@ -158,6 +162,55 @@ class AutomaticIndexingTests(unittest.TestCase):
         self.assertEqual(2, result.indexed_chunks)
         self.assertEqual(calls_before + 1, self.provider.calls)
 
+    def test_full_reindex_rebuilds_every_imported_document(self):
+        first_path = self._write_document("first.md", "A")
+        second_path = self._write_document("second.md", "B")
+        self.library.import_document(str(first_path))
+        self.library.import_document(str(second_path))
+
+        results = self.library.reindex_all()
+
+        self.assertEqual(2, len(results))
+        self.assertTrue(all(result.forced for result in results))
+        self.assertEqual(results, self.library.last_reindex_results)
+
+    def test_status_exposes_model_versions_and_stale_vector_counts(self):
+        imported = self.library.import_document(str(self._write_sections("A", "B")))
+        new_provider = TrackingEmbeddingProvider("version-two")
+        switched = IndexedKnowledgeLibrary(
+            self.raw_library,
+            DocumentEmbeddingIndexer(self.raw_library, self.store, new_provider),
+        )
+
+        status = switched.list_document_statuses()[0]
+        stale = switched.list_stale_vectors()
+
+        self.assertEqual(imported.document.id, status.document.id)
+        self.assertEqual("version-two", status.model_version)
+        self.assertEqual(0, status.current_vectors)
+        self.assertEqual(2, status.stale_vectors)
+        self.assertEqual(2, len(stale))
+
+    def test_document_overview_uses_stored_model_when_ollama_is_offline(self):
+        imported = self.library.import_document(str(self._write_sections("A")))
+        self.provider.unavailable = True
+
+        status = self.library.list_document_statuses()[0]
+
+        self.assertEqual(imported.document.id, status.document.id)
+        self.assertEqual("embeddinggemma", status.model_name)
+        self.assertEqual("version-one", status.model_version)
+        self.assertEqual(1, status.current_vectors)
+
+    def test_verified_deletion_removes_document_versions_and_vectors(self):
+        imported = self.library.import_document(str(self._write_sections("A", "B")))
+
+        self.assertTrue(self.library.forget_document(imported.document.id))
+
+        self.assertFalse(self.raw_library.document_exists(imported.document.id))
+        self.assertEqual((), self.raw_library.list_document_versions(imported.document.id))
+        self.assertEqual((), self.store.list_for_document(imported.document.id))
+
     def test_failure_before_persistence_leaves_no_partial_index(self):
         path = self._write_sections("A", "B", "C")
         imported = self.raw_library.import_document(str(path))
@@ -198,6 +251,11 @@ class AutomaticIndexingTests(unittest.TestCase):
             "\n\n".join(marker * 90 for marker in markers),
             encoding="utf-8",
         )
+        return path
+
+    def _write_document(self, name: str, marker: str) -> Path:
+        path = self.root / name
+        path.write_text(marker * 90, encoding="utf-8")
         return path
 
 

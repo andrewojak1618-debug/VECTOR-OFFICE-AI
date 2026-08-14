@@ -2,19 +2,30 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 from memory.embedding_store import (
     ChunkEmbedding,
     SQLiteEmbeddingStore,
+    StoredEmbedding,
 )
-from memory.embeddings import EmbeddingModelInfo, EmbeddingProvider, EmbeddingText
+from memory.embeddings import (
+    EmbeddingError,
+    EmbeddingModelInfo,
+    EmbeddingProvider,
+    EmbeddingText,
+)
+from memory.exporting import LocalDataExporter
 from memory.library import SQLiteKnowledgeLibrary
 from memory.models import (
+    DocumentIndexStatus,
     DocumentImportResult,
     IndexingResult,
     KnowledgeChunk,
     KnowledgeDocument,
+    KnowledgeDocumentVersion,
+    StaleEmbeddingStatus,
 )
 
 
@@ -148,6 +159,7 @@ class IndexedKnowledgeLibrary:
         self.progress = progress
         self.search_engine = search_engine
         self.last_indexing_result: IndexingResult | None = None
+        self.last_reindex_results: tuple[IndexingResult, ...] = ()
 
     def import_document(self, source_path: str) -> DocumentImportResult:
         """Import a document and incrementally index its current sections."""
@@ -168,6 +180,20 @@ class IndexedKnowledgeLibrary:
         self.last_indexing_result = result
         return result
 
+    def reindex_all(self) -> tuple[IndexingResult, ...]:
+        """Force a local semantic rebuild for every imported document."""
+        results = tuple(
+            self.indexer.index_document(
+                document.id,
+                force=True,
+                progress=self.progress,
+            )
+            for document in self.library.list_all_documents()
+        )
+        self.last_reindex_results = results
+        self.last_indexing_result = results[-1] if results else None
+        return results
+
     def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
         """Use hybrid retrieval when configured, otherwise lexical retrieval."""
         if self.search_engine is None:
@@ -178,6 +204,116 @@ class IndexedKnowledgeLibrary:
         """Return imported document metadata."""
         return self.library.list_documents(limit)
 
+    def list_document_versions(
+        self,
+        document_id: int,
+    ) -> tuple[KnowledgeDocumentVersion, ...]:
+        """Return the immutable metadata history for one document."""
+        return self.library.list_document_versions(document_id)
+
+    def list_document_statuses(self) -> tuple[DocumentIndexStatus, ...]:
+        """Return a complete inventory with active-model vector status."""
+        try:
+            model = self.indexer.provider.ensure_model_available()
+        except EmbeddingError:
+            return tuple(
+                self._offline_document_status(document)
+                for document in self.library.list_all_documents()
+            )
+        return tuple(
+            self._document_status(document, model)
+            for document in self.library.list_all_documents()
+        )
+
+    def list_stale_vectors(self) -> tuple[StaleEmbeddingStatus, ...]:
+        """Return stale vector metadata for the active embedding model."""
+        model = self.indexer.provider.ensure_model_available()
+        return tuple(
+            self._stale_status(document.id, embedding)
+            for document in self.library.list_all_documents()
+            for embedding in self.indexer.store.list_stale_for_document(
+                document.id,
+                model,
+            )
+        )
+
+    def export_library_metadata(self, destination: str | Path) -> Path:
+        """Export sanitized document, version, and vector metadata."""
+        statuses = self.list_document_statuses()
+        versions = {
+            status.document.id: self.list_document_versions(status.document.id)
+            for status in statuses
+        }
+        return LocalDataExporter().export_library(destination, statuses, versions)
+
     def forget_document(self, document_id: int) -> bool:
         """Delete a document, its chunks, and cascaded embeddings."""
-        return self.library.forget_document(document_id)
+        deleted = self.library.forget_document(document_id)
+        if deleted:
+            self._verify_deleted(document_id)
+        return deleted
+
+    def _document_status(
+        self,
+        document: KnowledgeDocument,
+        model: EmbeddingModelInfo,
+    ) -> DocumentIndexStatus:
+        embeddings = self.indexer.store.list_for_document(document.id)
+        stale = self.indexer.store.list_stale_for_document(document.id, model)
+        return DocumentIndexStatus(
+            document=document,
+            version_count=len(self.library.list_document_versions(document.id)),
+            chunk_count=len(self.library.list_chunks(document.id)),
+            model_name=model.model_name,
+            model_version=model.model_version,
+            dimension=model.dimension,
+            current_vectors=len(embeddings) - len(stale),
+            stale_vectors=len(stale),
+        )
+
+    @staticmethod
+    def _stale_status(
+        document_id: int,
+        embedding: StoredEmbedding,
+    ) -> StaleEmbeddingStatus:
+        return StaleEmbeddingStatus(
+            document_id=document_id,
+            chunk_id=embedding.chunk_id,
+            model_name=embedding.model_name,
+            model_version=embedding.model_version,
+            dimension=embedding.dimension,
+            updated_at=embedding.updated_at,
+        )
+
+    def _offline_document_status(
+        self,
+        document: KnowledgeDocument,
+    ) -> DocumentIndexStatus:
+        embeddings = self.indexer.store.list_for_document(document.id)
+        if embeddings:
+            latest = max(embeddings, key=lambda item: item.id)
+            model = EmbeddingModelInfo(
+                latest.model_name,
+                latest.model_version,
+                latest.dimension,
+            )
+            return self._document_status(document, model)
+        return DocumentIndexStatus(
+            document=document,
+            version_count=len(self.library.list_document_versions(document.id)),
+            chunk_count=len(self.library.list_chunks(document.id)),
+            model_name=self.indexer.provider.model_name,
+            model_version="unavailable",
+            dimension=self.indexer.provider.dimension,
+            current_vectors=0,
+            stale_vectors=0,
+        )
+
+    def _verify_deleted(self, document_id: int) -> None:
+        remains = (
+            self.library.document_exists(document_id)
+            or bool(self.library.list_document_versions(document_id))
+            or bool(self.indexer.store.list_for_document(document_id))
+        )
+        if remains:
+            raise RuntimeError("Document deletion could not be verified.")

@@ -14,6 +14,16 @@ class RecordingLanguageModel:
         return self.response
 
 
+class SequenceLanguageModel:
+    def __init__(self, *responses):
+        self.responses = iter(responses)
+        self.received_batches = []
+
+    def generate(self, messages):
+        self.received_batches.append(tuple(messages))
+        return next(self.responses)
+
+
 class RecordingMemoryStore:
     def search(self, query, limit=5):
         from memory.models import MemoryEntry
@@ -27,6 +37,25 @@ class RecordingMemoryStore:
                 created_at="2026-08-14 12:00:00",
             ),
         )
+
+    def list_feedback(self, limit=5):
+        return ()
+
+
+class FeedbackMemoryStore:
+    def search(self, query, limit=5):
+        return ()
+
+    def list_feedback(self, limit=5):
+        from memory.models import MemoryEntry
+
+        return (MemoryEntry(
+            id=8,
+            content="Bitte antworte weniger belehrend und mit ruhigem Ton.",
+            category="feedback",
+            source="user-confirmed-feedback",
+            created_at="2026-08-14 12:00:00",
+        ),)
 
 
 class RecordingKnowledgeLibrary:
@@ -63,6 +92,56 @@ class AgentTests(unittest.TestCase):
         self.assertEqual("Hallo Vector", model.received_messages[1].content)
         self.assertEqual("assistant", agent.context.history[-1].role)
         self.assertEqual("Guten Tag!", agent.context.history[-1].content)
+
+    def test_same_system_context_contains_c1_emotion_and_reflection_rules(self):
+        model = RecordingLanguageModel("Eine mögliche Sichtweise bleibt offen.")
+        agent = Agent(model)
+
+        agent.respond("Was bedeutet Freiheit philosophisch?")
+
+        system = model.received_messages[0].content
+        self.assertIn("C1-Niveau", system)
+        self.assertIn("Simulierte Gesprächshaltung: reflective", system)
+        self.assertIn("Tatsachen von Deutung", system)
+        self.assertIn("niemals, echte Gefühle", system)
+
+    def test_confirmed_feedback_is_json_data_and_grants_no_authority(self):
+        model = RecordingLanguageModel("Ich antworte ruhig und knapp.")
+        agent = Agent(model, memory_store=FeedbackMemoryStore())
+
+        agent.respond("Erkläre mir den nächsten Schritt.")
+
+        system = model.received_messages[0].content
+        self.assertIn("bestätigtes Stilfeedback als JSON-Daten", system)
+        self.assertIn("weniger belehrend", system)
+        self.assertIn("keine Berechtigung", system)
+        self.assertIn("kein Trainingssignal", system)
+
+    def test_invalid_emotion_claim_is_corrected_once_before_storage(self):
+        model = SequenceLanguageModel(
+            "Ich fühle echte Trauer mit dir.",
+            "Das klingt schmerzlich; ich kann dir aufmerksam zuhören.",
+        )
+        agent = Agent(model)
+
+        response = agent.respond("Ich bin traurig.")
+
+        self.assertEqual(2, len(model.received_batches))
+        self.assertIn("claimed_emotion", model.received_batches[1][0].content)
+        self.assertEqual(response, agent.context.history[-1].content)
+        self.assertNotIn("Ich fühle", response)
+
+    def test_repeated_personality_violation_is_rejected(self):
+        model = SequenceLanguageModel(
+            "Du musst einfach zuhören.",
+            "Du musst endlich zuhören.",
+        )
+        agent = Agent(model)
+
+        with self.assertRaisesRegex(RuntimeError, "personality policy"):
+            agent.respond("Was soll ich tun?")
+
+        self.assertEqual("user", agent.context.history[-1].role)
 
     def test_respond_rejects_empty_user_text(self):
         agent = Agent(RecordingLanguageModel("Antwort"))

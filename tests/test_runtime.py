@@ -1,7 +1,13 @@
 import unittest
 from types import SimpleNamespace
 
-from application.runtime import _knowledge_enabled, get_runtime_mode
+from unittest.mock import MagicMock
+
+from application.runtime import (
+    _create_tool_registry,
+    _knowledge_enabled,
+    get_runtime_mode,
+)
 
 
 def make_settings(**overrides):
@@ -18,6 +24,14 @@ def make_settings(**overrides):
 
 
 class RuntimeModeTests(unittest.TestCase):
+    def test_runtime_registers_only_controlled_vector_tools(self):
+        registry = _create_tool_registry(MagicMock())
+
+        self.assertEqual(
+            ("vector.emergency_stop", "vector.perform_action"),
+            tuple(item.name for item in registry.definitions()),
+        )
+
     def test_openai_console_uses_configured_ollama_fallback(self):
         mode = get_runtime_mode(make_settings())
 

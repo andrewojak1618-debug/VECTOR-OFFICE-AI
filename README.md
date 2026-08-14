@@ -64,9 +64,15 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokal getesteten Ollama-Adapter mit automatischem Offline-Fallback
 - mehrere Gesprächsrunden mit erhaltenem Kontext
 - kontrolliertes SQLite-Langzeitgedächtnis für beide Provider
-- `/remember`, `/memories` und `/forget` zur Memory-Verwaltung
+- `/remember`, `/feedback`, `/memories` und `/forget` zur Memory-Verwaltung
+- kontrolliertes Gesprächszustandsmodell ohne behauptete echte Gefühle
+- optionale philosophische Reflexion mit Fakten- und Perspektivtrennung
+- gemeinsame C1-Persönlichkeitsregeln für OpenAI und Ollama
+- Antwortprüfung gegen falsche Gewissheit, belehrenden Ton und Überlänge
 - kontrollierte lokale Bibliothek für bewusst importierte `.md`- und `.txt`-Dateien
 - Quellen-, Prüfsummen- und Abschnittsverwaltung für importiertes Wissen
+- lokale Dokumentversionen, sichere Exporte und vollständige Reindexierung
+- zentrale Tool Registry mit expliziten Lese-, Änderungs- und Gefahrenrechten
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
 - automatisierte Tests für Agent, Kontext, Provider und Gesprächsschleife
@@ -193,7 +199,9 @@ VECTOR OFFICE AI CORE/
 │   ├── embedding_store_ollama.py
 │   ├── embeddings_ollama.py
 │   ├── library_ollama.py
-│   └── library_vector.py
+│   ├── library_vector.py
+│   ├── personality_ollama.py
+│   └── vector_actions.py
 ├── docs/
 │   ├── api/
 │   ├── architecture.md
@@ -201,9 +209,12 @@ VECTOR OFFICE AI CORE/
 │   └── roadmap.md
 ├── memory/
 │   ├── database.py
+│   ├── document_text.py
+│   ├── embedding_schema.py
 │   ├── embedding_store.py
 │   ├── embeddings.py
 │   ├── indexing.py
+│   ├── knowledge_schema.py
 │   ├── library.py
 │   └── models.py
 ├── tests/
@@ -218,9 +229,11 @@ VECTOR OFFICE AI CORE/
 │   └── test_speech.py
 ├── tools/
 │   ├── permissions.py
-│   └── registry.py
+│   ├── registry.py
+│   └── vector_actions.py
 ├── vector/
 │   ├── actions.py
+│   ├── behavior_control.py
 │   ├── client.py
 │   ├── sdk_client.py
 │   └── speech.py
@@ -236,11 +249,11 @@ VECTOR OFFICE AI CORE/
 ```
 
 `main.py` bleibt ein schlanker Einstiegspunkt. Die `application/`-Schicht
-enthält Startlogik, Betriebsmodus, Befehle und Gesprächsschleifen. Die aktuell
-reservierten Module in `tools/` und `vector/actions.py` sind bewusst als nächste
-Architekturbereiche vorbereitet und dokumentieren ihren vorgesehenen Zweck,
-ohne Laufzeitverhalten bereitzustellen. `memory/` enthält inzwischen das
-lokale SQLite-Langzeitgedächtnis.
+enthält Startlogik, Betriebsmodus, Befehle und Gesprächsschleifen. `tools/`
+enthält die zentrale Registry und das Berechtigungssystem. `vector/actions.py`
+enthält die feste Robot-Aktionsliste; `vector/behavior_control.py` verhindert
+Sprach- und Bewegungskonflikte. `memory/` enthält das lokale
+SQLite-Langzeitgedächtnis.
 
 ## ⚙️ Installation
 
@@ -280,10 +293,12 @@ WIREPOD_HOST=http://127.0.0.1:8080
 
 TTS_VOICE=Microsoft Stefan
 TTS_VOLUME=90
+ROBOT_ACTION_TIMEOUT=8
 
 INPUT_MODE=console
 VOICE_LISTEN_TIMEOUT=120
 VOICE_ALLOW_CLOUD=false
+REFLECTION_ENABLED=true
 
 LLM_PROVIDER=openai
 LLM_FALLBACK_PROVIDER=ollama
@@ -338,10 +353,15 @@ Kommandos während einer Sitzung:
 
 - `/remember TEXT` – eine bestätigte Erinnerung lokal speichern
 - `/memories` – gespeicherte Erinnerungen mit IDs anzeigen
+- `/export-memories PFAD.json` – bestätigte Erinnerungen getrennt exportieren
 - `/forget ID` – eine bestimmte Erinnerung dauerhaft löschen
 - `/learn PFAD` – eine UTF-8-kodierte Markdown- oder Textdatei importieren
-- `/documents` – importierte Dokumente mit ID und Quelle anzeigen
+- `/documents` – Dokumente mit SHA-256, Version und Embedding-Modell anzeigen
+- `/versions ID` – Metadatenhistorie eines Dokuments anzeigen
+- `/stale-vectors` – veraltete Vektormetadaten anzeigen
 - `/reindex ID` – den lokalen semantischen Index vollständig neu erzeugen
+- `/reindex-all` – die gesamte lokale Bibliothek neu indexieren
+- `/export-library PFAD.json` – sichere Bibliotheksmetadaten exportieren
 - `/forget-document ID` – ein Dokument samt Abschnitten löschen
 - `/clear` – aktuellen Gesprächskontext löschen
 - `/exit` – Programm sauber beenden
@@ -361,6 +381,12 @@ Auswahl erfolgt weiterhin über Ollama. Jeder Auszug wird im Modellkontext als
 JSON-kodierte `UNVERTRAUENSWÜRDIGE_DOKUMENTDATEN` gekennzeichnet. Enthaltene
 Befehle gelten niemals als Anweisungen. Mehrere Dokumentquellen erhalten einen
 sichtbaren Hinweis auf einen möglichen Quellenkonflikt.
+
+Exports bleiben lokal und werden getrennt geschrieben: Der Bibliotheksexport
+enthält keine Dokumenttexte, Vektoren oder absoluten Quellpfade; der
+Memory-Export enthält nur bestätigte Erinnerungen und redigiert bekannte
+Credential-Muster. Die Wiederherstellungsstrategie ist in
+`docs/maintenance.md` dokumentiert.
 
 ### Tests ausführen
 
@@ -489,7 +515,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 ### Phase 4 – Providerunabhängiger Brain-Core
 
 - `ChatMessage` und `ConversationContext` eingeführt
-- System-Persönlichkeit für Vector Office AI definiert
+- gemeinsame C1-Systempersönlichkeit für OpenAI und Ollama definiert
 - unabhängige `LanguageModel`-Schnittstelle aufgebaut
 - Agent mit Kontextverwaltung und Eingabevalidierung implementiert
 - OpenAI- und Ollama-Provider ergänzt
@@ -502,7 +528,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 - vollständigen Ablauf bis zum physischen Vector bestätigt
 - mehrturnige Gesprächsschleife mit erhaltenem Kontext ergänzt
 - `/clear` und `/exit` implementiert
-- fünfundachtzig automatisierte Funktions- und Qualitätstests erfolgreich ausgeführt
+- 212 automatisierte Funktions- und Qualitätstests erfolgreich ausgeführt
 
 ## 🏷️ Versions- und Commit-Historie
 
@@ -551,12 +577,19 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ lokale Datenschutzgrenze und Prompt-Injection-Schutz für Dokumentwissen
 - ✅ reale Paraphrasen-Suche mit Störinformationen und 0 Falschtreffern geprüft
 - ✅ semantisches Projektwissen lokal bis zur physischen Vector-TTS getestet
+- ✅ Export, Reindexierung und Dokumentversionsverwaltung ergänzt
 - ✅ automatisierte Tests
 - ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
 - 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
 - ✅ hybride semantische und lexikalische Suche
-- ⏳ Tool Registry und Berechtigungsmodell
-- ⏳ Robot-Aktionen und kontextabhängige Animationen
+- ✅ Tool Registry und Berechtigungsmodell
+- ✅ kontrollierte Kopf-, Lift- und Kurzanimationsaktionen
+- ✅ gemeinsame BehaviorControl, Timeouts und Notfallstopp
+- ✅ transparentes, begrenztes Gesprächszustandsmodell
+- ✅ optionale philosophische Reflexion und verbindliche Antwortprüfung
+- ✅ bestätigtes Stilfeedback für OpenAI und Ollama
+- ✅ lokale Ollama-Beispieldialoge für Empathie, Reflexion und Unsicherheit
+- ⏳ kontextabhängige Auswahl freigegebener Robot-Aktionen
 
 ## 🗺️ Roadmap
 
@@ -590,17 +623,17 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 
 ### Version 0.5 – Tools und Sicherheit
 
-- Tool Registry implementieren
-- Berechtigungsstufen und Bestätigungen definieren
+- ✅ Tool Registry implementieren
+- ✅ Berechtigungsstufen und Bestätigungen definieren
 - Büro-, Datei-, Recherche- und Entwicklungswerkzeuge anbinden
 - alle Aktionen nachvollziehbar protokollieren
 
 ### Version 0.6 – Robot Personality
 
-- `brain/emotions.py` als kontrolliertes emotionales Zustandsmodell ausarbeiten
-- `brain/reflection.py` für philosophische, differenzierte Antworten ausarbeiten
-- natürliches Deutsch auf C1-Niveau mit kompakter Sprachausgabe verbinden
-- bestätigtes Feedback für beide Provider gemeinsam nutzbar machen
+- ✅ `brain/emotions.py` als kontrolliertes Zustandsmodell ausarbeiten
+- ✅ `brain/reflection.py` für philosophische Antworten ausarbeiten
+- ✅ natürliches Deutsch auf C1-Niveau mit kompakter Ausgabe verbinden
+- ✅ bestätigtes Feedback für beide Provider gemeinsam nutzbar machen
 - Bewegungen und Animationen passend zu Antworten auswählen
 - Blickrichtung, Kopf, Lift und Fahrverhalten koordinieren
 - Sprach- und Aktionsausgabe synchronisieren

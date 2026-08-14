@@ -1,37 +1,28 @@
 """Controlled local document storage and lexical retrieval."""
 
-import hashlib
 import re
 import sqlite3
 from contextlib import contextmanager
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
-from memory.embedding_store import initialize_embedding_schema
+from memory.document_text import DocumentTextProcessor, PreparedDocument
+from memory.knowledge_schema import initialize_knowledge_schema
 from memory.models import (
     DocumentImportResult,
     KnowledgeChunk,
     KnowledgeDocument,
+    KnowledgeDocumentVersion,
 )
-
-
-@dataclass(frozen=True)
-class _PreparedDocument:
-    path: Path
-    source: str
-    title: str
-    content_hash: str
-    chunks: tuple[str, ...]
 
 
 class SQLiteKnowledgeLibrary:
     """Store explicitly imported documents in a local SQLite database."""
 
-    ALLOWED_EXTENSIONS = frozenset({".md", ".txt"})
-    DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024
-    DEFAULT_CHUNK_SIZE = 1000
-    MIN_CHUNK_SIZE = 100
+    ALLOWED_EXTENSIONS = DocumentTextProcessor.ALLOWED_EXTENSIONS
+    DEFAULT_MAX_FILE_BYTES = DocumentTextProcessor.DEFAULT_MAX_FILE_BYTES
+    DEFAULT_CHUNK_SIZE = DocumentTextProcessor.DEFAULT_CHUNK_SIZE
+    MIN_CHUNK_SIZE = DocumentTextProcessor.MIN_CHUNK_SIZE
     TERM_MIN_LENGTH = 4
 
     def __init__(
@@ -40,19 +31,12 @@ class SQLiteKnowledgeLibrary:
         max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
     ):
-        self._validate_limits(max_file_bytes, chunk_size)
         self.database_path = Path(database_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self.max_file_bytes = max_file_bytes
         self.chunk_size = chunk_size
+        self.text_processor = DocumentTextProcessor(max_file_bytes, chunk_size)
         self._initialize()
-
-    @staticmethod
-    def _validate_limits(max_file_bytes: int, chunk_size: int) -> None:
-        if max_file_bytes < 1:
-            raise ValueError("Maximum file size must be at least 1 byte.")
-        if chunk_size < SQLiteKnowledgeLibrary.MIN_CHUNK_SIZE:
-            raise ValueError("Chunk size must be at least 100 characters.")
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
@@ -67,78 +51,29 @@ class SQLiteKnowledgeLibrary:
 
     def _initialize(self) -> None:
         with self._connect() as connection:
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS knowledge_documents (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    source_path TEXT NOT NULL UNIQUE,
-                    title TEXT NOT NULL,
-                    content_hash TEXT NOT NULL,
-                    imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
-
-                CREATE TABLE IF NOT EXISTS knowledge_chunks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    document_id INTEGER NOT NULL,
-                    chunk_index INTEGER NOT NULL,
-                    content TEXT NOT NULL,
-                    FOREIGN KEY(document_id)
-                        REFERENCES knowledge_documents(id)
-                        ON DELETE CASCADE,
-                    UNIQUE(document_id, chunk_index)
-                );
-                """
-            )
-            initialize_embedding_schema(connection)
+            initialize_knowledge_schema(connection)
 
     def import_document(self, source_path: str | Path) -> DocumentImportResult:
         """Import or atomically refresh one approved UTF-8 document."""
-        prepared = self._prepare_document(source_path)
+        prepared = self.text_processor.prepare(source_path)
         with self._connect() as connection:
             existing = self._find_document(connection, prepared.source)
             if self._is_current(existing, prepared.content_hash):
                 return self._current_result(connection, existing)
             document_id = self._write_document(connection, existing, prepared)
             self._synchronize_chunks(connection, document_id, prepared.chunks)
+            self._record_version(
+                connection,
+                document_id,
+                prepared.content_hash,
+                len(prepared.chunks),
+            )
             row = self._find_document_by_id(connection, document_id)
         return DocumentImportResult(
             document=self._to_document(row),
             chunk_count=len(prepared.chunks),
             changed=True,
         )
-
-    def _prepare_document(self, source_path: str | Path) -> _PreparedDocument:
-        path = self._resolve_document_path(source_path)
-        content = self._read_document(path)
-        normalized = content.strip()
-        if not normalized:
-            raise ValueError("Document must not be empty.")
-        return _PreparedDocument(
-            path=path,
-            source=str(path),
-            title=path.stem,
-            content_hash=hashlib.sha256(content.encode("utf-8")).hexdigest(),
-            chunks=self._split_content(normalized),
-        )
-
-    def _resolve_document_path(self, source_path: str | Path) -> Path:
-        path_text = str(source_path).strip().strip('"')
-        path = Path(path_text).expanduser().resolve()
-        if not path.is_file():
-            raise ValueError(f"Document does not exist: {path}")
-        if path.suffix.casefold() not in self.ALLOWED_EXTENSIONS:
-            allowed = ", ".join(sorted(self.ALLOWED_EXTENSIONS))
-            raise ValueError(f"Only these document types are allowed: {allowed}")
-        if path.stat().st_size > self.max_file_bytes:
-            raise ValueError(f"Document exceeds the {self.max_file_bytes}-byte limit.")
-        return path
-
-    @staticmethod
-    def _read_document(path: Path) -> str:
-        try:
-            return path.read_text(encoding="utf-8")
-        except UnicodeDecodeError as exc:
-            raise ValueError("Document must be UTF-8 encoded.") from exc
 
     @staticmethod
     def _find_document(
@@ -179,7 +114,7 @@ class SQLiteKnowledgeLibrary:
         self,
         connection: sqlite3.Connection,
         existing: sqlite3.Row | None,
-        document: _PreparedDocument,
+        document: PreparedDocument,
     ) -> int:
         if existing is None:
             return self._insert_document(connection, document)
@@ -189,7 +124,7 @@ class SQLiteKnowledgeLibrary:
     @staticmethod
     def _insert_document(
         connection: sqlite3.Connection,
-        document: _PreparedDocument,
+        document: PreparedDocument,
     ) -> int:
         cursor = connection.execute(
             """
@@ -204,7 +139,7 @@ class SQLiteKnowledgeLibrary:
     def _update_document(
         connection: sqlite3.Connection,
         document_id: int,
-        document: _PreparedDocument,
+        document: PreparedDocument,
     ) -> None:
         connection.execute(
             """
@@ -275,6 +210,25 @@ class SQLiteKnowledgeLibrary:
             (document_id, index, content),
         )
 
+    @staticmethod
+    def _record_version(
+        connection: sqlite3.Connection,
+        document_id: int,
+        content_hash: str,
+        chunk_count: int,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO knowledge_document_versions (
+                document_id, version_number, content_hash, chunk_count
+            ) VALUES (
+                ?, COALESCE((SELECT MAX(version_number) + 1
+                    FROM knowledge_document_versions WHERE document_id = ?), 1), ?, ?
+            )
+            """,
+            (document_id, document_id, content_hash, chunk_count),
+        )
+
     def list_documents(self, limit: int = 50) -> tuple[KnowledgeDocument, ...]:
         """Return the newest imported document records."""
         if limit < 1:
@@ -283,6 +237,14 @@ class SQLiteKnowledgeLibrary:
             rows = connection.execute(
                 "SELECT * FROM knowledge_documents ORDER BY id DESC LIMIT ?",
                 (limit,),
+            ).fetchall()
+        return tuple(self._to_document(row) for row in rows)
+
+    def list_all_documents(self) -> tuple[KnowledgeDocument, ...]:
+        """Return the complete imported document inventory."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM knowledge_documents ORDER BY id"
             ).fetchall()
         return tuple(self._to_document(row) for row in rows)
 
@@ -301,6 +263,27 @@ class SQLiteKnowledgeLibrary:
                 (document_id,),
             ).fetchall()
         return tuple(self._to_chunk(row) for row in rows)
+
+    def list_document_versions(
+        self,
+        document_id: int,
+    ) -> tuple[KnowledgeDocumentVersion, ...]:
+        """Return recorded metadata revisions for one document."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM knowledge_document_versions
+                WHERE document_id = ? ORDER BY version_number DESC
+                """,
+                (document_id,),
+            ).fetchall()
+        return tuple(self._to_document_version(row) for row in rows)
+
+    def document_exists(self, document_id: int) -> bool:
+        """Report whether one document identifier is still present."""
+        with self._connect() as connection:
+            row = self._find_document_by_id(connection, document_id)
+        return row is not None
 
     def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
         """Return lexically relevant document chunks for a query."""
@@ -349,55 +332,6 @@ class SQLiteKnowledgeLibrary:
             )
         return cursor.rowcount > 0
 
-    def _split_content(self, content: str) -> tuple[str, ...]:
-        chunks: list[str] = []
-        current = ""
-        for paragraph in re.split(r"\n\s*\n", content):
-            for part in self._split_long_paragraph(paragraph.strip()):
-                current = self._append_part(chunks, current, part)
-        if current:
-            chunks.append(current)
-        return tuple(chunks)
-
-    def _append_part(self, chunks: list[str], current: str, part: str) -> str:
-        if not part:
-            return current
-        candidate = f"{current}\n\n{part}" if current else part
-        if len(candidate) <= self.chunk_size:
-            return candidate
-        chunks.append(current)
-        return part
-
-    def _split_long_paragraph(self, paragraph: str) -> tuple[str, ...]:
-        if not paragraph or len(paragraph) <= self.chunk_size:
-            return (paragraph,) if paragraph else ()
-        parts: list[str] = []
-        current = ""
-        for word in paragraph.split():
-            if len(word) > self.chunk_size:
-                current = self._append_long_word(parts, current, word)
-                continue
-            current = self._append_word(parts, current, word)
-        if current:
-            parts.append(current)
-        return tuple(parts)
-
-    def _append_long_word(self, parts: list[str], current: str, word: str) -> str:
-        if current:
-            parts.append(current)
-        parts.extend(
-            word[index:index + self.chunk_size]
-            for index in range(0, len(word), self.chunk_size)
-        )
-        return ""
-
-    def _append_word(self, parts: list[str], current: str, word: str) -> str:
-        candidate = f"{current} {word}" if current else word
-        if len(candidate) <= self.chunk_size:
-            return candidate
-        parts.append(current)
-        return word
-
     @classmethod
     def _search_terms(cls, query: str) -> frozenset[str]:
         return frozenset(
@@ -425,4 +359,15 @@ class SQLiteKnowledgeLibrary:
             title=row["title"],
             chunk_index=row["chunk_index"],
             content=row["content"],
+        )
+
+    @staticmethod
+    def _to_document_version(row: sqlite3.Row) -> KnowledgeDocumentVersion:
+        return KnowledgeDocumentVersion(
+            id=row["id"],
+            document_id=row["document_id"],
+            version_number=row["version_number"],
+            content_hash=row["content_hash"],
+            chunk_count=row["chunk_count"],
+            imported_at=row["imported_at"],
         )

@@ -104,6 +104,13 @@ class Settings:
         maximum=100,
     )
 
+    ROBOT_ACTION_TIMEOUT = get_int_setting(
+        "ROBOT_ACTION_TIMEOUT",
+        default=8,
+        minimum=1,
+        maximum=30,
+    )
+
     INPUT_MODE = os.getenv(
         "INPUT_MODE",
         "console",
@@ -119,6 +126,11 @@ class Settings:
     VOICE_ALLOW_CLOUD = get_bool_setting(
         "VOICE_ALLOW_CLOUD",
         default=False,
+    )
+
+    REFLECTION_ENABLED = get_bool_setting(
+        "REFLECTION_ENABLED",
+        default=True,
     )
 
     LLM_PROVIDER = os.getenv(

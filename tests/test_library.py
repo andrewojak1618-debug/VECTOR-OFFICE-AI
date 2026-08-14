@@ -1,5 +1,7 @@
+import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 
 from memory.library import SQLiteKnowledgeLibrary
@@ -64,6 +66,56 @@ class SQLiteKnowledgeLibraryTests(unittest.TestCase):
         self.assertNotIn("alte Stimme", matches[0].content)
         self.assertIn("neue deutsche Stimme", matches[0].content)
 
+    def test_changed_documents_keep_ordered_metadata_versions(self):
+        document_path = self.root / "versioned.txt"
+        document_path.write_text("Version eins", encoding="utf-8")
+        document = self.library.import_document(document_path).document
+
+        document_path.write_text("Version zwei", encoding="utf-8")
+        self.library.import_document(document_path)
+        self.library.import_document(document_path)
+        versions = self.library.list_document_versions(document.id)
+
+        self.assertEqual([2, 1], [item.version_number for item in versions])
+        self.assertNotEqual(versions[0].content_hash, versions[1].content_hash)
+        self.assertEqual([1, 1], [item.chunk_count for item in versions])
+
+    def test_existing_database_backfills_current_version_without_data_loss(self):
+        database_path = self.root / "legacy.db"
+        with closing(sqlite3.connect(database_path)) as connection:
+            connection.executescript(
+                """
+                CREATE TABLE knowledge_documents (
+                    id INTEGER PRIMARY KEY,
+                    source_path TEXT NOT NULL UNIQUE,
+                    title TEXT NOT NULL,
+                    content_hash TEXT NOT NULL,
+                    imported_at TEXT NOT NULL
+                );
+                CREATE TABLE knowledge_chunks (
+                    id INTEGER PRIMARY KEY,
+                    document_id INTEGER NOT NULL,
+                    chunk_index INTEGER NOT NULL,
+                    content TEXT NOT NULL,
+                    FOREIGN KEY(document_id) REFERENCES knowledge_documents(id)
+                        ON DELETE CASCADE,
+                    UNIQUE(document_id, chunk_index)
+                );
+                INSERT INTO knowledge_documents VALUES (
+                    7, 'legacy.md', 'legacy', 'abc123', '2026-08-01 10:00:00'
+                );
+                INSERT INTO knowledge_chunks VALUES (9, 7, 1, 'Bestehender Inhalt');
+                """
+            )
+            connection.commit()
+
+        migrated = SQLiteKnowledgeLibrary(database_path)
+        versions = migrated.list_document_versions(7)
+
+        self.assertEqual(1, len(versions))
+        self.assertEqual("abc123", versions[0].content_hash)
+        self.assertEqual(1, versions[0].chunk_count)
+
     def test_changed_document_preserves_only_identical_chunk_ids(self):
         document_path = self.root / "abschnitte.txt"
         first_text = "A" * 90
@@ -116,6 +168,7 @@ class SQLiteKnowledgeLibraryTests(unittest.TestCase):
         self.assertTrue(self.library.forget_document(imported.document.id))
         self.assertFalse(self.library.forget_document(imported.document.id))
         self.assertEqual((), self.library.list_documents())
+        self.assertEqual((), self.library.list_document_versions(imported.document.id))
         self.assertEqual((), self.library.search("Projektwissen"))
 
 

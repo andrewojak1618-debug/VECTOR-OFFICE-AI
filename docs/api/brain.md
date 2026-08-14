@@ -28,8 +28,10 @@
 
 ::: brain.personality
 
-## Reservierte Architektur
+## Kontrolliertes Zustandsmodell
 
 ::: brain.emotions
+
+## Reflexion und Antwortprüfung
 
 ::: brain.reflection

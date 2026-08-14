@@ -160,3 +160,77 @@ Die deutsche TTS wurde schrittweise verbessert:
 - deutsche TTS mit Microsoft Stefan und Lautstärke 90 erzeugt
 - Vector-SDK bei `4,04 V` verbunden und Audiostream vollständig abgespielt
 - wiederholbaren Befehl und verbleibende subjektive Hörprüfung dokumentiert
+
+## Bibliothekswartung und Versionsverwaltung
+
+- Dokumentübersicht um Importzeit, SHA-256, Version und Modellstatus erweitert
+- additive SQLite-Historie für geänderte Dokumentstände eingeführt
+- bestehende Datenbanken zerstörungsfrei mit einer ersten Version ergänzt
+- aktives Embedding-Modell, Dimension sowie aktuelle und alte Vektoren sichtbar
+- Einzel-Reindexierung beibehalten und `/reindex-all` ergänzt
+- Bibliotheksmetadaten ohne Texte, Vektoren und absolute Pfade exportierbar
+- bestätigte Erinnerungen in einen getrennten JSON-Export ausgelagert
+- bekannte Credential-Muster vor dem Schreiben automatisch redigiert
+- Cascade-Löschung um Versionsdaten erweitert und nachträglich verifiziert
+- lokale Backup- und Wiederherstellungsstrategie dokumentiert
+
+## Tool Registry und Berechtigungssystem
+
+- `tools/registry.py` als einzige spätere Tool-Ausführungsgrenze implementiert
+- einheitliche Definitionen für Namen, Beschreibungen und Parameter ergänzt
+- flache String-, Integer-, Number- und Boolean-Parameter streng validiert
+- `READ_ONLY`, `MUTATING` und `DANGEROUS` als Berechtigungsstufen eingeführt
+- Änderungen an eine explizite Freigabe und Gefahren an Einzelbestätigung gebunden
+- unbekannte Tools und ungültige Parameter vor der Ausführung blockiert
+- Erfolge und Fehler als strukturierte Agent-Ergebnisse modelliert
+- interne Tool-Exceptions durch neutrale Fehlercodes ersetzt
+- sensible Parameter aus optionalen Audit-Ereignissen entfernt
+- Argumente unbekannter Tools vollständig aus Audit-Ereignissen ausgeschlossen
+- nebenwirkungsfreies `test.echo`-Tool für Integrationstests ergänzt
+- Runtime mit leerer, standardmäßig blockierender Registry verbunden
+- automatische Toolauswahl durch Sprachmodelle bewusst noch nicht aktiviert
+
+## Python-Strukturbereinigung
+
+- Modulgrenze von strikt weniger als 400 Zeilen automatisiert abgesichert
+- Dateiprüfung und Textsegmentierung aus `memory/library.py` ausgelagert
+- Wissens- und Embedding-Schemata in getrennte Fachmodule verschoben
+- öffentliche Bibliotheks- und Speicher-APIs unverändert beibehalten
+- reservierte Architekturpfade und Sicherheitsgrenzen bewahrt
+
+## Kontrollierte Robot-Aktionen
+
+- `vector/actions.py` mit sechs festen sicheren Aktionsnamen implementiert
+- Kopf- und Liftwerte auf geprüfte feste Positionen begrenzt
+- zwei kurze Animations-Trigger mit deaktivierter Radspur freigegeben
+- Fahrbewegungen vollständig außerhalb der Aktionsschnittstelle gehalten
+- gemeinsame BehaviorControl für Sprache und Aktionen eingeführt
+- normale SDK-Priorität unter Beibehaltung physischer Schutzreaktionen verwendet
+- SDK-Aktionen durch konfigurierbare Timeouts und Future-Abbruch abgesichert
+- verriegelten Notfallstopp mit `stop_all_motors` ergänzt
+- Aktion und Notfallstopp als explizit mutierende Registry-Tools registriert
+- alle sechs Aktionen und den Leerlauf-Notfallstopp physisch erfolgreich geprüft
+
+## Emotionen und philosophische Reflexion
+
+- vier transparente simulierte Gesprächshaltungen festgelegt
+- Intensität, Übergangshistorie und Gründe deterministisch begrenzt
+- Nutzersätze aus Zustandsmetadaten ausgeschlossen
+- optionale Reflexion für klar philosophische Themen implementiert
+- Fakt, Interpretation, Perspektive und Unsicherheit im Prompt getrennt
+- deutsche C1-, Kürze- und Anti-Belehrungsregeln zentralisiert
+- Modellantworten vor Speicherung und TTS auf harte Stilregeln geprüft
+- genau einen sicheren Korrekturversuch bei Regelverstößen ergänzt
+- bestätigtes Stilfeedback als eigene Memory-Kategorie eingeführt
+- OpenAI- und Ollama-Nachrichten auf identische Persönlichkeitsregeln getestet
+- nicht ausführbare Ausdruckshinweise für spätere Animationen vorbereitet
+- drei automatisierte und drei reale lokale Beispieldialoge geprüft
+
+## Qualitätsabnahme nach Karten 9 bis 12
+
+- alle produktiven Python-Module erneut gegen die Unter-400-Zeilen-Regel geprüft
+- zentrale Memory-, Tool-, Robot- und Persönlichkeitsmodule als dokumentierte
+  Architekturpfade in der automatischen Qualitätskontrolle verankert
+- reservierte Pfade und öffentliche Schnittstellen unverändert beibehalten
+- vollständige Unit-Test-, Syntax-, Dokumentations- und Git-Prüfung ausgeführt
+- private `.env`- und `data/`-Laufzeitdaten weiterhin aus Git ausgeschlossen

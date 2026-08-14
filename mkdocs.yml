@@ -39,6 +39,9 @@ nav:
   - Codequalität: quality.md
   - Spracheingabe: voice.md
   - Gedächtnis: memory.md
+  - Wartung & Export: maintenance.md
+  - Tools & Berechtigungen: tools-security.md
+  - Kontrollierte Robot-Aktionen: robot-actions.md
   - Lokale Embeddings: embeddings.md
   - Paraphrasen-Test: paraphrase-evaluation.md
   - Physischer Wissenstest: physical-knowledge-test.md
@@ -48,4 +51,5 @@ nav:
       - Application: api/application.md
       - Brain: api/brain.md
       - Memory: api/memory.md
+      - Tools: api/tools.md
       - Vector & Voice: api/vector-voice.md

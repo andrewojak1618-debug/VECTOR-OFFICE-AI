@@ -38,6 +38,31 @@ class SQLiteMemoryStoreTests(unittest.TestCase):
         self.assertEqual(1, len(results))
         self.assertIn("Lieblingsprojekt", results[0].content)
 
+    def test_confirmed_feedback_is_listed_separately(self):
+        self.store.remember("Vector spricht Deutsch.")
+        saved = self.store.remember(
+            "Bitte antworte weniger belehrend.",
+            category="feedback",
+            source="user-confirmed-feedback",
+        )
+
+        feedback = self.store.list_feedback()
+
+        self.assertEqual((saved,), feedback)
+        self.assertEqual("feedback", feedback[0].category)
+        self.assertEqual("user-confirmed-feedback", feedback[0].source)
+
+    def test_style_feedback_is_not_returned_as_factual_memory(self):
+        self.store.remember(
+            "Antworte bei Projektfragen immer sehr kurz.",
+            category="feedback",
+            source="user-confirmed-feedback",
+        )
+
+        results = self.store.search("Wie sollst du bei Projektfragen antworten?")
+
+        self.assertEqual((), results)
+
     def test_forget_deletes_memory(self):
         saved = self.store.remember("Diese Erinnerung wird gelöscht.")
 

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
+from memory.exporting import LocalDataExporter
 from memory.models import MemoryEntry
 
 
@@ -90,14 +91,40 @@ class SQLiteMemoryStore:
             ).fetchall()
         return tuple(self._to_entry(row) for row in rows)
 
+    def list_feedback(self, limit: int = 5) -> tuple[MemoryEntry, ...]:
+        """Return only explicitly confirmed communication feedback."""
+        self._validate_limit(limit)
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM memories
+                WHERE category = 'feedback'
+                ORDER BY id DESC LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return tuple(self._to_entry(row) for row in rows)
+
     def search(self, query: str, limit: int = 5) -> tuple[MemoryEntry, ...]:
         """Return memories ranked by matching significant query terms."""
         self._validate_limit(limit)
         terms = self._search_terms(query)
         if not terms:
             return ()
-        candidates = self.list_memories(limit=SEARCH_CANDIDATE_LIMIT)
+        candidates = self._search_candidates()
         return self._rank(candidates, terms, limit)
+
+    def _search_candidates(self) -> tuple[MemoryEntry, ...]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM memories
+                WHERE category != 'feedback'
+                ORDER BY id DESC LIMIT ?
+                """,
+                (SEARCH_CANDIDATE_LIMIT,),
+            ).fetchall()
+        return tuple(self._to_entry(row) for row in rows)
 
     @staticmethod
     def _search_terms(query: str) -> frozenset[str]:
@@ -125,6 +152,15 @@ class SQLiteMemoryStore:
                 (memory_id,),
             )
         return cursor.rowcount > 0
+
+    def export_confirmed_memories(self, destination: str | Path) -> Path:
+        """Export every confirmed memory to a separate sanitized JSON file."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM memories ORDER BY id"
+            ).fetchall()
+        memories = tuple(self._to_entry(row) for row in rows)
+        return LocalDataExporter().export_memories(destination, memories)
 
     @staticmethod
     def _validate_limit(limit: int) -> None:

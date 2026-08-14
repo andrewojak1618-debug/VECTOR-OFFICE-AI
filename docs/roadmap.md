@@ -26,18 +26,25 @@
 - ✅ vollständigen lokalen Wissenspfad bis zur Vector-Wiedergabe testen
 - ✅ Markdown- und Textdokumente kontrolliert importieren
 - ✅ Quellen und Inhaltsprüfsummen speichern
-- Vertrauensstatus und Versionshistorie erweitern
-- Export und vollständige Löschung anbieten
+- ✅ Versionshistorie, Modell- und Vektorstatus ergänzen
+- ✅ getrennten Metadaten- und Memory-Export anbieten
+- ✅ vollständige Reindexierung und verifizierte Löschung ergänzen
 
 ## Tools und Sicherheit
 
-- Tool Registry implementieren
-- Berechtigungsstufen und Bestätigungen definieren
-- Aktionen nachvollziehbar protokollieren
+- ✅ zentrale Tool Registry und einheitliche Schnittstelle implementieren
+- ✅ Lese-, Änderungs- und Gefahrenstufen mit Bestätigung definieren
+- ✅ sensible Audit-Parameter redigieren und Blockierungen testen
+- ✅ erste produktive Robot-Tools mit expliziter Mutationsfreigabe anbinden
+- ✅ Kopf, Lift, Kurzanimationen und Notfallstopp physisch prüfen
+- automatische Modellauswahl für Robot-Aktionen kontrolliert vorbereiten
+- lokale Audit-Persistenz mit Aufbewahrungsregeln ergänzen
 
 ## Robot Personality
 
-- emotionales Zustandsmodell implementieren
-- philosophische Reflexionsschicht implementieren
-- Deutsch auf C1-Niveau systematisch testen
+- ✅ kontrolliertes emotionales Zustandsmodell implementieren
+- ✅ philosophische Reflexionsschicht implementieren
+- ✅ Deutsch auf C1-Niveau mit Beispieldialogen systematisch prüfen
+- ✅ bestätigtes Stilfeedback providerunabhängig berücksichtigen
+- Ausdruckshinweise kontrolliert auf freigegebene Animationen abbilden
 - Sprache und Vector-Animationen synchronisieren

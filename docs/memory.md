@@ -12,12 +12,15 @@ einen bewussten `/learn`-Befehl hin.
 Nur der Benutzer entscheidet, was dauerhaft gespeichert wird:
 
 - `/remember TEXT` speichert eine bestätigte Erinnerung.
+- `/feedback TEXT` speichert bestätigtes Feedback ausschließlich für Stil und Ton.
 - `/memories` zeigt gespeicherte Einträge und IDs.
 - `/forget ID` löscht einen Eintrag dauerhaft.
 - `/clear` entfernt nur den aktuellen Gesprächskontext.
 
 Jeder Eintrag enthält Inhalt, Kategorie, Herkunft und Zeitstempel. Doppelte
-Inhalte werden nicht mehrfach angelegt.
+Inhalte werden nicht mehrfach angelegt. Feedback erhält die eigene Kategorie
+`feedback`, wird von der Faktensuche ausgeschlossen und kann weiterhin über
+`/memories` eingesehen sowie über `/forget ID` gelöscht werden.
 
 ## Abruf
 
@@ -60,6 +63,11 @@ reduziert.
   `.txt`-Datei lokal.
 - `/documents` zeigt alle importierten Dokumente mit Quelle und ID.
 - `/reindex ID` erzeugt den lokalen semantischen Index vollständig neu.
+- `/reindex-all` baut alle lokalen Dokumentvektoren vollständig neu auf.
+- `/versions ID` zeigt die zeitlich geordnete Prüfsummen-Historie.
+- `/stale-vectors` zeigt veraltete Vektormetadaten ohne Vektorwerte.
+- `/export-library PFAD.json` exportiert nur sichere Bibliotheksmetadaten.
+- `/export-memories PFAD.json` exportiert bestätigte Erinnerungen getrennt.
 - `/forget-document ID` entfernt ein Dokument und sämtliche Abschnitte.
 - Dateien sind auf 2 MiB begrenzt und werden in Abschnitte zerlegt.
 - Eine SHA-256-Prüfsumme verhindert unveränderte Doppelimporte.
@@ -70,6 +78,11 @@ reduziert.
 
 Quellpfad, Titel, Prüfsumme und Importzeit bleiben nachvollziehbar. Auch hybride
 Treffer behalten Quelle und Abschnittsnummer.
+
+Geänderte Dokumente erhalten zusätzlich eine fortlaufende Metadatenversion mit
+Prüfsumme, Importzeit und Abschnittsanzahl. Dokumentinhalte werden dafür nicht
+dupliziert. Details zu Export, Löschverifikation und Wiederherstellung stehen
+unter [Export, Versionen und Wiederherstellung](maintenance.md).
 
 ## Datenschutzgrenze
 
@@ -116,6 +129,7 @@ temporäres Wissen bis zur deutschen Sprachausgabe auf Vector getestet werden:
 - ✅ Duplikate, Aktualität und Cascade-Löschung absichern
 - ✅ automatische differentielle Indexierung und manuelle Reindexierung
 - ✅ hybride semantische und lexikalische Suche integrieren
-- Vertrauensstatus und erweiterte Versionshistorie
-- Export- und vollständige Löschfunktionen
-- bestätigtes Feedback für beide Provider
+- ✅ Metadaten-Versionierung und Modellstatus
+- ✅ getrennte, Secret-bereinigte JSON-Exporte
+- ✅ vollständige Reindexierung und verifizierte Löschung
+- ✅ bestätigtes, getrennt behandeltes Stilfeedback für beide Provider

@@ -12,6 +12,12 @@
     options:
       members: true
 
+## Sichere Exporte
+
+::: memory.exporting
+    options:
+      members: true
+
 ## Embeddings
 
 ::: memory.embeddings
@@ -21,6 +27,24 @@
 ## Embedding-Speicher
 
 ::: memory.embedding_store
+    options:
+      members: true
+
+## Embedding-Schema
+
+::: memory.embedding_schema
+    options:
+      members: true
+
+## Dokumentverarbeitung
+
+::: memory.document_text
+    options:
+      members: true
+
+## Wissensschema
+
+::: memory.knowledge_schema
     options:
       members: true
 
