@@ -1,6 +1,7 @@
 from config.settings import settings
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
+from vector.speech import VectorSpeech
 
 
 def main():
@@ -17,10 +18,10 @@ def main():
     wirepod = VectorClient(settings.WIREPOD_HOST)
 
     if not wirepod.check_wirepod():
-        print("WirePod is not reachable. ❌")
+        print("WirePod is not reachable. [ERROR]")
         return
 
-    print("WirePod is online. ✅")
+    print("WirePod is online. [OK]")
 
     print()
     print("Starting Vector SDK test...")
@@ -29,9 +30,14 @@ def main():
 
     if vector.test_connection():
         print()
-        print("Testing direct speech...")
+        print("Testing German speech...")
 
-        vector.say(
+        speech = VectorSpeech(
+            vector,
+            voice=settings.TTS_VOICE,
+            volume=settings.TTS_VOLUME,
+        )
+        speech.say(
             "Hallo. Vector Office AI Core ist jetzt mit mir verbunden."
         )
 

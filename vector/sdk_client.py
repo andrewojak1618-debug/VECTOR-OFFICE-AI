@@ -17,13 +17,13 @@ class VectorSDKClient:
             ) as robot:
                 battery = robot.get_battery_state()
 
-                print("Vector SDK connection established. ✅")
+                print("Vector SDK connection established. [OK]")
                 print(f"Battery voltage: {battery.battery_volts:.2f} V")
 
                 return True
 
         except Exception as exc:
-            print("Vector SDK connection failed. ❌")
+            print("Vector SDK connection failed. [ERROR]")
             print(f"Reason: {exc}")
             return False
 
@@ -68,10 +68,10 @@ class VectorSDKClient:
             ) as robot:
                 robot.behavior.say_text(text)
 
-                print("Speech command completed. ✅")
+                print("Speech command completed. [OK]")
                 return True
 
         except Exception as exc:
-            print("Speech command failed. ❌")
+            print("Speech command failed. [ERROR]")
             print(f"Reason: {exc}")
             return False
