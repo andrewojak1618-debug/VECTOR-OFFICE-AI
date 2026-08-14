@@ -176,8 +176,10 @@ VECTOR OFFICE AI CORE/
 ├── brain/
 │   ├── agent.py
 │   ├── context.py
+│   ├── emotions.py
 │   ├── personality.py
-│   └── providers.py
+│   ├── providers.py
+│   └── reflection.py
 ├── config/
 │   └── settings.py
 ├── data/
@@ -451,6 +453,10 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 
 ### Version 0.6 – Robot Personality
 
+- `brain/emotions.py` als kontrolliertes emotionales Zustandsmodell ausarbeiten
+- `brain/reflection.py` für philosophische, differenzierte Antworten ausarbeiten
+- natürliches Deutsch auf C1-Niveau mit kompakter Sprachausgabe verbinden
+- bestätigtes Feedback für beide Provider gemeinsam nutzbar machen
 - Bewegungen und Animationen passend zu Antworten auswählen
 - Blickrichtung, Kopf, Lift und Fahrverhalten koordinieren
 - Sprach- und Aktionsausgabe synchronisieren
