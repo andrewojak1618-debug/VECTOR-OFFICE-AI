@@ -1,11 +1,13 @@
 import json
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import httpx
 
 from memory.embeddings import (
     EmbeddingError,
+    EmbeddingModelUnavailableError,
     EmbeddingProvider,
     EmbeddingText,
     EmbeddingVector,
@@ -56,6 +58,67 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
         self.assertEqual(3, result.dimension)
         self.assertEqual((0.1, 0.2, 0.3), result.vector.values)
 
+    def test_model_availability_reads_native_dimension(self):
+        def handle_request(request):
+            self.assertEqual("/api/show", request.url.path)
+            payload = json.loads(request.content)
+            self.assertEqual("embeddinggemma", payload["model"])
+            self.assertNotIn("input", payload)
+            return httpx.Response(
+                200,
+                json={"model_info": {"gemma3.embedding_length": 768}},
+            )
+
+        provider = self._provider(handle_request)
+        info = provider.ensure_model_available()
+
+        self.assertEqual("embeddinggemma", info.model_name)
+        self.assertEqual(768, info.dimension)
+        self.assertEqual(768, provider.dimension)
+
+    def test_missing_model_is_reported_with_install_command(self):
+        provider = self._provider(
+            lambda request: httpx.Response(404, json={"error": "not found"})
+        )
+
+        with self.assertRaisesRegex(
+            EmbeddingModelUnavailableError,
+            "ollama pull embeddinggemma",
+        ):
+            provider.ensure_model_available()
+
+    def test_batch_embeds_multiple_sections_in_one_request(self):
+        request_count = 0
+
+        def handle_request(request):
+            nonlocal request_count
+            request_count += 1
+            payload = json.loads(request.content)
+            self.assertEqual(["Abschnitt A", "Abschnitt B"], payload["input"])
+            return httpx.Response(
+                200,
+                json={
+                    "model": "embeddinggemma:latest",
+                    "embeddings": [[0.1, 0.2], [0.3, 0.4]],
+                },
+            )
+
+        provider = self._provider(handle_request)
+        results = provider.embed_many(
+            (EmbeddingText("Abschnitt A"), EmbeddingText("Abschnitt B"))
+        )
+
+        self.assertEqual(1, request_count)
+        self.assertEqual(2, len(results))
+        self.assertEqual("Abschnitt B", results[1].text.value)
+        self.assertEqual(2, provider.dimension)
+
+    def test_empty_batch_is_rejected_before_request(self):
+        provider = self._provider(lambda request: self._response(request))
+
+        with self.assertRaisesRegex(ValueError, "At least one"):
+            provider.embed_many(())
+
     def test_dimension_is_inferred_when_not_configured(self):
         def handle_request(request):
             payload = json.loads(request.content)
@@ -82,6 +145,33 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
 
         with self.assertRaisesRegex(EmbeddingError, "invalid embedding response"):
             provider.embed(EmbeddingText("Test"))
+
+    def test_inconsistent_batch_dimensions_are_rejected(self):
+        provider = self._provider(
+            lambda request: httpx.Response(
+                200,
+                json={
+                    "model": "embeddinggemma",
+                    "embeddings": [[0.1, 0.2], [0.3]],
+                },
+            )
+        )
+
+        with self.assertRaisesRegex(EmbeddingError, "inconsistent"):
+            provider.embed_many((EmbeddingText("A"), EmbeddingText("B")))
+
+    def test_sensitive_text_is_never_printed_on_failure(self):
+        sensitive_text = "Vertrauliches Dokumentgeheimnis 4711"
+        provider = self._provider(
+            lambda request: httpx.Response(200, json={"embeddings": []})
+        )
+
+        with patch("builtins.print") as print_mock:
+            with self.assertRaises(EmbeddingError) as raised:
+                provider.embed(EmbeddingText(sensitive_text))
+
+        print_mock.assert_not_called()
+        self.assertNotIn(sensitive_text, str(raised.exception))
 
     def test_unexpected_dimension_is_rejected(self):
         provider = self._provider(

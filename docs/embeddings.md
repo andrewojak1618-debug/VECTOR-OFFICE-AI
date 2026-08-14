@@ -1,9 +1,19 @@
 # Lokale Embedding-Architektur
 
-Die erste semantische Grundlage ist providerunabhängig aufgebaut und verwendet
-aktuell ausschließlich einen lokalen Ollama-Adapter. Erinnerungen und
-Dokumentabschnitte werden in dieser Phase noch nicht automatisch vektorisiert;
-die bestehende lexikalische Suche bleibt deshalb unverändert aktiv.
+Die semantische Grundlage ist providerunabhängig aufgebaut und verwendet
+aktuell ausschließlich einen lokalen Ollama-Adapter. Einzeltexte und mehrere
+Dokumentabschnitte können bereits real vektorisiert werden. Die Vektoren werden
+noch nicht in SQLite gespeichert; die produktive Suche bleibt daher zunächst
+lexikalisch.
+
+## Modellauswahl
+
+`embeddinggemma` wurde als lokales Standardmodell ausgewählt. Es ist ein
+mehrsprachiges On-Device-Modell mit 300 Millionen Parametern, ungefähr 622 MB,
+einem Kontextfenster von 2K und einer nativen Dimension von 768. Die
+[Ollama-Modellseite](https://ollama.com/library/embeddinggemma) nennt es zusammen
+mit der [Embedding-Dokumentation](https://docs.ollama.com/capabilities/embeddings)
+als empfohlenes Modell für semantische Suche und Retrieval.
 
 ## Bausteine
 
@@ -12,13 +22,14 @@ die bestehende lexikalische Suche bleibt deshalb unverändert aktiv.
 | `EmbeddingText` | normalisierte, nicht leere Texteingabe |
 | `EmbeddingVector` | unveränderlicher, endlicher Zahlenvektor |
 | `EmbeddingResult` | Text, Vektor, tatsächliches Modell und Dimension |
-| `EmbeddingProvider` | providerunabhängiger Vertrag für eine Vektorerzeugung |
+| `EmbeddingProvider` | Vertrag für Verfügbarkeit, Einzel- und Batch-Erzeugung |
 | `OllamaEmbeddingProvider` | lokaler Adapter für `POST /api/embed` |
 
-Ollama erhält genau einen Text pro Aufruf. `truncate=false` verhindert eine
-unbemerkte Kürzung langer Inhalte. Modellname und tatsächliche Vektordimension
-werden aus der Antwort übernommen. Eine konfigurierte Dimension wird zusätzlich
-gegen das Ergebnis geprüft.
+Ollama erhält einen Text oder eine Liste von Abschnitten pro Aufruf.
+`truncate=false` verhindert eine unbemerkte Kürzung langer Inhalte. Modellname
+und tatsächliche Vektordimension werden aus der Antwort übernommen. Alle
+Batch-Vektoren müssen dieselbe Dimension besitzen. Spätere Aufrufe werden gegen
+die zuerst beobachtete Dimension geprüft.
 
 Die Implementierung folgt dem aktuellen offiziellen Ollama-Endpunkt:
 [Generate embeddings](https://docs.ollama.com/api/embed).
@@ -40,11 +51,37 @@ eines möglicherweise notwendigen Modellstarts.
 Der Factory-Pfad akzeptiert bewusst nur `ollama`. Ein Cloud-Embedding-Anbieter
 ist weder implementiert noch als Fallback vorgesehen.
 
+## Modellverfügbarkeit
+
+Vor einer Verarbeitung kann `ensure_model_available()` das Modell über
+`POST /api/show` prüfen, ohne Dokumenttext zu übertragen. Ein fehlendes Modell
+führt zu einem konkreten Hinweis:
+
+```powershell
+ollama pull embeddinggemma
+```
+
+Ein nicht erreichbarer Ollama-Dienst und ein nicht installiertes Modell bleiben
+getrennte, verständliche Fehlerfälle.
+
 ## Fehlergrenzen
 
 Transport- und HTTP-Fehler werden als verständlicher `EmbeddingError`
 weitergegeben, ohne interne Verbindungsdetails offenzulegen. Ungültige,
 mehrdeutige oder dimensionsfalsche Antworten werden abgelehnt.
+
+Der produktive Code enthält keine Text- oder Vektorprotokollierung. Auch der
+Diagnosepfad gibt nur Modellname, Dimension und Anzahl erzeugter Vektoren aus.
+
+## Reale lokale Diagnose
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.embeddings_ollama
+```
+
+Der geprüfte Lauf mit Ollama `0.32.11` und `embeddinggemma` erzeugte drei
+Vektoren in einem Batch. Modellmetadaten und Ergebnis bestätigten konsistent die
+Dimension 768.
 
 ## Nächster Integrationsschritt
 

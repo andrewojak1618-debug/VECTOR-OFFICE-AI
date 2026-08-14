@@ -16,6 +16,7 @@
 ## Memory und Bibliothek
 
 - ✅ lokale providerunabhängige Embedding-Grundlage ergänzen
+- ✅ `embeddinggemma` lokal prüfen und Batch-Embeddings integrieren
 - Embedding-Vektoren für Erinnerungen und Dokumentabschnitte speichern
 - hybride semantische und lexikalische Suche ergänzen
 - ✅ Markdown- und Textdokumente kontrolliert importieren

@@ -70,3 +70,14 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Timeout, Antwortvalidierung und sichere Fehlergrenze ergänzt
 - Cloud-Embedding im Factory-Pfad ausdrücklich ausgeschlossen
 - produktive Suche bewusst noch nicht verändert
+
+## Lokales Embedding-Modell
+
+- `embeddinggemma` als kleines, mehrsprachiges On-Device-Modell ausgewählt
+- Modellverfügbarkeit über Ollamas `/api/show` geprüft
+- fehlendes Modell mit konkretem `ollama pull`-Hinweis behandelt
+- Einzeltexte und mehrere Abschnitte über `/api/embed` verarbeitet
+- Batch-Antworten auf Anzahl, Zahlenwerte und konsistente Dimension geprüft
+- native Dimension 768 automatisch aus Metadaten und Ergebnis validiert
+- realen lokalen Batch-Aufruf mit drei Vektoren erfolgreich ausgeführt
+- keine Texte oder Vektorwerte im Diagnosepfad protokolliert

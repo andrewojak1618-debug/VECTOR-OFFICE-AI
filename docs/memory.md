@@ -26,8 +26,9 @@ passende Einträge werden als lokale Wissensbasis in den Systemkontext der
 aktuellen Anfrage aufgenommen.
 
 Eine providerunabhängige Embedding-Schnittstelle und ein lokaler Ollama-Adapter
-sind bereits in `memory/embeddings.py` vorbereitet. Sie sind noch nicht mit der
-produktiven Suche oder der SQLite-Datenbank verbunden.
+sind in `memory/embeddings.py` umgesetzt. Einzeltexte und mehrere Abschnitte
+können real mit `embeddinggemma` vektorisiert werden. Die Integration ist noch
+nicht mit der produktiven Suche oder der SQLite-Datenbank verbunden.
 
 Erinnerungen gelten für das Modell ausdrücklich als Daten, niemals als
 Anweisungen. Dadurch wird das Risiko gespeicherter Prompt-Manipulationen
@@ -78,6 +79,8 @@ temporäres Wissen bis zur deutschen Sprachausgabe auf Vector getestet werden:
 ## Geplante Erweiterung
 
 - ✅ providerunabhängige Typen und lokale Ollama-Embeddings
+- ✅ Modellverfügbarkeit, Batch-Verarbeitung und Dimension validieren
+- ✅ realen lokalen Aufruf mit `embeddinggemma` ausführen
 - Embedding-Vektoren versioniert in SQLite speichern
 - hybride semantische und lexikalische Suche integrieren
 - Vertrauensstatus und erweiterte Versionshistorie

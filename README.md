@@ -190,6 +190,7 @@ VECTOR OFFICE AI CORE/
 │   └── settings.py
 ├── data/
 ├── diagnostics/
+│   ├── embeddings_ollama.py
 │   ├── library_ollama.py
 │   └── library_vector.py
 ├── docs/
@@ -309,10 +310,12 @@ Datei wird über den `PATH` und die üblichen Windows-Installationsordner gesuch
 Nur bei einer abweichenden Installation muss `OLLAMA_EXECUTABLE` als absoluter
 Pfad gesetzt werden.
 
-Die Embedding-Grundlage verwendet ausschließlich den lokalen Ollama-Endpunkt
-`/api/embed`. `OLLAMA_EMBEDDING_DIMENSION=0` übernimmt die native Dimension des
-Modells; ein positiver Wert aktiviert eine strikte Prüfung. Die Vektoren werden
-in dieser Phase noch nicht produktiv gespeichert oder für die Suche verwendet.
+Die Embedding-Integration verwendet ausschließlich den lokalen Ollama-Endpunkt
+`/api/embed`. `embeddinggemma` verarbeitet einzelne Texte und mehrere Abschnitte
+in einem Batch. `OLLAMA_EMBEDDING_DIMENSION=0` übernimmt und validiert die native
+Dimension von 768; ein positiver Wert aktiviert eine zusätzliche Vorgabe. Die
+Vektoren werden noch nicht produktiv in SQLite gespeichert oder für die Suche
+verwendet.
 
 ### Programm starten
 
@@ -356,6 +359,13 @@ Ollama, eine temporäre Datenbank und ein temporäres Testdokument:
 
 ```powershell
 .venv\Scripts\python.exe -m diagnostics.library_ollama
+```
+
+Der lokale Embedding-Test prüft Modellverfügbarkeit und einen echten
+Batch-Aufruf. Er zeigt ausschließlich Modellname, Dimension und Vektoranzahl:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.embeddings_ollama
 ```
 
 Der physische Diagnosepfad importiert die öffentliche Projekt-README in eine
@@ -458,7 +468,7 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 - vollständigen Ablauf bis zum physischen Vector bestätigt
 - mehrturnige Gesprächsschleife mit erhaltenem Kontext ergänzt
 - `/clear` und `/exit` implementiert
-- neunundsechzig automatisierte Funktions- und Qualitätstests erfolgreich ausgeführt
+- fünfundsiebzig automatisierte Funktions- und Qualitätstests erfolgreich ausgeführt
 
 ## 🏷️ Versions- und Commit-Historie
 
@@ -497,6 +507,8 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ kontrollierter Import und Abruf lokaler Markdown-/Textdokumente
 - ✅ Cloud-Sperre für Dokumentwissen als sichere Voreinstellung
 - ✅ providerunabhängige lokale Embedding-Grundlage mit Ollama
+- ✅ `embeddinggemma` lokal installiert und mit 768 Dimensionen getestet
+- ✅ effiziente Batch-Embeddings ohne Protokollierung sensibler Inhalte
 - ✅ automatisierte Tests
 - ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
 - 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
@@ -529,6 +541,8 @@ bewusst über kleine, überprüfbare Meilensteine aufgebaut.
 - ✅ Erinnerungen können angezeigt und einzeln gelöscht werden
 - ✅ kontrollierten Dokumentimport mit Quellen und Prüfsummen ergänzen
 - ✅ lokale providerunabhängige Embedding-Schnittstelle ergänzen
+- ✅ lokales Embedding-Modell prüfen und real über Ollama testen
+- ✅ mehrere Dokumentabschnitte in einem Batch vektorisieren
 - Embedding-Vektoren in SQLite speichern
 - hybride semantische und lexikalische Suche ergänzen
 

@@ -18,7 +18,7 @@ fest.
 - Ollama mit `llama3.2:3b` arbeitet als lokaler Provider und Fallback.
 - SQLite speichert ausschließlich ausdrücklich bestätigte Erinnerungen.
 - Spracheingaben bleiben standardmäßig lokal.
-- 69 automatisierte Tests sichern Funktion und Codequalität ab.
+- 75 automatisierte Tests sichern Funktion und Codequalität ab.
 
 ## Schnellstart
 
