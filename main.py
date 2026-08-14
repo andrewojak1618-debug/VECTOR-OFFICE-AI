@@ -6,6 +6,49 @@ from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
 
 
+def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
+    print()
+    print("Conversation started.")
+    print("Commands: /clear resets context, /exit ends the session.")
+
+    while True:
+        print()
+
+        try:
+            user_text = input("Du: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            print("Conversation ended.")
+            return
+
+        if not user_text:
+            continue
+
+        command = user_text.lower()
+
+        if command == "/exit":
+            print("Conversation ended.")
+            return
+
+        if command == "/clear":
+            agent.context.clear()
+            print("Conversation context cleared.")
+            continue
+
+        print("Thinking...")
+
+        try:
+            answer = agent.respond(user_text)
+        except (RuntimeError, ValueError) as exc:
+            print(f"Brain request failed: {exc}")
+            continue
+
+        print(f"Vector: {answer}")
+
+        if not speech.say(answer):
+            print("Vector could not play the response.")
+
+
 def main():
     print("=" * 50)
     print(f"{settings.APP_NAME} v{settings.VERSION}")
@@ -40,24 +83,7 @@ def main():
             volume=settings.TTS_VOLUME,
         )
         agent = Agent(create_language_model(settings))
-
-        print()
-        user_text = input("Du: ").strip()
-
-        if not user_text:
-            print("No question entered.")
-            return
-
-        print("Thinking...")
-
-        try:
-            answer = agent.respond(user_text)
-        except (RuntimeError, ValueError) as exc:
-            print(f"Brain request failed: {exc}")
-            return
-
-        print(f"Vector: {answer}")
-        speech.say(answer)
+        run_conversation(agent, speech)
 
 
 if __name__ == "__main__":
