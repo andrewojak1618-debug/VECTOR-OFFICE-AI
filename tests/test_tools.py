@@ -57,6 +57,30 @@ class ToolRegistryTests(unittest.TestCase):
         self.assertEqual(["text", "secret"], [item.name for item in definition.parameters])
         self.assertTrue(definition.parameters[1].sensitive)
 
+    def test_call_inspection_validates_without_execution_or_audit(self):
+        events = []
+        tool = EchoTestTool()
+        registry = ToolRegistry(audit_sink=events.append)
+        registry.register(tool)
+
+        inspection = registry.inspect_call("test.echo", {"text": "Vorschlag"})
+
+        self.assertTrue(inspection.valid)
+        self.assertEqual("Vorschlag", inspection.arguments["text"])
+        self.assertEqual([], events)
+
+    def test_call_inspection_rejects_unknown_and_invalid_calls(self):
+        registry = ToolRegistry()
+        registry.register(EchoTestTool())
+
+        unknown = registry.inspect_call("missing.tool", {})
+        invalid = registry.inspect_call("test.echo", {"text": 12})
+
+        self.assertFalse(unknown.valid)
+        self.assertEqual("tool_not_registered", unknown.error_code)
+        self.assertFalse(invalid.valid)
+        self.assertEqual("invalid_parameter_type", invalid.error_code)
+
     def test_sensitive_parameters_are_redacted_from_audit_events(self):
         events = []
         registry = ToolRegistry(audit_sink=events.append)

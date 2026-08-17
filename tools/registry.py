@@ -8,6 +8,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Protocol, TypeAlias
 
+from tools.inspection import ToolCallInspection
 from tools.permissions import (
     PermissionDecision,
     PermissionLevel,
@@ -158,6 +159,40 @@ class ToolRegistry:
         return tuple(
             self._tools[name].definition
             for name in sorted(self._tools)
+        )
+
+    def inspect_call(
+        self,
+        tool_name: str,
+        arguments: ToolArguments,
+    ) -> ToolCallInspection:
+        """Validate a proposed call without permission checks or execution."""
+        safe_name = _safe_requested_name(tool_name)
+        if safe_name is None:
+            return ToolCallInspection(
+                "invalid-tool-name",
+                error_code="tool_not_registered",
+            )
+        registered = self._tools.get(safe_name)
+        if registered is None:
+            return ToolCallInspection(safe_name, error_code="tool_not_registered")
+        if not isinstance(arguments, Mapping):
+            return ToolCallInspection(
+                safe_name,
+                registered.definition,
+                error_code="invalid_arguments",
+            )
+        validated = self._validate_arguments(registered.definition, arguments)
+        if isinstance(validated, ToolExecutionResult):
+            return ToolCallInspection(
+                safe_name,
+                registered.definition,
+                error_code=validated.error_code,
+            )
+        return ToolCallInspection(
+            safe_name,
+            registered.definition,
+            MappingProxyType(validated),
         )
 
     def execute(

@@ -115,6 +115,33 @@ erfolgte erst nach Ende der Animation.
 | Animation | „Begrüße mich“, „Zeige deine Augen“ | Bestätigung erforderlich |
 | Sicherheit | „Notfallstopp“, „Stopp sofort“ | sofortiger Notfallstopp |
 
+## Strukturierte Modellvorschläge
+
+`tools/proposals.py` bildet eine bewusst inaktive Prüfgrenze für spätere
+kontextabhängige Vorschläge. OpenAI oder Ollama dürfen dort ausschließlich ein
+kleines JSON-Objekt mit `schema_version` und einer abstrakten `proposal_id`
+zurückgeben. Sie erhalten keine Toolnamen, Parameterwerte oder
+`ToolAuthorization`-Objekte zur freien Erzeugung.
+
+`application/model_tool_proposals.py` erstellt für beide Provider denselben
+isolierten Klassifikationsprompt. Die Nutzeranfrage wird als unvertrauenswürdige
+JSON-Dateneingabe übertragen. Der Modelltext wird anschließend lokal streng
+geprüft:
+
+- exakt ein JSON-Objekt, kein Markdown und kein Begleittext,
+- keine doppelten oder zusätzlichen Felder,
+- nur lokale IDs aus `SAFE_VECTOR_PROPOSAL_OPTIONS`,
+- feste lokale Abbildung von ID auf Toolname und Parameter,
+- erneute Prüfung gegen die tatsächlich registrierte Tooldefinition,
+- vollständiger Ausschluss gefährlicher und sensibler Tooldefinitionen,
+- keine Registry-Ausführung, kein Audit-Ereignis und keine Berechtigung.
+
+`tools/inspection.py` enthält dafür nur den unveränderlichen Prüfbefund. Die
+eigentliche Namens- und Parameterprüfung bleibt in `tools/registry.py`. Der
+Notfallstopp gehört ausdrücklich nicht zum Modellkatalog. Ein Ergebnis ist nur
+ein `ToolProposal`-Datenobjekt; selbst ein gültiger Vorschlag bewirkt keine
+Bewegung und wird derzeit nicht in der produktiven Gesprächsschleife abgefragt.
+
 ## Robot-Aktionen
 
 `tools/vector_actions.py` stellt `vector.list_actions`,
@@ -128,10 +155,10 @@ Allowlist, Timeouts und Hardwaretests sind unter
 
 Folgende Funktionen sind bewusst nicht Teil dieser Karte:
 
-- freie oder probabilistische Toolauswahl durch OpenAI oder Ollama,
+- produktive oder automatische Aktivierung von Modellvorschlägen,
 - dauerhafte Berechtigungsfreigaben,
 - Dateiänderungen, Shell-Kommandos oder Internetzugriffe,
-- Auswahl oder Autorisierung von Robot-Aktionen durch ein Modell,
+- Auswahl von Toolnamen, Parametern oder Autorisierungen durch ein Modell,
 - Ausführung von Toolanweisungen aus importierten Dokumenten.
 
 Jedes zukünftige produktive Tool benötigt eigene Parameter-, Berechtigungs-,

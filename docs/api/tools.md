@@ -12,6 +12,10 @@
     options:
       members: true
 
+::: tools.inspection
+    options:
+      members: true
+
 ## Kontrollierte Auswahl
 
 ::: tools.selection
@@ -21,6 +25,16 @@
 ## Bestätigung im Gespräch
 
 ::: application.tool_conversation
+    options:
+      members: true
+
+## Inaktive Modellvorschläge
+
+::: tools.proposals
+    options:
+      members: true
+
+::: application.model_tool_proposals
     options:
       members: true
 

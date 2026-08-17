@@ -259,6 +259,9 @@ Natürliche Tool-Absichten werden ausschließlich über feste Formulierungen in
 `tools/selection.py` erkannt. Lesende Abfragen dürfen automatisch laufen;
 Bewegungen benötigen ein separates „Ja“. OpenAI und Ollama erhalten weder freie
 Toolausführung noch die Möglichkeit, Berechtigungen selbst zu erzeugen.
+Ein vorbereiteter, noch inaktiver Vorschlagspfad akzeptiert von beiden Modellen
+nur feste JSON-IDs. Toolname und Parameter werden ausschließlich lokal ergänzt;
+ein akzeptierter Vorschlag führt niemals selbst eine Aktion aus.
 
 ## ⚙️ Installation
 
@@ -610,7 +613,8 @@ geprüften Commit gesetzt.
 - ✅ optionale philosophische Reflexion und verbindliche Antwortprüfung
 - ✅ bestätigtes Stilfeedback für OpenAI und Ollama
 - ✅ lokale Ollama-Beispieldialoge für Empathie, Reflexion und Unsicherheit
-- ⏳ kontextabhängige Auswahl freigegebener Robot-Aktionen
+- ✅ strukturierte Modellvorschläge ohne Ausführungs- oder Berechtigungsrecht
+- ⏳ kontrollierte produktive Freigabe kontextabhängiger Vorschläge
 
 ## 🗺️ Roadmap
 

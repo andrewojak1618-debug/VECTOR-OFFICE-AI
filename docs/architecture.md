@@ -99,5 +99,7 @@ und für Animationen immer eine deaktivierte Körper-/Radspur.
 
 `tools/vector_actions.py` registriert Aktion und Notfallstopp als mutierende
 Tools. Freie SDK-Methoden und Fahrbefehle sind nicht erreichbar. Die Runtime
-stellt diese Werkzeuge bereit, erlaubt dem Sprachmodell aber noch keine
-automatische Auswahl oder Autorisierung.
+stellt diese Werkzeuge bereit. `tools/proposals.py` kann eine abstrakte
+Modellvorschlags-ID lokal auf einen festen Registry-Aufruf abbilden, führt ihn
+aber nicht aus und erzeugt keine Autorisierung. Dieser beratende Pfad ist noch
+nicht in der produktiven Gesprächsschleife aktiviert.

@@ -8,6 +8,7 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 - feste, registrygebundene Tool-Auswahl im Gespräch ergänzt
 - Ja/Nein-Bestätigung für Bewegungen und sofortigen Notfallstopp ergänzt
+- inaktive strukturierte Modellvorschläge mit lokaler Registry-Prüfung ergänzt
 - Persönlichkeit mit freigegebenen Robot-Aktionen verbinden
 - Bedienung und Systemdiagnose weiter vereinfachen
 

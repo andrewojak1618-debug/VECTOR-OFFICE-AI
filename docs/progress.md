@@ -264,3 +264,16 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Modellaufrufe für ausgewählte, bestätigte und abgebrochene Tools ausgeschlossen
 - Leseabfrage, Rückfrage, separates Ja, Animation und Abschluss-TTS produktiv
   mit dem physischen Vector erfolgreich geprüft
+
+## Strukturierte Modellvorschläge ohne Ausführungsrecht
+
+- providerneutralen Klassifikationspfad für OpenAI und Ollama ergänzt
+- Modellausgabe auf ein exaktes JSON-Schema mit abstrakter Vorschlags-ID begrenzt
+- Toolnamen und Parameter ausschließlich aus einer festen lokalen Tabelle ergänzt
+- Notfallstopp, gefährliche Tools und sensible Parameter aus dem Katalog entfernt
+- Vorschläge erneut nebenwirkungsfrei gegen die aktuelle Registry geprüft
+- zusätzliche Felder, Berechtigungen, freie Parameter, Markdown und Text verworfen
+- rohe oder fehlerhafte Modellantworten nicht im Prüfergebnis aufbewahrt
+- keinerlei Toolausführung, Audit-Ereignisse oder Autorisierungen erzeugt
+- produktive Gesprächsaktivierung bis zu einer gesonderten Freigabe deaktiviert
+- OpenAI-/Ollama-neutralen Vertrag und Prompt-Injection-Fälle automatisiert geprüft
