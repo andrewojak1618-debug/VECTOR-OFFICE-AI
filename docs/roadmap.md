@@ -8,7 +8,7 @@
 - ✅ eingesetzte Ollama- und OpenAI-Provider live prüfen
 - ✅ physischen Wissens- und Aktionspfad subjektiv bestätigen
 - ✅ Versionsnummer und Changelog für `0.2.0-rc.1` festlegen
-- ersten geprüften Git-Tag setzen
+- ✅ ersten geprüften Git-Tag `v0.2.0-rc.1` historisch setzen
 
 ## Conversation Foundation
 
@@ -57,5 +57,11 @@
 - ✅ philosophische Reflexionsschicht implementieren
 - ✅ Deutsch auf C1-Niveau mit Beispieldialogen systematisch prüfen
 - ✅ bestätigtes Stilfeedback providerunabhängig berücksichtigen
-- Ausdruckshinweise kontrolliert auf freigegebene Animationen abbilden
-- Sprache und Vector-Animationen synchronisieren
+- ✅ Ausdruckshinweise kontrolliert auf freigegebene Animationen abbilden
+- ✅ bestätigte Ausdrucksanimation und Vector-Sprache sequenziell synchronisieren
+- ✅ expliziten Ausdrucksdialog für Konsole und WirePod kontrolliert aktivieren
+- ✅ stärkeres festes Reflexionsprofil für Bewegung und Prosodie implementieren
+- ✅ erstes reflektiertes Bewegungs- und Sprachprofil physisch verbessern und abnehmen
+- ✅ natürliche Satzmelodie und eigenständiger wirkende Reflexion technisch fein abstimmen
+- fein abgestimmte Satzmelodie am physischen Vector subjektiv abnehmen
+- ✅ drei lokale zufällige Reflexionseinleitungen physisch auf Natürlichkeit prüfen

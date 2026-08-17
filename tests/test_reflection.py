@@ -19,6 +19,11 @@ class ReflectionPolicyTests(unittest.TestCase):
         self.assertIn("Tatsachen", plan.guidance)
         self.assertIn("mögliche Sichtweise", plan.guidance)
         self.assertIn("höchstens zwei Sätzen", plan.guidance)
+        self.assertIn("eigenständiges Nachdenken", plan.guidance)
+        self.assertIn("keine abstrakte Aufzählung", plan.guidance)
+        self.assertIn("greifbaren Kerngedanken", plan.guidance)
+        self.assertIn("Lexikondefinition", plan.guidance)
+        self.assertIn("unter 18 Wörtern", plan.guidance)
         self.assertEqual(2, plan.max_sentences)
 
     def test_ordinary_question_keeps_direct_mode(self):

@@ -173,6 +173,29 @@ Notfallstopp gehört ausdrücklich nicht zum Modellkatalog. Ein Ergebnis ist nur
 ein `ToolProposal`-Datenobjekt; selbst ein gültiger Vorschlag bewirkt keine
 Bewegung und wird derzeit nicht in der produktiven Gesprächsschleife abgefragt.
 
+`brain/expression_actions.py` verwendet dieselbe lokale Prüfgrenze für
+simulierte Ausdruckshinweise, jedoch ohne Modellaufruf. Nicht neutrale Cues
+können ausschließlich `vector.eyes_only` oder das feste Profil
+`vector.reflective_expression` vorschlagen. Letzteres besitzt lokal unveränderlich
+die Parameter für 18 Grad Kopfneigung, eine Augenanimation und die Rückkehr auf
+0 Grad. Auch dieser Pfad erzeugt keine Autorisierung, keine Registry-Ausführung
+und kein Audit-Ereignis. Freie Kopfparameter, Begrüßung, Lift, Fahrbewegung und
+Notfallstopp sind von dieser automatischen Zuordnung ausgeschlossen.
+
+`application/expression_delivery.py` darf einen solchen Vorschlag nur mit einem
+separaten `ToolAuthorization` ausführen, dessen Mutationsfreigabe und
+Einzelbestätigung beide gesetzt sind. Die Autorisierung wird nicht gespeichert.
+Nach der synchronen Registry-Rückgabe beginnt TTS; eine parallele Umgehung der
+zentralen `BehaviorControl` findet nicht statt.
+
+`application/expression_conversation.py` aktiviert diesen Pfad nur für die
+deterministisch erkannte Form `Mit Ausdruck ...`. Zuerst wird die Antwort
+vorbereitet, dann eine gesonderte Ja/Nein-Frage gestellt. Nur ein nachfolgendes
+exaktes Ja erzeugt die einmalige Autorisierung. Nein liefert dieselbe Antwort
+ohne Bewegung, behält bei reflektierten Fragen jedoch das begrenzte TTS-Profil;
+Abbruch, Notfallstopp und behandelte Konsolenbefehle verwerfen den offenen
+Ausdrucksvorschlag.
+
 ## Robot-Aktionen
 
 `tools/vector_actions.py` stellt `vector.list_actions`,
@@ -187,6 +210,7 @@ Allowlist, Timeouts und Hardwaretests sind unter
 Folgende Funktionen sind bewusst nicht Teil dieser Karte:
 
 - produktive oder automatische Aktivierung von Modellvorschlägen,
+- automatische Ausführung von Ausdrucksvorschlägen,
 - dauerhafte Berechtigungsfreigaben,
 - Dateiänderungen, Shell-Kommandos oder Internetzugriffe,
 - Auswahl von Toolnamen, Parametern oder Autorisierungen durch ein Modell,

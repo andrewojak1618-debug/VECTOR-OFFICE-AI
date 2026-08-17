@@ -11,7 +11,23 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - inaktive strukturierte Modellvorschläge mit lokaler Registry-Prüfung ergänzt
 - lokale redigierte Tool-Audits mit begrenzter Aufbewahrung ergänzt
 - grenznahe Registry- und Embedding-Module verhaltensneutral aufgeteilt
-- Persönlichkeit mit freigegebenen Robot-Aktionen verbinden
+- Ausdruckshinweise auf eine geprüfte, noch nicht ausführbare Animation abgebildet
+- bestätigte Ausdrucksanimation und TTS sicher nacheinander koordiniert
+- expliziten Zwei-Turn-Ausdrucksdialog für Konsole und WirePod ergänzt
+- verworfene vorbereitete Antworten sicher aus dem Sitzungskontext zurückgerollt
+- festes reflektiertes Kopf-Augen-Profil ohne Räder oder Lift ergänzt
+- zusammengesetztes Profil mit dem bestehenden Timeout pro SDK-Einzelaktion abgesichert
+- reflektiertes OneCore-SSML-Profil mit ruhigerem Tempo und Denkpausen ergänzt
+- Satzmelodie durch weniger Bremsung, kürzere Pausen und native Tonhöhe verfeinert
+- Sprachregeln gegen Manuskriptton, Nominalketten und abstrakte Aufzählungen ergänzt
+- kurze reflektierte Sätze und greifbare Einstiege statt Lexikondefinitionen vorgegeben
+- drei gleichgewichtete lokale Reflexionseinleitungen mit unabhängiger Auswahl ergänzt
+- unnatürlich ausgesprochene Varianten `Hmmm` und `Mmmm` nach Hörprobe entfernt
+- physisch ausgewählten IPA-Summton mit 1,5 Sekunden Denkpause übernommen
+- IPA-Summton nach A/B-Hörprobe um rund eine halbe Sekunde verlängert
+- Pause nach `Lass mich überlegen` auf zwei Sekunden abgestimmt
+- `vektor beenden` und sauberen Abbruch der Voice-Schleife per `Ctrl+C` ergänzt
+- reflektiertes Bewegungs- und Sprachprofil physisch erfolgreich als Verbesserung bewertet
 - Bedienung und Systemdiagnose weiter vereinfachen
 
 ## [0.2.0-rc.1] – 2026-08-17

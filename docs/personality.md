@@ -21,9 +21,51 @@ schrittweise wieder ab. Jeder Verarbeitungsschritt erhält eine Revisionsnummer
 und einen neutralen Grundcode. Nutzersätze werden nicht im Übergangsverlauf
 gespeichert. Der Verlauf ist auf 20 Einträge begrenzt und endet mit der Sitzung.
 
-`ExpressionCue` bereitet eine spätere Zuordnung zu freigegebenen Animationen
-vor. Der Cue ist nur Metadatum: Er führt weder ein Tool noch eine Robot-Aktion
-aus. Die automatische Aktionsauswahl bleibt deaktiviert.
+`ExpressionCue` bleibt ein nicht ausführbares Metadatum. Das lokale Modul
+`brain/expression_actions.py` bildet den Cue kontrolliert auf eine feste
+Vorschlags-ID ab und lässt das Ziel erneut durch `ToolProposalReviewer` gegen
+die aktuelle Registry prüfen.
+
+## Kontrollierte Ausdruckszuordnung
+
+Die Zuordnung verwendet ausschließlich feste, bereits geprüfte Profile:
+
+| Ausdruckshinweis | lokaler Vorschlag | Wirkung |
+|---|---|---|
+| `neutral` oder Intensität 0 | kein Vorschlag | keine Aktion |
+| `attentive` | `vector.eyes_only` | nur geprüfter Vorschlag |
+| `supportive` | `vector.eyes_only` | nur geprüfter Vorschlag |
+| `reflective` | `vector.reflective_expression` | feste Kopf-Augen-Kopf-Sequenz |
+
+Freie Kopfparameter, Begrüßung, Lift und Fahrbewegungen werden nicht aus einer
+simulierten Gesprächshaltung abgeleitet. Das reflektierte Profil darf nur den
+festen 18-Grad-Kopfwinkel, die Augenanimation und die Rückkehr auf 0 Grad
+verwenden. Das Ergebnis enthält weder Nutzersatz noch
+Zustandsgrund, erzeugt keine Berechtigung und ruft kein Tool auf. Fehlt das Ziel
+in der Registry oder erfüllt es die Sicherheitsregeln nicht mehr, wird der
+Vorschlag lokal blockiert. Die produktive Aktivierung, eine separate
+Benutzerbestätigung und die tatsächliche Roboterausführung bleiben getrennt.
+`application/expression_delivery.py` stellt den sicheren sequenziellen Ablauf
+bereit: zuerst die vollständig abgeschlossene feste Ausdruckssequenz, danach
+TTS. Ein reflektierter Cue wählt dabei ein begrenztes SSML-Profil mit nur leicht
+reduziertem Tempo und kurzen Denkpausen. Eine globale Tonhöhenverschiebung wird
+nicht mehr gesetzt, damit die natürliche deutsche Satzmelodie der Stimme
+erhalten bleibt. Normale Antworten bleiben unverändert. Die produktive
+Gesprächsschleife aktiviert den Pfad nur nach `Mit Ausdruck ...` und einer
+separaten Bestätigung der Bewegung.
+
+Vor der reflektierten Antwort wählt die lokale TTS-Schicht unabhängig und mit
+gleicher Chance genau eine feste Gesprächseinleitung: einen synthetischen
+IPA-Summton, `Ich schätze` oder `Lass mich überlegen`. Die Auswahl besitzt
+keinen Sitzungszustand;
+Wiederholungen sind daher möglich. Die Einleitung stammt niemals vom
+Sprachmodell, verändert die gespeicherte Antwort nicht und wird nicht als
+tatsächliches menschliches Empfinden oder Bewusstsein dargestellt.
+Der physisch ausgewählte IPA-Summton wird intern mit minus 32 Prozent Tempo
+erzeugt und dauert lokal gemessen rund 1,54 Sekunden. Anschließend folgen 1.500
+Millisekunden Pause. `Lass mich überlegen` erhält 2.000 Millisekunden und
+`Ich schätze` bleibt bei 320 Millisekunden. Geschriebene Varianten wie `Hmmm`
+oder `Mmmm` wurden entfernt, weil OneCore sie unnatürlich aussprach.
 
 ## Optionale Reflexionsschicht
 
@@ -37,6 +79,10 @@ Eine reflektierte Antwort soll:
 - eine Perspektive als mögliche Sichtweise kennzeichnen,
 - relevante Unsicherheit offen benennen,
 - verständlich und unaufdringlich bleiben,
+- aktive Verben statt abstrakter Aufzählungen und Nominalketten verwenden,
+- wie gesprochene Reflexion und nicht wie ein Manuskript klingen,
+- mit einem greifbaren Kerngedanken statt einer Lexikondefinition beginnen,
+- gesprochene Sätze möglichst unter 18 Wörtern halten,
 - standardmäßig höchstens zwei Sätze enthalten.
 
 Fordert der Benutzer ausdrücklich eine ausführliche oder detaillierte Antwort,

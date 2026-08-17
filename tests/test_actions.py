@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 from vector.actions import (
     DRIVE_ACTIONS_ENABLED,
@@ -26,6 +26,7 @@ class VectorActionsTests(unittest.TestCase):
                 "lift_down",
                 "greeting",
                 "eyes_only",
+                "reflective_expression",
             ),
             SAFE_ACTION_NAMES,
         )
@@ -56,6 +57,28 @@ class VectorActionsTests(unittest.TestCase):
             "ObservingIdleEyesOnly",
             7.0,
         )
+
+    def test_reflective_expression_combines_bounded_head_and_eyes(self):
+        self.assertTrue(self.actions.perform("reflective_expression"))
+
+        expected_timeout = 7.0
+        self.client.assert_has_calls(
+            (
+                call.set_head_angle(18.0, expected_timeout),
+                call.play_animation_trigger(
+                    "ObservingIdleEyesOnly",
+                    expected_timeout,
+                ),
+                call.set_head_angle(0.0, expected_timeout),
+            )
+        )
+
+    def test_reflective_expression_resets_head_after_animation_failure(self):
+        self.client.play_animation_trigger.return_value = False
+
+        self.assertFalse(self.actions.perform("reflective_expression"))
+
+        self.client.set_head_angle.assert_any_call(0.0, 7.0)
 
     def test_unknown_and_drive_actions_are_rejected(self):
         with self.assertRaises(ValueError):

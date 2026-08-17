@@ -32,6 +32,10 @@
 
 ::: brain.emotions
 
+## Kontrollierte Ausdruckszuordnung
+
+::: brain.expression_actions
+
 ## Reflexion und Antwortprüfung
 
 ::: brain.reflection

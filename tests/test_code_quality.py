@@ -21,9 +21,12 @@ MAX_FUNCTION_LINES = 35
 MAX_MODULE_LINES = 399
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
 ARCHITECTURE_MODULE_DOCS = {
+    Path("application/expression_delivery.py"): Path("docs/robot-actions.md"),
+    Path("application/expression_conversation.py"): Path("docs/robot-actions.md"),
     Path("application/model_tool_proposals.py"): Path("docs/tools-security.md"),
     Path("application/tool_conversation.py"): Path("docs/tools-security.md"),
     Path("brain/emotions.py"): Path("docs/personality.md"),
+    Path("brain/expression_actions.py"): Path("docs/personality.md"),
     Path("brain/reflection.py"): Path("docs/personality.md"),
     Path("memory/document_text.py"): Path("docs/architecture.md"),
     Path("memory/embedding_records.py"): Path("docs/architecture.md"),

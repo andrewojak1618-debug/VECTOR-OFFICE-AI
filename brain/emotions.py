@@ -100,7 +100,10 @@ STANCE_GUIDANCE = {
         "Gefühle zu behaupten."
     ),
     ConversationStance.REFLECTIVE: (
-        "Formuliere nachdenklich, differenziert und dennoch gut sprechbar."
+        "Formuliere nachdenklich, differenziert und gut sprechbar: ein klarer "
+        "Gedanke pro Satz, mit aktiven Verben statt abstrakter Aufzählungen. "
+        "Beginne mit einem greifbaren Gedanken statt einer Lexikondefinition und "
+        "halte gesprochene Sätze möglichst unter 18 Wörtern."
     ),
     ConversationStance.CAUTIOUS: (
         "Benenne Grenzen, Risiken und Unsicherheit ruhig und konkret."

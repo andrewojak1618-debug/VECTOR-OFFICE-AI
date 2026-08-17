@@ -7,7 +7,11 @@ from vector.speech import VectorSpeech
 from voice.wirepod_input import WirePodTranscriptListener
 
 from application.commands import CommandResult, ConsoleCommandHandler
+from application.expression_conversation import ControlledExpressionConversation
+from application.expression_delivery import ExpressionResponseCoordinator
 from application.tool_conversation import ControlledToolConversation
+from brain.expression_actions import ExpressionActionMapper
+from tools.proposals import ToolProposalReviewer
 
 
 COMMAND_HELP = (
@@ -18,12 +22,14 @@ COMMAND_HELP = (
 TOOL_HELP = (
     "Controlled tools: 'Welche Aktionen kannst du?', 'Begrüße mich', "
     "'Schau nach oben', 'Lift nach oben', or 'Stopp sofort'. "
-    "Movements require a separate yes."
+    "Movements require a separate yes. Expressive response: "
+    "'Mit Ausdruck was bedeutet Freiheit'."
 )
 VOICE_EXIT_PHRASES = {
     "gespräch beenden",
     "programm beenden",
     "vector beenden",
+    "vektor beenden",
 }
 
 
@@ -57,6 +63,7 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
     print(TOOL_HELP)
     command_handler = ConsoleCommandHandler(agent)
     tool_conversation = _create_tool_conversation(agent)
+    expression_conversation = _create_expression_conversation(agent, speech)
     while True:
         user_text = _read_console_input()
         if user_text is None:
@@ -66,12 +73,16 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
         result = command_handler.handle(user_text)
         if result is CommandResult.EXIT:
             return
-        if result is CommandResult.NOT_HANDLED and not _handle_tool_turn(
-            tool_conversation,
-            speech,
-            user_text,
-        ):
-            respond_and_speak(agent, speech, user_text)
+        if result is CommandResult.NOT_HANDLED:
+            _handle_user_turn(
+                agent,
+                speech,
+                tool_conversation,
+                expression_conversation,
+                user_text,
+            )
+        elif expression_conversation is not None:
+            expression_conversation.cancel_pending()
 
 
 def _read_console_input() -> str | None:
@@ -94,10 +105,14 @@ def run_voice_conversation(
     _print_voice_intro()
     listener.prime()
     tool_conversation = _create_tool_conversation(agent)
+    expression_conversation = _create_expression_conversation(agent, speech)
     completed_turns = 0
     while max_turns is None or completed_turns < max_turns:
         try:
             user_text = _listen_for_user_text(listener, listen_timeout)
+        except KeyboardInterrupt:
+            print("\nConversation ended.")
+            return
         except RuntimeError as exc:
             print(f"Voice input failed: {exc}")
             return
@@ -106,8 +121,13 @@ def run_voice_conversation(
         if user_text.casefold() in VOICE_EXIT_PHRASES:
             print("Conversation ended.")
             return
-        if not _handle_tool_turn(tool_conversation, speech, user_text):
-            respond_and_speak(agent, speech, user_text)
+        _handle_user_turn(
+            agent,
+            speech,
+            tool_conversation,
+            expression_conversation,
+            user_text,
+        )
         completed_turns += 1
 
 
@@ -115,6 +135,7 @@ def _print_voice_intro() -> None:
     print("\nWirePod voice conversation started.")
     print("Say 'Hey Vector' followed by your question.")
     print("Controlled movements require a separate spoken yes.")
+    print("Say 'Mit Ausdruck' for confirmed head and eye expression.")
     print("Say 'Vector beenden' to end the session.")
 
 
@@ -141,6 +162,35 @@ def _create_tool_conversation(
     return ControlledToolConversation(agent, ToolIntentSelector(registry))
 
 
+def _create_expression_conversation(
+    agent: Agent,
+    speech: VectorSpeech,
+) -> ControlledExpressionConversation | None:
+    registry = getattr(agent, "tool_registry", None)
+    if not isinstance(registry, ToolRegistry):
+        return None
+    reviewer = ToolProposalReviewer(registry)
+    mapper = ExpressionActionMapper(reviewer)
+    coordinator = ExpressionResponseCoordinator(registry, speech)
+    return ControlledExpressionConversation(agent, mapper, coordinator)
+
+
+def _handle_user_turn(
+    agent: Agent,
+    speech: VectorSpeech,
+    tool_controller: ControlledToolConversation | None,
+    expression_controller: ControlledExpressionConversation | None,
+    user_text: str,
+) -> None:
+    if _handle_tool_turn(tool_controller, speech, user_text):
+        if expression_controller is not None:
+            expression_controller.cancel_pending()
+        return
+    if _handle_expression_turn(expression_controller, speech, user_text):
+        return
+    respond_and_speak(agent, speech, user_text)
+
+
 def _handle_tool_turn(
     controller: ControlledToolConversation | None,
     speech: VectorSpeech,
@@ -155,4 +205,23 @@ def _handle_tool_turn(
         print(f"Vector: {result.message}")
     if result.speak and result.message:
         _speak_answer(speech, result.message)
+    return True
+
+
+def _handle_expression_turn(
+    controller: ControlledExpressionConversation | None,
+    speech: VectorSpeech,
+    user_text: str,
+) -> bool:
+    if controller is None:
+        return False
+    result = controller.handle(user_text)
+    if not result.handled:
+        return False
+    if result.message:
+        print(f"Vector: {result.message}")
+    if result.speak and result.message:
+        _speak_answer(speech, result.message)
+    if result.delivery is not None and not result.delivery.speech_completed:
+        print("Vector could not play the prepared response.")
     return True

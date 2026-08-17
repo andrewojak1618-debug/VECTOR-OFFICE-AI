@@ -116,6 +116,12 @@ SAFE_VECTOR_PROPOSAL_OPTIONS = (
         "Augenanimation",
         (("action", "eyes_only"),),
     ),
+    ToolProposalOption(
+        "vector.reflective_expression",
+        "vector.perform_action",
+        "reflektierte Kopf- und Augenbewegung",
+        (("action", "reflective_expression"),),
+    ),
 )
 
 
@@ -152,6 +158,10 @@ class ToolProposalReviewer:
         if payload["schema_version"] != PROPOSAL_SCHEMA_VERSION:
             return _rejected("unsupported_proposal_version")
         proposal_id = payload["proposal_id"]
+        return self.resolve(proposal_id)
+
+    def resolve(self, proposal_id: str | None) -> ToolProposalReview:
+        """Resolve one trusted local identifier without executing its tool."""
         if proposal_id is None:
             return ToolProposalReview(ToolProposalStatus.NO_PROPOSAL)
         if not isinstance(proposal_id, str):

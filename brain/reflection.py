@@ -65,7 +65,12 @@ REFLECTION_GUIDANCE = (
     "Die Frage profitiert von kurzer Reflexion. Trenne Tatsachen von Deutung; "
     "kennzeichne eine persönliche Perspektive als mögliche Sichtweise statt "
     "als eigene Erfahrung. Benenne relevante Unsicherheit offen. Bleibe "
-    "verständlich, unaufdringlich und standardmäßig bei höchstens zwei Sätzen."
+    "verständlich, unaufdringlich und standardmäßig bei höchstens zwei Sätzen. "
+    "Formuliere wie ruhiges eigenständiges Nachdenken: ein klarer Gedanke pro "
+    "Satz, aktive Verben und keine abstrakte Aufzählung oder Manuskriptsprache."
+    " Beginne mit einem greifbaren Kerngedanken statt mit einer Lexikondefinition "
+    "oder der allgemeinen Formel, das Thema sei komplex. Halte jeden gesprochenen "
+    "Satz möglichst unter 18 Wörtern und vermeide erklärbuchartige Definitionen."
 )
 
 EMOTION_CLAIMS = re.compile(

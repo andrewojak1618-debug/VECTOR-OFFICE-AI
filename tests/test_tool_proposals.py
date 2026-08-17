@@ -66,6 +66,7 @@ class ToolProposalReviewerTests(unittest.TestCase):
             "lift_down",
             "greeting",
             "eyes_only",
+            "reflective_expression",
         )
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
@@ -83,7 +84,7 @@ class ToolProposalReviewerTests(unittest.TestCase):
     def test_catalog_excludes_emergency_stop(self):
         proposal_ids = {option.proposal_id for option in self.reviewer.catalog()}
 
-        self.assertEqual(7, len(proposal_ids))
+        self.assertEqual(8, len(proposal_ids))
         self.assertNotIn("vector.emergency_stop", proposal_ids)
 
     def test_null_is_an_explicit_no_proposal_result(self):
@@ -91,6 +92,13 @@ class ToolProposalReviewerTests(unittest.TestCase):
 
         self.assertEqual(ToolProposalStatus.NO_PROPOSAL, review.status)
         self.assertIsNone(review.proposal)
+
+    def test_trusted_local_identifier_uses_the_same_safe_resolution(self):
+        review = self.reviewer.resolve("vector.eyes_only")
+
+        self.assertTrue(review.accepted)
+        self.assertEqual("eyes_only", review.proposal.arguments["action"])
+        self.actions.perform.assert_not_called()
 
     def test_unknown_or_unavailable_options_are_rejected(self):
         unknown = self.reviewer.review(_proposal("vector.drive_forward"))

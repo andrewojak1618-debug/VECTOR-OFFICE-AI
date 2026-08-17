@@ -7,6 +7,8 @@ from vector.sdk_client import VectorSDKClient
 
 
 DRIVE_ACTIONS_ENABLED = False
+REFLECTIVE_HEAD_DEGREES = 18.0
+REFLECTIVE_ANIMATION_TRIGGER = "ObservingIdleEyesOnly"
 
 
 class SafeRobotAction(Enum):
@@ -18,6 +20,7 @@ class SafeRobotAction(Enum):
     LIFT_DOWN = "lift_down"
     GREETING = "greeting"
     EYES_ONLY = "eyes_only"
+    REFLECTIVE_EXPRESSION = "reflective_expression"
 
 
 SAFE_ACTION_NAMES = tuple(action.value for action in SafeRobotAction)
@@ -47,6 +50,8 @@ class VectorActions:
     def perform(self, action_name: str) -> bool:
         """Execute one allowlisted action and reject every other name."""
         action = self._parse_action(action_name)
+        if action is SafeRobotAction.REFLECTIVE_EXPRESSION:
+            return self._perform_reflective_expression()
         if action in HEAD_ANGLES:
             return self.client.set_head_angle(HEAD_ANGLES[action], self.timeout)
         if action in LIFT_HEIGHTS:
@@ -55,6 +60,19 @@ class VectorActions:
             ANIMATION_TRIGGERS[action],
             self.timeout,
         )
+
+    def _perform_reflective_expression(self) -> bool:
+        if not self.client.set_head_angle(
+            REFLECTIVE_HEAD_DEGREES,
+            self.timeout,
+        ):
+            return False
+        animated = self.client.play_animation_trigger(
+            REFLECTIVE_ANIMATION_TRIGGER,
+            self.timeout,
+        )
+        reset = self.client.set_head_angle(0.0, self.timeout)
+        return animated and reset
 
     def emergency_stop(self) -> bool:
         """Cancel active behavior, stop all motors, and latch the stop state."""

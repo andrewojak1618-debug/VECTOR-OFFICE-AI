@@ -1,11 +1,16 @@
 """German speech synthesis and Vector audio preparation."""
 
 import base64
+import re
+import secrets
 import shutil
 import subprocess
 import tempfile
 import wave
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from vector.sdk_client import VectorSDKClient
 
@@ -23,6 +28,7 @@ $voiceName = [Text.Encoding]::UTF8.GetString(
 $outputPath = [Text.Encoding]::UTF8.GetString(
     [Convert]::FromBase64String('__OUTPUT__')
 )
+$isSsml = '__IS_SSML__' -eq 'true'
 
 $synth = New-Object Windows.Media.SpeechSynthesis.SpeechSynthesizer
 $voice = [Windows.Media.SpeechSynthesis.SpeechSynthesizer]::AllVoices |
@@ -35,7 +41,11 @@ if ($null -eq $voice) {
 }
 
 $synth.Voice = $voice
-$operation = $synth.SynthesizeTextToStreamAsync($text)
+if ($isSsml) {
+    $operation = $synth.SynthesizeSsmlToStreamAsync($text)
+} else {
+    $operation = $synth.SynthesizeTextToStreamAsync($text)
+}
 $asTask = [System.WindowsRuntimeSystemExtensions].GetMethods() |
     Where-Object {
         $_.Name -eq 'AsTask' -and
@@ -65,6 +75,42 @@ try {
 """
 
 
+class SpeechStyle(Enum):
+    """Select a bounded speech-synthesis profile for one utterance."""
+
+    NEUTRAL = "neutral"
+    REFLECTIVE = "reflective"
+
+
+REFLECTIVE_SENTENCE_BREAK_MS = 190
+REFLECTIVE_LEADING_BREAK_MS = 180
+REFLECTIVE_RATE = "-5%"
+REFLECTIVE_HUM_RATE = "-32%"
+
+
+@dataclass(frozen=True)
+class _ReflectivePrelude:
+    label: str
+    markup: str
+    break_ms: int
+
+
+REFLECTIVE_PRELUDES = (
+    _ReflectivePrelude(
+        "IPA-Summton",
+        f'<prosody rate="{REFLECTIVE_HUM_RATE}">'
+        '<phoneme alphabet="ipa" ph="mː">mmm</phoneme></prosody>',
+        1500,
+    ),
+    _ReflectivePrelude("Ich schätze", "Ich schätze", 320),
+    _ReflectivePrelude(
+        "Lass mich überlegen",
+        "Lass mich überlegen",
+        2000,
+    ),
+)
+
+
 class VectorSpeech:
     """Synthesize German speech and stream validated WAV audio to Vector."""
 
@@ -87,48 +133,83 @@ class VectorSpeech:
         self.voice = voice
         self.volume = volume
 
-    def say(self, text: str) -> bool:
+    def say(
+        self,
+        text: str,
+        style: SpeechStyle = SpeechStyle.NEUTRAL,
+    ) -> bool:
         """Synthesize and play one non-empty German utterance."""
-        if not text.strip():
+        if not isinstance(text, str) or not text.strip():
             print("Speech text must not be empty.")
             return False
+        if not isinstance(style, SpeechStyle):
+            raise TypeError("Speech style must be a SpeechStyle value.")
         try:
-            return self._prepare_and_play(text)
+            return self._prepare_and_play(text, style)
         except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
             print("German speech generation failed.")
             print(f"Reason: {exc}")
             return False
 
-    def _prepare_and_play(self, text: str) -> bool:
+    def _prepare_and_play(self, text: str, style: SpeechStyle) -> bool:
         with tempfile.TemporaryDirectory(prefix="vector-speech-") as temp_dir:
             source_path = Path(temp_dir) / "source.wav"
             vector_path = Path(temp_dir) / "vector.wav"
-            self._synthesize_german_wav(text, source_path)
+            self._synthesize_german_wav(text, source_path, style)
             self._convert_for_vector(source_path, vector_path)
             self._validate_vector_wav(vector_path)
             return self.vector_client.play_wav(vector_path, volume=self.volume)
 
-    def _synthesize_german_wav(self, text: str, output_path: Path) -> None:
+    def _synthesize_german_wav(
+        self,
+        text: str,
+        output_path: Path,
+        style: SpeechStyle = SpeechStyle.NEUTRAL,
+    ) -> None:
         powershell = self._require_executable(
             "powershell",
             "Windows PowerShell is required for German TTS.",
         )
-        script = self._create_tts_script(text, output_path)
+        script = self._create_tts_script(text, output_path, style)
         result = self._run_process(
             [powershell, "-NoProfile", "-NonInteractive", "-Command", script]
         )
         self._require_output(result, output_path, "Windows TTS")
 
-    def _create_tts_script(self, text: str, output_path: Path) -> str:
+    def _create_tts_script(
+        self,
+        text: str,
+        output_path: Path,
+        style: SpeechStyle = SpeechStyle.NEUTRAL,
+    ) -> str:
+        content = self._speech_content(text, style)
         replacements = {
-            "__TEXT__": self._encode(text),
+            "__TEXT__": self._encode(content),
             "__VOICE__": self._encode(self.voice),
             "__OUTPUT__": self._encode(str(output_path)),
+            "__IS_SSML__": str(style is SpeechStyle.REFLECTIVE).lower(),
         }
         script = ONECORE_TTS_SCRIPT
         for marker, value in replacements.items():
             script = script.replace(marker, value)
         return script
+
+    @staticmethod
+    def _speech_content(text: str, style: SpeechStyle) -> str:
+        if style is SpeechStyle.NEUTRAL:
+            return text
+        sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+        pause = f'<break time="{REFLECTIVE_SENTENCE_BREAK_MS}ms"/>'
+        body = pause.join(escape(sentence) for sentence in sentences)
+        prelude = secrets.choice(REFLECTIVE_PRELUDES)
+        return (
+            '<speak version="1.0" '
+            'xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="de-DE">'
+            f'<prosody rate="{REFLECTIVE_RATE}">'
+            f'<break time="{REFLECTIVE_LEADING_BREAK_MS}ms"/>{prelude.markup}'
+            f'<break time="{prelude.break_ms}ms"/>{body}'
+            "</prosody></speak>"
+        )
 
     @staticmethod
     def _encode(value: str) -> str:

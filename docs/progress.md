@@ -253,7 +253,8 @@ Die deutsche TTS wurde schrittweise verbessert:
 - minimale OpenAI-Live-Abnahme mit 5/5 Prüfschritten bestanden
 - physische Vector-Abnahme mit TTS und Begrüßung mit 6/6 bestanden
 - Aussprache, Lautstärke, Wissensantwort und Bewegung subjektiv bestätigt
-- Version `0.2.0-rc.1` und Changelog vorbereitet; Git-Tag noch ausstehend
+- Version `0.2.0-rc.1` und Changelog vorbereitet
+- annotierten Tag `v0.2.0-rc.1` historisch auf den geprüften Release-Commit gesetzt
 
 ## Kontrollierte Tool-Auswahl im Gespräch
 
@@ -294,3 +295,85 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Initialisierungs- und Schreibfehler ohne Einfluss auf die Toolausführung gehalten
 - Anzeige, manuelle Bereinigung und bestätigtes Löschen lokal diagnostizierbar gemacht
 - bestehende Memory-Daten bei Migration und Audit-Löschung unverändert verifiziert
+
+## Kontrollierte Ausdruckszuordnung
+
+- `brain/expression_actions.py` als providerunabhängige Abbildungsschicht ergänzt
+- neutrale Cues und Zustände mit Intensität 0 vollständig aktionslos gehalten
+- attentive und supportive Cues auf die dezente `eyes_only`-Animation begrenzt
+- reflective Cues auf ein festes, registrygeprüftes Ausdrucksprofil begrenzt
+- Begrüßung, Kopf, Lift, Fahrbewegung und Notfallstopp nicht automatisch abgeleitet
+- Vorschlag erneut gegen feste Option, Registry, Berechtigung und Parameter geprüft
+- Nutzersätze und Zustandsgründe aus dem Vorschlagsobjekt ausgeschlossen
+- Toolausführung, Autorisierung und Audit-Ereignis in dieser Schicht verhindert
+- automatische Aktivierung und konkrete Roboterausführung strikt getrennt gehalten
+
+## Sequenzielle Ausdrucks- und Sprachausgabe
+
+- `application/expression_delivery.py` als eigene Orchestrierungsschicht ergänzt
+- ausschließlich cuegebundene feste Ausdrucksprofile in diesem Pfad akzeptiert
+- Mutationsfreigabe und Einzelbestätigung für jeden konkreten Ablauf verlangt
+- bestätigte Animation vollständig vor Beginn der deutschen TTS abgeschlossen
+- parallele Sprache und Robot-Aktion durch synchrone Reihenfolge ausgeschlossen
+- Antwort bei fehlender Bestätigung oder Animationsfehler weiterhin gesprochen
+- fremde, manipulierte oder nicht verfügbare Vorschläge ohne Bewegung verworfen
+- gesprochenen Antworttext aus dem strukturierten Ergebnis ausgeschlossen
+- automatische Aktivierung in der produktiven Gesprächsschleife ausgeschlossen
+
+## Expliziter Ausdrucksdialog
+
+- `application/expression_conversation.py` produktiv in Konsole und WirePod angebunden
+- nur die eindeutige Einleitung `Mit Ausdruck ...` als Ausdruckswunsch akzeptiert
+- Antwort vor der Aktion vorbereitet und höchstens einen Vorschlag offen gehalten
+- Animation erst nach einem separaten exakten Ja einmalig autorisiert
+- Nein als Sprachausgabe ohne Animation und Abbrechen als vollständiges Verwerfen behandelt
+- Notfallstopp und behandelte Konsolenbefehle gegenüber offenen Vorschlägen priorisiert
+- Sitzungskontext bei vollständig verworfenen vorbereiteten Antworten zurückgesetzt
+- normale Gespräche und neutrale Zustände weiterhin ohne Ausdrucksbewegung ausgeliefert
+- OpenAI und Ollama denselben lokalen, providerunabhängigen Kontrollpfad gegeben
+
+## Reflektiertes Bewegungs- und Sprechprofil
+
+- `reflective_expression` als feste 18-Grad-Kopf-, Augen- und Rückkehrsequenz ergänzt
+- Räder und Lift aus diesem Ausdrucksprofil weiterhin vollständig ausgeschlossen
+- reflektierte Antwortausgabe mit begrenztem OneCore-SSML-Profil erweitert
+- Tempo leicht reduziert, Tonlage minimal gesenkt und natürliche Satzpausen ergänzt
+- neutrale TTS-Ausgabe und bestehende Lautheitskompression unverändert gelassen
+- Promptregeln gegen Manuskriptton, Nominalketten und abstrakte Aufzählungen verschärft
+- abgelehnte Bewegung bei ausdrücklichem Reflexionswunsch weiterhin ruhig gesprochen
+- `vektor beenden` als Erkennungsvariante und sauberes `Ctrl+C` ergänzt
+- reale lokale SSML-WAV-Erzeugung sowie automatisierte Sicherheitsabläufe geprüft
+- ersten Hardwarelauf wegen zu kurz aufgeteiltem Animationstimeout sicher gestoppt
+- jeden Sequenzschritt anschließend auf den bestehenden Einzelaktionstimeout korrigiert
+- korrigierte Kopf-Augen-Kopf-Sequenz am physischen Vector vollständig abgeschlossen
+- reflektierte TTS anschließend konfliktfrei und verständlich wiedergegeben
+- Bewegungs- und Sprachwirkung vom Benutzer als besser als die Vorstufe bewertet
+- Profil als verbesserte Zwischenstufe statt als endgültige Ausdrucksqualität eingeordnet
+
+## Natürlichere Satzmelodie
+
+- reflektierte Verlangsamung von neun auf fünf Prozent reduziert
+- globale Absenkung der Tonhöhe entfernt und native Intonation erhalten
+- Anfangspause auf 180 und Satzpause auf 190 Millisekunden verkürzt
+- Lexikon- und Manuskripteinstiege in allen providerneutralen Regeln ausgeschlossen
+- reflektierte Sätze möglichst auf weniger als 18 Wörter ausgerichtet
+- reale lokale SSML-WAV-Erzeugung mit dem neuen Profil erfolgreich geprüft
+- deterministische Ollama-Beispiele mit kürzeren gesprochenen Gedanken bestanden
+- neutrale TTS, Lautheitskompression und Bewegungssicherheit unverändert gelassen
+
+## Variable Reflexionseinleitung
+
+- IPA-Summton, `Ich schätze` und `Lass mich überlegen` als feste Varianten hinterlegt
+- bei jeder reflektierten Ausgabe unabhängig genau eine Variante zufällig gewählt
+- alle drei Varianten gleich wahrscheinlich und direkte Wiederholungen zugelassen
+- Auswahl vollständig aus Modellprompt, Antwortspeicher und Memory herausgehalten
+- neutrale Antworten und Bestätigungsfragen weiterhin ohne Einleitung gesprochen
+- alle aktiven Varianten durch deterministische SSML-Tests einzeln abgedeckt
+- `Hmmm` und `Mmmm` nach unnatürlicher physischer Aussprache wieder entfernt
+- echten gedehnten IPA-Summton als deutlich natürlichere Alternative physisch verglichen
+- IPA-Summton nach Benutzerauswahl mit 1.500 Millisekunden Pause übernommen
+- Summtonvarianten lokal vermessen und direkt am physischen Vector verglichen
+- Summton mit minus 32 Prozent von rund 1,01 auf 1,54 Sekunden verlängert
+- längere Variante nach positiver Hörabnahme produktiv übernommen
+- Pause nach `Lass mich überlegen` nach Nutzerfeedback auf 2.000 Millisekunden gesetzt
+- Pause nach `Ich schätze` unverändert bei 320 Millisekunden gelassen

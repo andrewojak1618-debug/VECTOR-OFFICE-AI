@@ -64,6 +64,9 @@ class EmotionalStateModelTests(unittest.TestCase):
 
         self.assertEqual(ConversationStance.REFLECTIVE, model.state.stance)
         self.assertEqual(ExpressionCue.REFLECTIVE, model.state.expression_cue)
+        self.assertIn("aktiven Verben", model.prompt_guidance())
+        self.assertIn("greifbaren Gedanken", model.prompt_guidance())
+        self.assertIn("unter 18 Wörtern", model.prompt_guidance())
 
     def test_transition_history_is_bounded_and_contains_no_user_text(self):
         model = EmotionalStateModel()

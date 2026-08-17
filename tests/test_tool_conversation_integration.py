@@ -10,6 +10,11 @@ from tools.registry import ToolRegistry
 from tools.vector_actions import register_vector_action_tools
 
 
+EXPRESSIVE_ANSWER = (
+    "Eine mögliche Perspektive ist, Freiheit als verantwortete Wahl zu verstehen."
+)
+
+
 class RejectingLanguageModel:
     def __init__(self):
         self.calls = 0
@@ -19,11 +24,21 @@ class RejectingLanguageModel:
         raise AssertionError("Tool intents must not invoke the language model.")
 
 
+class FixedLanguageModel:
+    def __init__(self, response=EXPRESSIVE_ANSWER):
+        self.response = response
+        self.calls = 0
+
+    def generate(self, _messages):
+        self.calls += 1
+        return self.response
+
+
 class RecordingSpeech:
     def __init__(self):
         self.spoken = []
 
-    def say(self, text):
+    def say(self, text, _style=None):
         self.spoken.append(text)
         return True
 
@@ -55,6 +70,7 @@ class ToolConversationIntegrationTests(unittest.TestCase):
             "lift_down",
             "greeting",
             "eyes_only",
+            "reflective_expression",
         )
         self.actions.perform.return_value = True
         self.actions.emergency_stop.return_value = True
@@ -92,6 +108,60 @@ class ToolConversationIntegrationTests(unittest.TestCase):
         self.actions.perform.assert_called_once_with("head_up")
         self.assertEqual(0, self.model.calls)
         self.assertEqual(2, len(self.speech.spoken))
+
+    def test_console_delivers_confirmed_expression_then_answer(self):
+        model = FixedLanguageModel()
+        agent = Agent(model, tool_registry=self.agent.tool_registry)
+
+        with patch(
+            "builtins.input",
+            side_effect=["mit ausdruck was bedeutet freiheit", "ja", "/exit"],
+        ), patch("sys.stdout", new_callable=io.StringIO):
+            run_conversation(agent, self.speech)
+
+        self.actions.perform.assert_called_once_with("reflective_expression")
+        self.assertEqual(1, model.calls)
+        self.assertEqual(2, len(self.speech.spoken))
+        self.assertIn("Ja oder Nein", self.speech.spoken[0])
+        self.assertEqual(EXPRESSIVE_ANSWER, self.speech.spoken[1])
+
+    def test_voice_decline_delivers_answer_without_animation(self):
+        model = FixedLanguageModel()
+        agent = Agent(model, tool_registry=self.agent.tool_registry)
+        listener = SequenceListener(
+            ("mit ausdruck was bedeutet freiheit", "nein"),
+        )
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                agent,
+                self.speech,
+                listener,
+                listen_timeout=1,
+                max_turns=2,
+            )
+
+        self.actions.perform.assert_not_called()
+        self.assertEqual(1, model.calls)
+        self.assertEqual(EXPRESSIVE_ANSWER, self.speech.spoken[-1])
+
+    def test_emergency_stop_discards_pending_expression(self):
+        model = FixedLanguageModel()
+        agent = Agent(model, tool_registry=self.agent.tool_registry)
+
+        with patch(
+            "builtins.input",
+            side_effect=[
+                "mit ausdruck was bedeutet freiheit",
+                "stopp sofort",
+                "/exit",
+            ],
+        ), patch("sys.stdout", new_callable=io.StringIO):
+            run_conversation(agent, self.speech)
+
+        self.actions.emergency_stop.assert_called_once_with()
+        self.actions.perform.assert_not_called()
+        self.assertNotIn(EXPRESSIVE_ANSWER, self.speech.spoken)
 
 
 if __name__ == "__main__":

@@ -153,6 +153,14 @@ class FailingVoiceListener(FakeVoiceListener):
         raise RuntimeError("endpoint unavailable")
 
 
+class InterruptingVoiceListener(FakeVoiceListener):
+    def __init__(self):
+        super().__init__([])
+
+    def wait_for_transcript(self, timeout):
+        raise KeyboardInterrupt
+
+
 class ConversationLoopTests(unittest.TestCase):
     def test_loop_responds_clears_context_and_exits(self):
         agent = FakeAgent()
@@ -303,6 +311,31 @@ class ConversationLoopTests(unittest.TestCase):
 
         self.assertEqual([], agent.requests)
         self.assertEqual([], speech.spoken)
+
+    def test_voice_loop_accepts_german_spelling_of_vector_exit(self):
+        agent = FakeAgent()
+        speech = FakeSpeech()
+        listener = FakeVoiceListener(["vektor beenden"])
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(agent, speech, listener)
+
+        self.assertEqual([], agent.requests)
+        self.assertEqual([], speech.spoken)
+
+    def test_voice_loop_handles_keyboard_interrupt_without_traceback(self):
+        agent = FakeAgent()
+        speech = FakeSpeech()
+
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            run_voice_conversation(
+                agent,
+                speech,
+                InterruptingVoiceListener(),
+            )
+
+        self.assertIn("Conversation ended", output.getvalue())
+        self.assertEqual([], agent.requests)
 
     def test_voice_loop_stops_after_listener_failure(self):
         agent = FakeAgent()

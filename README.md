@@ -69,6 +69,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - optionale philosophische Reflexion mit Fakten- und Perspektivtrennung
 - gemeinsame C1-Persönlichkeitsregeln für OpenAI und Ollama
 - Antwortprüfung gegen falsche Gewissheit, belehrenden Ton und Überlänge
+- kontrollierte, noch nicht ausführbare Zuordnung von Ausdruckshinweisen
 - kontrollierte lokale Bibliothek für bewusst importierte `.md`- und `.txt`-Dateien
 - Quellen-, Prüfsummen- und Abschnittsverwaltung für importiertes Wissen
 - lokale Dokumentversionen, sichere Exporte und vollständige Reindexierung
@@ -162,6 +163,26 @@ Benutzer: Welche Zahl solltest du dir merken?
 Vector:   27
 ```
 
+Eine einzelne reflektierte Antwort kann kontrolliert mit einer ruhigen Kopf-
+und Augenbewegung sowie einem eigenen Sprechprofil ausgegeben werden. In
+Konsole und WirePod lautet die eindeutige Form:
+
+```text
+Benutzer: Mit Ausdruck was bedeutet Freiheit
+Vector:   Soll ich die Antwort mit einer ruhigen Kopf- und Augenbewegung ausgeben?
+Benutzer: Ja
+Vector:   [Kopf- und Augenbewegung endet]
+          [zufällig: IPA-Summton / Ich schätze / Lass mich überlegen]
+          [reflektierte Antwort wird gesprochen]
+```
+
+`Nein` spricht die vorbereitete Antwort mit dem ruhigeren Sprechprofil, aber
+ohne Bewegung. `Abbrechen` verwirft sie. Ohne die Einleitung `Mit Ausdruck`
+löst eine normale Modellantwort weder das Profil noch eine Bewegung aus.
+Die Einleitungen sind lokal festgelegt und werden pro reflektierter Ausgabe
+unabhängig mit gleicher Chance gewählt; sie gelangen nicht in Modellkontext,
+Memory oder Antwortverlauf.
+
 ## 🛠️ Technik
 
 - **Python 3.12:** zentraler Application Core
@@ -169,7 +190,7 @@ Vector:   27
 - **wirepod-vector-sdk 0.8.1:** direkte Robot-Kommunikation
 - **OpenAI Responses API:** Cloud-basierte KI-Antworten
 - **Ollama API:** vorbereitete lokale LLM-Alternative
-- **Windows OneCore TTS:** natürliche deutsche Spracherzeugung
+- **Windows OneCore TTS/SSML:** deutsche Spracherzeugung mit kontrollierter Prosodie
 - **FFmpeg:** Audioformatierung, Normalisierung und Kompression
 - **httpx:** WirePod- und Ollama-HTTP-Kommunikation
 - **python-dotenv:** lokale Konfiguration und Secret-Verwaltung
@@ -573,8 +594,8 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 
 Die Anwendung befindet sich nach vollständiger Systemabnahme im ersten
 Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
-[`CHANGELOG.md`](CHANGELOG.md) zusammengefasst; der Git-Tag wird erst auf dem
-geprüften Commit gesetzt.
+[`CHANGELOG.md`](CHANGELOG.md) zusammengefasst. Der annotierte Git-Tag
+`v0.2.0-rc.1` verweist historisch auf den geprüften Release-Commit.
 
 ## 🚧 Aktueller Projektstatus
 
@@ -618,6 +639,9 @@ geprüften Commit gesetzt.
 - ✅ bestätigtes Stilfeedback für OpenAI und Ollama
 - ✅ lokale Ollama-Beispieldialoge für Empathie, Reflexion und Unsicherheit
 - ✅ strukturierte Modellvorschläge ohne Ausführungs- oder Berechtigungsrecht
+- ✅ Ausdruckshinweise lokal auf eine geprüfte, nicht ausführbare Animation abgebildet
+- ✅ bestätigte Ausdrucksanimation vor TTS sequenziell und ausfallsicher koordiniert
+- ✅ expliziter Ausdrucksdialog in Konsole und WirePod mit separatem Ja
 - ⏳ kontrollierte produktive Freigabe kontextabhängiger Vorschläge
 
 ## 🗺️ Roadmap
@@ -663,9 +687,10 @@ geprüften Commit gesetzt.
 - ✅ `brain/reflection.py` für philosophische Antworten ausarbeiten
 - ✅ natürliches Deutsch auf C1-Niveau mit kompakter Ausgabe verbinden
 - ✅ bestätigtes Feedback für beide Provider gemeinsam nutzbar machen
-- Bewegungen und Animationen passend zu Antworten auswählen
+- ✅ Ausdruckshinweise auf eine sichere, nicht ausführbare Animation abbilden
+- ✅ bestätigte Ausdrucksanimation und Sprachausgabe sequenziell koordinieren
+- Bewegungen und Animationen produktiv nach separater Bestätigung auswählen
 - Blickrichtung, Kopf, Lift und Fahrverhalten koordinieren
-- Sprach- und Aktionsausgabe synchronisieren
 - emotionale Reaktionen kontrolliert einsetzen
 
 ### Version 1.0 – Personal Office Assistant

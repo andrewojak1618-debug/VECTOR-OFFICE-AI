@@ -4,7 +4,7 @@ import wave
 from pathlib import Path
 from unittest.mock import patch
 
-from vector.speech import VectorSpeech
+from vector.speech import REFLECTIVE_PRELUDES, SpeechStyle, VectorSpeech
 
 
 class FakeVectorClient:
@@ -32,6 +32,7 @@ class VectorSpeechTests(unittest.TestCase):
             self.assertTrue(speech.say("Guten Tag"))
 
         synthesize.assert_called_once()
+        self.assertEqual(SpeechStyle.NEUTRAL, synthesize.call_args.args[2])
         convert.assert_called_once()
         validate.assert_called_once()
         self.assertEqual(90, client.calls[0][1])
@@ -45,6 +46,82 @@ class VectorSpeechTests(unittest.TestCase):
             side_effect=RuntimeError("test failure"),
         ):
             self.assertFalse(speech.say("Guten Tag"))
+
+    def test_reflective_style_builds_bounded_ssml_with_safe_text(self):
+        estimate = REFLECTIVE_PRELUDES[1]
+        with patch("vector.speech.secrets.choice", return_value=estimate):
+            content = VectorSpeech._speech_content(
+                "Freiheit & Verantwortung. Eine mögliche Sichtweise?",
+                SpeechStyle.REFLECTIVE,
+            )
+
+        self.assertIn('<prosody rate="-5%">', content)
+        self.assertNotIn("pitch=", content)
+        self.assertIn('<break time="180ms"/>', content)
+        self.assertIn('Ich schätze<break time="320ms"/>', content)
+        self.assertIn('<break time="190ms"/>', content)
+        self.assertIn("Freiheit &amp; Verantwortung.", content)
+
+    def test_each_reflective_prelude_can_be_selected_independently(self):
+        self.assertEqual(
+            ("IPA-Summton", "Ich schätze", "Lass mich überlegen"),
+            tuple(prelude.label for prelude in REFLECTIVE_PRELUDES),
+        )
+        for prelude in REFLECTIVE_PRELUDES:
+            with self.subTest(prelude=prelude.label), patch(
+                "vector.speech.secrets.choice",
+                return_value=prelude,
+            ) as choose:
+                content = VectorSpeech._speech_content(
+                    "Freiheit braucht Verantwortung.",
+                    SpeechStyle.REFLECTIVE,
+                )
+                self.assertIn(prelude.markup, content)
+                choose.assert_called_once_with(REFLECTIVE_PRELUDES)
+
+    def test_ipa_hum_uses_the_physically_selected_longer_rate(self):
+        hum = REFLECTIVE_PRELUDES[0]
+
+        self.assertIn('<prosody rate="-32%">', hum.markup)
+        self.assertIn('<phoneme alphabet="ipa" ph="mː">', hum.markup)
+        self.assertEqual(1500, hum.break_ms)
+
+    def test_each_prelude_uses_its_configured_pause(self):
+        expected_breaks = {
+            "IPA-Summton": 1500,
+            "Ich schätze": 320,
+            "Lass mich überlegen": 2000,
+        }
+
+        for prelude in REFLECTIVE_PRELUDES:
+            with self.subTest(prelude=prelude.label), patch(
+                "vector.speech.secrets.choice",
+                return_value=prelude,
+            ):
+                content = VectorSpeech._speech_content(
+                    "Eine kurze Antwort.",
+                    SpeechStyle.REFLECTIVE,
+                )
+                self.assertIn(
+                    f'{prelude.markup}<break time="{expected_breaks[prelude.label]}ms"/>',
+                    content,
+                )
+
+    def test_neutral_style_preserves_plain_text(self):
+        text = "Guten Tag & willkommen."
+
+        with patch("vector.speech.secrets.choice") as choose:
+            self.assertEqual(
+                text,
+                VectorSpeech._speech_content(text, SpeechStyle.NEUTRAL),
+            )
+        choose.assert_not_called()
+
+    def test_invalid_speech_style_is_rejected(self):
+        speech = VectorSpeech(FakeVectorClient())
+
+        with self.assertRaises(TypeError):
+            speech.say("Guten Tag", "reflective")
 
     def test_validate_accepts_vector_audio_format(self):
         with tempfile.TemporaryDirectory() as temp_dir:

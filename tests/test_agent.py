@@ -81,6 +81,21 @@ class RecordingKnowledgeLibrary:
 
 
 class AgentTests(unittest.TestCase):
+    def test_context_checkpoint_restores_tentative_messages(self):
+        context = ConversationContext()
+        context.add_user_message("Bestehende Frage")
+        context.add_assistant_message("Bestehende Antwort")
+        checkpoint = context.checkpoint()
+        context.add_user_message("Vorläufige Frage")
+        context.add_assistant_message("Vorläufige Antwort")
+
+        context.restore(checkpoint)
+
+        self.assertEqual(
+            ("Bestehende Frage", "Bestehende Antwort"),
+            tuple(message.content for message in context.history),
+        )
+
     def test_respond_sends_context_and_stores_response(self):
         model = RecordingLanguageModel("Guten Tag!")
         agent = Agent(model)
@@ -105,6 +120,11 @@ class AgentTests(unittest.TestCase):
         self.assertIn("Tatsachen von Deutung", system)
         self.assertIn("niemals, echte Gefühle", system)
         self.assertIn("Das klingt belastend", system)
+        self.assertIn("Manuskriptton", system)
+        self.assertIn("aktive Verben", system)
+        self.assertIn("greifbaren Kerngedanken", system)
+        self.assertIn("Lexikondefinition", system)
+        self.assertIn("unter 18 Wörtern", system)
 
     def test_confirmed_feedback_is_json_data_and_grants_no_authority(self):
         model = RecordingLanguageModel("Ich antworte ruhig und knapp.")

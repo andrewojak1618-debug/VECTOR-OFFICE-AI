@@ -17,6 +17,13 @@ class ChatMessage:
     content: str
 
 
+@dataclass(frozen=True)
+class ConversationCheckpoint:
+    """Capture one restorable in-memory history snapshot."""
+
+    history: tuple[ChatMessage, ...]
+
+
 @dataclass
 class ConversationContext:
     """Store a bounded user/assistant history with one system prompt."""
@@ -51,6 +58,23 @@ class ConversationContext:
             ChatMessage(role="system", content=self.system_prompt),
             *self._history,
         )
+
+    def checkpoint(self) -> ConversationCheckpoint:
+        """Capture the current bounded history for a tentative response."""
+        return ConversationCheckpoint(tuple(self._history))
+
+    def restore(self, checkpoint: ConversationCheckpoint) -> None:
+        """Restore one validated snapshot without changing configuration."""
+        if not isinstance(checkpoint, ConversationCheckpoint):
+            raise TypeError("Context restore requires a checkpoint.")
+        history = checkpoint.history
+        if len(history) > self.max_history_messages:
+            raise ValueError("Checkpoint exceeds the context history limit.")
+        if not all(isinstance(message, ChatMessage) for message in history):
+            raise TypeError("Checkpoint contains an invalid message.")
+        if history and history[0].role == "assistant":
+            raise ValueError("Checkpoint must not start with an assistant message.")
+        self._history = list(history)
 
     def clear(self) -> None:
         """Clear conversational history while preserving configuration."""
