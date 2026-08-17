@@ -7,11 +7,11 @@ from types import MappingProxyType
 
 from tools.permissions import PermissionLevel
 from tools.registry import (
-    TOOL_NAME_PATTERN,
     ToolArguments,
     ToolRegistry,
     ToolValue,
 )
+from tools.tool_values import TOOL_NAME_PATTERN
 
 
 PROPOSAL_SCHEMA_VERSION = 1

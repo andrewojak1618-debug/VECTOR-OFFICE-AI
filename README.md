@@ -73,6 +73,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - Quellen-, Prüfsummen- und Abschnittsverwaltung für importiertes Wissen
 - lokale Dokumentversionen, sichere Exporte und vollständige Reindexierung
 - zentrale Tool Registry mit expliziten Lese-, Änderungs- und Gefahrenrechten
+- lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
 - automatisierte Tests für Agent, Kontext, Provider und Gesprächsschleife
@@ -324,6 +325,9 @@ OLLAMA_EMBEDDING_TIMEOUT=60
 
 MEMORY_DB_PATH=data/vector_memory.db
 MEMORY_CONTEXT_LIMIT=5
+TOOL_AUDIT_ENABLED=true
+TOOL_AUDIT_RETENTION_DAYS=30
+TOOL_AUDIT_MAX_ENTRIES=1000
 KNOWLEDGE_ALLOW_CLOUD=false
 KNOWLEDGE_LEXICAL_WEIGHT=0.45
 KNOWLEDGE_SEMANTIC_WEIGHT=0.55
@@ -651,7 +655,7 @@ geprüften Commit gesetzt.
 - ✅ Tool Registry implementieren
 - ✅ Berechtigungsstufen und Bestätigungen definieren
 - Büro-, Datei-, Recherche- und Entwicklungswerkzeuge anbinden
-- alle Aktionen nachvollziehbar protokollieren
+- ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality
 

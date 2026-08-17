@@ -20,6 +20,10 @@
 
 ## Embeddings
 
+::: memory.embedding_types
+    options:
+      members: true
+
 ::: memory.embeddings
     options:
       members: true
@@ -27,6 +31,10 @@
 ## Embedding-Speicher
 
 ::: memory.embedding_store
+    options:
+      members: true
+
+::: memory.embedding_records
     options:
       members: true
 
@@ -63,5 +71,9 @@
 ## Dokumentbibliothek
 
 ::: memory.library
+    options:
+      members: true
+
+::: memory.knowledge_records
     options:
       members: true

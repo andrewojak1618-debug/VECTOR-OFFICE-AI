@@ -89,6 +89,12 @@ enthalten die additiven SQLite-Schemata. Dadurch bleiben Bibliothekslogik,
 Textverarbeitung und Datenbankmigration getrennt, ohne die öffentlichen APIs
 von `KnowledgeLibrary` oder `EmbeddingStore` zu verändern.
 
+Die providerneutralen Embedding-Verträge liegen in `memory/embedding_types.py`;
+`memory/embedding_records.py` kapselt gespeicherte Records und den Float32-Codec.
+`memory/knowledge_records.py` übernimmt ausschließlich SQLite-Zeilenabbildung
+und lexikalisches Ranking. Die bisherigen öffentlichen Importpfade über
+`memory/embeddings.py` und `memory/embedding_store.py` bleiben kompatibel.
+
 ## Robot-Aktionsgrenze
 
 `vector/actions.py` bildet eine feste Aktions-Allowlist auf begrenzte
@@ -103,3 +109,12 @@ stellt diese Werkzeuge bereit. `tools/proposals.py` kann eine abstrakte
 Modellvorschlags-ID lokal auf einen festen Registry-Aufruf abbilden, führt ihn
 aber nicht aus und erzeugt keine Autorisierung. Dieser beratende Pfad ist noch
 nicht in der produktiven Gesprächsschleife aktiviert.
+
+`tools/audit_store.py` ist der optionale lokale Sink für bereits redigierte
+Registry-Ereignisse. Er erweitert dieselbe ignorierte SQLite-Datei additiv,
+wendet Alters- und Mengenlimits an und speichert keine Tool-Ausgaben oder
+Gesprächsinhalte. Auditfehler können die Registry-Ausführung nicht abbrechen.
+
+`tools/tool_values.py` kapselt die flachen Datentypen sowie Namens-, Parameter-
+und Ergebnisvalidierung der Registry. `tools/registry.py` bleibt dadurch auf
+Registrierung, Berechtigung, Ausführung und bereinigtes Audit fokussiert.

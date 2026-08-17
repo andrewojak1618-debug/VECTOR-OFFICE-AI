@@ -62,6 +62,37 @@ Audit-Ereignis übernommen. Tool-Exceptions werden auf den neutralen Fehlercode
 Ein Audit-Ziel darf den Toolablauf nicht unterbrechen. Auch Fehler des
 Audit-Sinks werden deshalb an dieser Grenze abgefangen.
 
+`tools/audit_store.py` persistiert diese bereits bereinigten Ereignisse additiv
+in der lokalen, durch `.gitignore` geschützten SQLite-Datei aus
+`MEMORY_DB_PATH`. Gespeichert werden nur Zeitpunkt, Toolname,
+Berechtigungsstufe, redigierte flache Argumente, Ergebnisstatus und neutraler
+Fehlercode. Tool-Ausgaben, Nutzersätze, Modellantworten, Dokumentinhalte,
+Embeddings und interne Exceptions gehören nicht zur Audit-Tabelle.
+
+Die lokale Persistenz ist standardmäßig aktiviert und doppelt begrenzt:
+
+- `TOOL_AUDIT_RETENTION_DAYS=30` entfernt ältere Ereignisse,
+- `TOOL_AUDIT_MAX_ENTRIES=1000` behält nur die neuesten Ereignisse,
+- beide Regeln werden nach jedem neuen Eintrag und über einen manuellen
+  Bereinigungsbefehl angewendet,
+- `TOOL_AUDIT_ENABLED=false` deaktiviert die Persistenz vollständig.
+
+Ein Fehler beim Initialisieren oder Schreiben des Audit-Ziels blockiert keine
+Toolaktion. Die Runtime arbeitet dann mit einer neutralen Warnung ohne lokale
+Persistenz weiter. Die additive Tabelle verändert oder löscht keine Memory-,
+Dokument-, Versions- oder Embedding-Daten.
+
+`diagnostics/tool_audit.py` bietet ausschließlich lokale Wartungsbefehle:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.tool_audit list --limit 20
+.venv\Scripts\python.exe -m diagnostics.tool_audit prune
+.venv\Scripts\python.exe -m diagnostics.tool_audit clear --confirm DELETE
+```
+
+Das vollständige Löschen verlangt die exakte Bestätigung `DELETE` und betrifft
+nur die Audit-Tabelle.
+
 ## Nebenwirkungsfreier Test
 
 `tools/test_tools.py` enthält `EchoTestTool`. Es besitzt ausschließlich

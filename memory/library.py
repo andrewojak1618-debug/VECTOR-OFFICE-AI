@@ -1,12 +1,19 @@
-"""Controlled local document storage and lexical retrieval."""
+"""Control local document imports and SQLite knowledge storage."""
 
-import re
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
 from memory.document_text import DocumentTextProcessor, PreparedDocument
+from memory.knowledge_records import (
+    DEFAULT_TERM_MIN_LENGTH,
+    rank_chunk_rows,
+    search_terms,
+    to_chunk,
+    to_document,
+    to_document_version,
+)
 from memory.knowledge_schema import initialize_knowledge_schema
 from memory.models import (
     DocumentImportResult,
@@ -23,7 +30,7 @@ class SQLiteKnowledgeLibrary:
     DEFAULT_MAX_FILE_BYTES = DocumentTextProcessor.DEFAULT_MAX_FILE_BYTES
     DEFAULT_CHUNK_SIZE = DocumentTextProcessor.DEFAULT_CHUNK_SIZE
     MIN_CHUNK_SIZE = DocumentTextProcessor.MIN_CHUNK_SIZE
-    TERM_MIN_LENGTH = 4
+    TERM_MIN_LENGTH = DEFAULT_TERM_MIN_LENGTH
 
     def __init__(
         self,
@@ -70,7 +77,7 @@ class SQLiteKnowledgeLibrary:
             )
             row = self._find_document_by_id(connection, document_id)
         return DocumentImportResult(
-            document=self._to_document(row),
+            document=to_document(row),
             chunk_count=len(prepared.chunks),
             changed=True,
         )
@@ -108,7 +115,7 @@ class SQLiteKnowledgeLibrary:
             "SELECT COUNT(*) FROM knowledge_chunks WHERE document_id = ?",
             (row["id"],),
         ).fetchone()[0]
-        return DocumentImportResult(self._to_document(row), chunk_count, False)
+        return DocumentImportResult(to_document(row), chunk_count, False)
 
     def _write_document(
         self,
@@ -238,7 +245,7 @@ class SQLiteKnowledgeLibrary:
                 "SELECT * FROM knowledge_documents ORDER BY id DESC LIMIT ?",
                 (limit,),
             ).fetchall()
-        return tuple(self._to_document(row) for row in rows)
+        return tuple(to_document(row) for row in rows)
 
     def list_all_documents(self) -> tuple[KnowledgeDocument, ...]:
         """Return the complete imported document inventory."""
@@ -246,7 +253,7 @@ class SQLiteKnowledgeLibrary:
             rows = connection.execute(
                 "SELECT * FROM knowledge_documents ORDER BY id"
             ).fetchall()
-        return tuple(self._to_document(row) for row in rows)
+        return tuple(to_document(row) for row in rows)
 
     def list_chunks(self, document_id: int) -> tuple[KnowledgeChunk, ...]:
         """Return all sections belonging to one imported document."""
@@ -262,7 +269,7 @@ class SQLiteKnowledgeLibrary:
                 """,
                 (document_id,),
             ).fetchall()
-        return tuple(self._to_chunk(row) for row in rows)
+        return tuple(to_chunk(row) for row in rows)
 
     def list_document_versions(
         self,
@@ -277,7 +284,7 @@ class SQLiteKnowledgeLibrary:
                 """,
                 (document_id,),
             ).fetchall()
-        return tuple(self._to_document_version(row) for row in rows)
+        return tuple(to_document_version(row) for row in rows)
 
     def document_exists(self, document_id: int) -> bool:
         """Report whether one document identifier is still present."""
@@ -289,11 +296,11 @@ class SQLiteKnowledgeLibrary:
         """Return lexically relevant document chunks for a query."""
         if limit < 1:
             raise ValueError("Knowledge limit must be at least 1.")
-        terms = self._search_terms(query)
+        terms = search_terms(query, self.TERM_MIN_LENGTH)
         if not terms:
             return ()
         rows = self._load_chunks()
-        return self._rank_chunks(rows, terms, limit)
+        return rank_chunk_rows(rows, terms, limit)
 
     def _load_chunks(self) -> tuple[sqlite3.Row, ...]:
         with self._connect() as connection:
@@ -308,21 +315,6 @@ class SQLiteKnowledgeLibrary:
             ).fetchall()
         return tuple(rows)
 
-    def _rank_chunks(
-        self,
-        rows: tuple[sqlite3.Row, ...],
-        terms: frozenset[str],
-        limit: int,
-    ) -> tuple[KnowledgeChunk, ...]:
-        scored = []
-        for row in rows:
-            text = f"{row['title']} {row['content']}".casefold()
-            score = sum(term in text for term in terms)
-            if score:
-                scored.append((score, row["id"], self._to_chunk(row)))
-        scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
-        return tuple(item[2] for item in scored[:limit])
-
     def forget_document(self, document_id: int) -> bool:
         """Delete one document and its chunks through cascade semantics."""
         with self._connect() as connection:
@@ -331,43 +323,3 @@ class SQLiteKnowledgeLibrary:
                 (document_id,),
             )
         return cursor.rowcount > 0
-
-    @classmethod
-    def _search_terms(cls, query: str) -> frozenset[str]:
-        return frozenset(
-            term
-            for term in re.findall(r"\w+", query.casefold())
-            if len(term) >= cls.TERM_MIN_LENGTH
-        )
-
-    @staticmethod
-    def _to_document(row: sqlite3.Row) -> KnowledgeDocument:
-        return KnowledgeDocument(
-            id=row["id"],
-            source_path=row["source_path"],
-            title=row["title"],
-            content_hash=row["content_hash"],
-            imported_at=row["imported_at"],
-        )
-
-    @staticmethod
-    def _to_chunk(row: sqlite3.Row) -> KnowledgeChunk:
-        return KnowledgeChunk(
-            id=row["id"],
-            document_id=row["document_id"],
-            source_path=row["source_path"],
-            title=row["title"],
-            chunk_index=row["chunk_index"],
-            content=row["content"],
-        )
-
-    @staticmethod
-    def _to_document_version(row: sqlite3.Row) -> KnowledgeDocumentVersion:
-        return KnowledgeDocumentVersion(
-            id=row["id"],
-            document_id=row["document_id"],
-            version_number=row["version_number"],
-            content_hash=row["content_hash"],
-            chunk_count=row["chunk_count"],
-            imported_at=row["imported_at"],
-        )

@@ -8,11 +8,21 @@
 
 ## Registry
 
+::: tools.tool_values
+    options:
+      members: true
+
 ::: tools.registry
     options:
       members: true
 
 ::: tools.inspection
+    options:
+      members: true
+
+## Lokale Audit-Persistenz
+
+::: tools.audit_store
     options:
       members: true
 

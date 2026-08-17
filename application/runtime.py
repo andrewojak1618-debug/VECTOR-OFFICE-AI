@@ -1,5 +1,6 @@
 """Application startup and dependency composition."""
 
+import sqlite3
 from dataclasses import dataclass
 
 from brain.agent import Agent
@@ -16,6 +17,7 @@ from memory.indexing import (
 )
 from memory.library import SQLiteKnowledgeLibrary
 from memory.search import HybridKnowledgeSearch, HybridSearchConfig
+from tools.audit_store import SQLiteToolAuditStore
 from tools.registry import ToolRegistry
 from tools.vector_actions import register_vector_action_tools
 from vector.actions import VectorActions
@@ -71,7 +73,8 @@ def run_application(settings) -> None:
         return
     speech = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
-    registry = _create_tool_registry(actions)
+    audit_store = _create_audit_store(settings)
+    registry = _create_tool_registry(actions, audit_store)
     agent = _create_agent(settings, mode, registry)
     _run_input_mode(settings, mode, agent, speech)
 
@@ -140,11 +143,30 @@ def _create_agent(
     )
 
 
-def _create_tool_registry(actions: VectorActions) -> ToolRegistry:
+def _create_tool_registry(
+    actions: VectorActions,
+    audit_store: SQLiteToolAuditStore | None = None,
+) -> ToolRegistry:
     """Register only explicitly reviewed production robot tools."""
-    registry = ToolRegistry()
+    audit_sink = audit_store.record if audit_store is not None else None
+    registry = ToolRegistry(audit_sink=audit_sink)
     register_vector_action_tools(registry, actions)
     return registry
+
+
+def _create_audit_store(settings) -> SQLiteToolAuditStore | None:
+    """Create optional local persistence without blocking application startup."""
+    if not settings.TOOL_AUDIT_ENABLED:
+        return None
+    try:
+        return SQLiteToolAuditStore(
+            settings.MEMORY_DB_PATH,
+            settings.TOOL_AUDIT_RETENTION_DAYS,
+            settings.TOOL_AUDIT_MAX_ENTRIES,
+        )
+    except (OSError, sqlite3.Error):
+        print("Local tool audit is unavailable. Continuing without persistence.")
+        return None
 
 
 def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:

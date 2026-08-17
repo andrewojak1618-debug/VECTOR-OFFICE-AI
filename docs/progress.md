@@ -197,6 +197,10 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Wissens- und Embedding-Schemata in getrennte Fachmodule verschoben
 - öffentliche Bibliotheks- und Speicher-APIs unverändert beibehalten
 - reservierte Architekturpfade und Sicherheitsgrenzen bewahrt
+- Registry-Wertvalidierung aus dem grenznahen Registry-Modul ausgelagert
+- Embedding-Typen, Persistenzrecords und Float32-Codec fachlich getrennt
+- SQLite-Zeilenabbildung und lexikalisches Ranking aus der Bibliothek gelöst
+- größte betroffene Module von 397–380 auf höchstens 351 Zeilen reduziert
 
 ## Kontrollierte Robot-Aktionen
 
@@ -277,3 +281,16 @@ Die deutsche TTS wurde schrittweise verbessert:
 - keinerlei Toolausführung, Audit-Ereignisse oder Autorisierungen erzeugt
 - produktive Gesprächsaktivierung bis zu einer gesonderten Freigabe deaktiviert
 - OpenAI-/Ollama-neutralen Vertrag und Prompt-Injection-Fälle automatisiert geprüft
+
+## Lokale Tool-Audit-Persistenz
+
+- bereits redigierte Registry-Ereignisse additiv in SQLite gespeichert
+- Toolname, Berechtigungsstufe, Status, Fehlercode und sichere Argumente erfasst
+- Nutzersätze, Modellantworten, Tool-Ausgaben und Dokumentwissen ausgeschlossen
+- unbekannte Toolargumente und sensible Parameter auch persistent ferngehalten
+- standardmäßige Aufbewahrung auf 30 Tage und 1.000 Ereignisse begrenzt
+- automatische Alters- und Mengenbereinigung nach jedem Eintrag ergänzt
+- Audit-Persistenz über lokale Settings vollständig deaktivierbar gemacht
+- Initialisierungs- und Schreibfehler ohne Einfluss auf die Toolausführung gehalten
+- Anzeige, manuelle Bereinigung und bestätigtes Löschen lokal diagnostizierbar gemacht
+- bestehende Memory-Daten bei Migration und Audit-Löschung unverändert verifiziert
