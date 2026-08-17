@@ -1,0 +1,168 @@
+"""Select registered tools from a fixed set of explicit German intents."""
+
+import re
+from dataclasses import dataclass, field
+from enum import Enum
+from types import MappingProxyType
+
+from tools.permissions import PermissionLevel
+from tools.registry import ToolArguments, ToolRegistry, ToolValue
+
+
+class ToolSelectionStatus(Enum):
+    """Describe whether a controlled intent matched and may be proposed."""
+
+    NO_MATCH = "no_match"
+    SELECTED = "selected"
+    BLOCKED = "blocked"
+
+
+@dataclass(frozen=True)
+class ToolIntentRule:
+    """Map exact normalized phrases to one predeclared tool invocation."""
+
+    phrases: tuple[str, ...]
+    tool_name: str
+    label: str
+    arguments: tuple[tuple[str, ToolValue], ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.phrases or not all(
+            isinstance(phrase, str) and phrase.strip()
+            for phrase in self.phrases
+        ):
+            raise ValueError("Tool intent phrases must not be empty.")
+        if not isinstance(self.tool_name, str) or not isinstance(self.label, str):
+            raise TypeError("Tool intent target and label must be strings.")
+        if not self.tool_name.strip() or not self.label.strip():
+            raise ValueError("Tool intent target and label must not be empty.")
+        names = tuple(name for name, _value in self.arguments)
+        if len(names) != len(set(names)):
+            raise ValueError("Tool intent argument names must be unique.")
+
+
+@dataclass(frozen=True)
+class ToolSelection:
+    """Return a safe selection decision without retaining original user text."""
+
+    status: ToolSelectionStatus
+    tool_name: str = ""
+    label: str = ""
+    permission: PermissionLevel | None = None
+    arguments: ToolArguments = field(
+        default_factory=lambda: MappingProxyType({}),
+    )
+    message: str = ""
+
+
+DEFAULT_INTENT_RULES = (
+    ToolIntentRule(
+        ("welche aktionen kannst du", "welche bewegungen kannst du"),
+        "vector.list_actions",
+        "sichere Aktionen anzeigen",
+    ),
+    ToolIntentRule(
+        ("schau nach oben", "kopf nach oben"),
+        "vector.perform_action",
+        "Kopf nach oben",
+        (("action", "head_up"),),
+    ),
+    ToolIntentRule(
+        ("schau geradeaus", "kopf gerade"),
+        "vector.perform_action",
+        "Kopf gerade",
+        (("action", "head_level"),),
+    ),
+    ToolIntentRule(
+        ("hebe deinen lift", "lift nach oben", "hebe deinen arm"),
+        "vector.perform_action",
+        "Lift anheben",
+        (("action", "lift_up"),),
+    ),
+    ToolIntentRule(
+        ("senke deinen lift", "lift nach unten", "senke deinen arm"),
+        "vector.perform_action",
+        "Lift absenken",
+        (("action", "lift_down"),),
+    ),
+    ToolIntentRule(
+        ("begrüße mich", "bitte begrüße mich", "begrüß mich"),
+        "vector.perform_action",
+        "Begrüßungsanimation",
+        (("action", "greeting"),),
+    ),
+    ToolIntentRule(
+        ("zeige deine augen", "augenanimation"),
+        "vector.perform_action",
+        "Augenanimation",
+        (("action", "eyes_only"),),
+    ),
+    ToolIntentRule(
+        ("notfallstopp", "stopp sofort", "vector stopp sofort"),
+        "vector.emergency_stop",
+        "Notfallstopp",
+    ),
+)
+
+
+class ToolIntentSelector:
+    """Match only fixed intents whose target still exists in the registry."""
+
+    def __init__(
+        self,
+        registry: ToolRegistry,
+        rules: tuple[ToolIntentRule, ...] = DEFAULT_INTENT_RULES,
+    ):
+        if not isinstance(registry, ToolRegistry):
+            raise TypeError("Tool selector requires a ToolRegistry.")
+        self.registry = registry
+        self._rules = self._index_rules(rules)
+
+    def select(self, user_text: str) -> ToolSelection:
+        """Return one registered safe selection for an exact user phrase."""
+        normalized = _normalize_phrase(user_text)
+        rule = self._rules.get(normalized)
+        if rule is None:
+            return ToolSelection(ToolSelectionStatus.NO_MATCH)
+        definitions = {
+            definition.name: definition
+            for definition in self.registry.definitions()
+        }
+        definition = definitions.get(rule.tool_name)
+        if definition is None:
+            return _blocked_selection("Selected tool is not registered.")
+        if definition.permission is PermissionLevel.DANGEROUS:
+            return _blocked_selection("Dangerous conversational tools are blocked.")
+        return ToolSelection(
+            ToolSelectionStatus.SELECTED,
+            definition.name,
+            rule.label,
+            definition.permission,
+            MappingProxyType(dict(rule.arguments)),
+        )
+
+    @staticmethod
+    def _index_rules(
+        rules: tuple[ToolIntentRule, ...],
+    ) -> dict[str, ToolIntentRule]:
+        indexed = {}
+        for rule in rules:
+            if not isinstance(rule, ToolIntentRule):
+                raise TypeError("Tool intent rules must be ToolIntentRule values.")
+            for phrase in rule.phrases:
+                normalized = _normalize_phrase(phrase)
+                if normalized in indexed:
+                    raise ValueError("Tool intent phrases must be unique.")
+                indexed[normalized] = rule
+        return indexed
+
+
+def _normalize_phrase(value: str) -> str:
+    if not isinstance(value, str):
+        return ""
+    collapsed = " ".join(value.casefold().strip().split())
+    return re.sub(r"[.!?]+$", "", collapsed).strip()
+
+
+def _blocked_selection(message: str) -> ToolSelection:
+    return ToolSelection(ToolSelectionStatus.BLOCKED, message=message)

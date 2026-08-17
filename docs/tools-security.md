@@ -71,14 +71,54 @@ Dateisystem, Datenbank noch Vector zu. Es wird nicht automatisch in der
 Produktiv-Runtime registriert.
 
 Der Agent besitzt mit `execute_tool(...)` einen expliziten Übergabepunkt. Die
-Runtime registriert inzwischen ausschließlich die kontrollierte Vector-Aktion
-und den Notfallstopp. Beide bleiben ohne eine explizite Mutationsfreigabe
-blockiert. Weitere produktive Toolaufrufe sind standardmäßig nicht registriert.
+Runtime registriert ausschließlich die kontrollierte Vector-Aktion, den
+Notfallstopp und die rein lesende Anzeige der sicheren Aktionsnamen. Bewegungen
+bleiben ohne eine explizite Mutationsfreigabe blockiert. Weitere produktive
+Toolaufrufe sind standardmäßig nicht registriert.
+
+## Kontrollierte Auswahl im Gespräch
+
+`tools/selection.py` ordnet eine kleine feste Liste eindeutiger deutscher
+Formulierungen registrierten Tools zu. Es verwendet weder OpenAI noch Ollama und
+ergänzt keine Parameter aus Vermutungen. Nur eine vollständige normalisierte
+Übereinstimmung gilt als Auswahl; zusätzliche Anweisungen bleiben normale
+Gesprächseingaben und lösen kein Tool aus.
+
+`application/tool_conversation.py` hält höchstens einen offenen Vorschlag:
+
+- `READ_ONLY` wird nach erfolgreicher Registry-Prüfung direkt ausgeführt,
+- `MUTATING` wird zunächst nur vorgeschlagen und benötigt anschließend ein
+  separates `Ja`, `Ja bitte`, `Bestätigen` oder `Ausführen`,
+- `Nein`, `Abbrechen` oder `Nicht ausführen` verwirft den Vorschlag,
+- andere Antworten halten die Aktion offen und erteilen keine Berechtigung,
+- `DANGEROUS` wird in diesem Gesprächspfad grundsätzlich blockiert,
+- ein exakter Notfallstopp unterbricht offene Vorschläge und wird sofort
+  ausgeführt, weil Verzögerung die Schutzwirkung verschlechtern würde.
+
+Die Bestätigung erzeugt genau ein `ToolAuthorization`-Objekt für diesen Aufruf
+und wird danach vergessen. Das Sprachmodell sieht keine Tooldefinitionen,
+wählt keinen Toolnamen und erzeugt weder Parameter noch Berechtigungen.
+
+Der produktive Konsolentest wurde mit der Folge „Welche Aktionen kannst du?“,
+„Begrüße mich“ und „Ja“ durchgeführt. Vector las die Allowlist ohne Bewegung
+vor, stellte anschließend nur die Bestätigungsfrage und führte erst nach dem
+separaten Ja genau eine Begrüßungsanimation aus. Die abschließende TTS-Ausgabe
+erfolgte erst nach Ende der Animation.
+
+### Freigegebene Formulierungen
+
+| Absicht | Beispiele | Verhalten |
+|---|---|---|
+| Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
+| Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
+| Lift bewegen | „Lift nach oben“, „Lift nach unten“ | Bestätigung erforderlich |
+| Animation | „Begrüße mich“, „Zeige deine Augen“ | Bestätigung erforderlich |
+| Sicherheit | „Notfallstopp“, „Stopp sofort“ | sofortiger Notfallstopp |
 
 ## Robot-Aktionen
 
-`tools/vector_actions.py` stellt `vector.perform_action` und
-`vector.emergency_stop` bereit. Der Aktionsname wird zusätzlich in
+`tools/vector_actions.py` stellt `vector.list_actions`,
+`vector.perform_action` und `vector.emergency_stop` bereit. Der Aktionsname wird zusätzlich in
 `vector/actions.py` gegen eine feste Allowlist geprüft. Freie Winkel,
 Animationsnamen und Fahrbefehle erreichen die SDK-Grenze nicht. Die vollständige
 Allowlist, Timeouts und Hardwaretests sind unter
@@ -88,10 +128,10 @@ Allowlist, Timeouts und Hardwaretests sind unter
 
 Folgende Funktionen sind bewusst nicht Teil dieser Karte:
 
-- automatische Toolauswahl durch OpenAI oder Ollama,
+- freie oder probabilistische Toolauswahl durch OpenAI oder Ollama,
 - dauerhafte Berechtigungsfreigaben,
 - Dateiänderungen, Shell-Kommandos oder Internetzugriffe,
-- automatische Auswahl oder Autorisierung von Robot-Aktionen durch ein Modell,
+- Auswahl oder Autorisierung von Robot-Aktionen durch ein Modell,
 - Ausführung von Toolanweisungen aus importierten Dokumenten.
 
 Jedes zukünftige produktive Tool benötigt eigene Parameter-, Berechtigungs-,

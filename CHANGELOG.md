@@ -6,7 +6,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
-- kontrollierte Tool-Auswahl im Gespräch vorbereiten
+- feste, registrygebundene Tool-Auswahl im Gespräch ergänzt
+- Ja/Nein-Bestätigung für Bewegungen und sofortigen Notfallstopp ergänzt
 - Persönlichkeit mit freigegebenen Robot-Aktionen verbinden
 - Bedienung und Systemdiagnose weiter vereinfachen
 

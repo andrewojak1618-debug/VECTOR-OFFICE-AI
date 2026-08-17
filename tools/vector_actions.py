@@ -65,10 +65,32 @@ class VectorEmergencyStopTool:
         return {"stopped": True, "latched": True}
 
 
+@dataclass(frozen=True)
+class VectorActionListTool:
+    """Expose the fixed action names without touching the physical robot."""
+
+    actions: VectorActions
+
+    @property
+    def definition(self) -> ToolDefinition:
+        """Describe the read-only allowlist inspection tool."""
+        return ToolDefinition(
+            name="vector.list_actions",
+            description="List the fixed safe Vector action aliases.",
+            permission=PermissionLevel.READ_ONLY,
+        )
+
+    def execute(self, arguments: ToolArguments) -> ToolOutput:
+        """Return safe aliases as a flat structured registry value."""
+        names = ", ".join(self.actions.available_actions())
+        return {"actions": names, "count": len(self.actions.available_actions())}
+
+
 def register_vector_action_tools(
     registry: ToolRegistry,
     actions: VectorActions,
 ) -> None:
     """Register only the controlled action and emergency-stop tools."""
+    registry.register(VectorActionListTool(actions))
     registry.register(VectorActionTool(actions))
     registry.register(VectorEmergencyStopTool(actions))

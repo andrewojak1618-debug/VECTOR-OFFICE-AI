@@ -28,7 +28,11 @@ class RuntimeModeTests(unittest.TestCase):
         registry = _create_tool_registry(MagicMock())
 
         self.assertEqual(
-            ("vector.emergency_stop", "vector.perform_action"),
+            (
+                "vector.emergency_stop",
+                "vector.list_actions",
+                "vector.perform_action",
+            ),
             tuple(item.name for item in registry.definitions()),
         )
 

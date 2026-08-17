@@ -1,0 +1,108 @@
+"""Tests for exact, registry-bound conversational tool selection."""
+
+import unittest
+from unittest.mock import MagicMock
+
+from tools.permissions import PermissionLevel
+from tools.registry import ToolDefinition, ToolRegistry
+from tools.selection import (
+    ToolIntentRule,
+    ToolIntentSelector,
+    ToolSelectionStatus,
+)
+from tools.vector_actions import register_vector_action_tools
+
+
+class DangerousTestTool:
+    @property
+    def definition(self):
+        return ToolDefinition(
+            "test.dangerous",
+            "Never execute conversationally.",
+            PermissionLevel.DANGEROUS,
+        )
+
+    def execute(self, _arguments):
+        raise AssertionError("Dangerous tool must stay blocked.")
+
+
+class ToolIntentSelectorTests(unittest.TestCase):
+    def setUp(self):
+        self.actions = MagicMock()
+        self.actions.available_actions.return_value = (
+            "head_up",
+            "head_level",
+            "lift_up",
+            "lift_down",
+            "greeting",
+            "eyes_only",
+        )
+        self.registry = ToolRegistry()
+        register_vector_action_tools(self.registry, self.actions)
+        self.selector = ToolIntentSelector(self.registry)
+
+    def test_exact_natural_phrase_selects_allowlisted_action(self):
+        selection = self.selector.select("Bitte begrüße mich!")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("vector.perform_action", selection.tool_name)
+        self.assertEqual("greeting", selection.arguments["action"])
+        self.assertEqual(PermissionLevel.MUTATING, selection.permission)
+
+    def test_additional_instruction_is_not_guessed(self):
+        selection = self.selector.select("Begrüße mich und fahre vorwärts")
+
+        self.assertEqual(ToolSelectionStatus.NO_MATCH, selection.status)
+
+    def test_read_only_action_list_is_selected_from_registry(self):
+        selection = self.selector.select("Welche Bewegungen kannst du?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("vector.list_actions", selection.tool_name)
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_missing_registered_target_is_blocked(self):
+        rule = ToolIntentRule(("sicherer test",), "missing.tool", "Test")
+        selector = ToolIntentSelector(ToolRegistry(), (rule,))
+
+        selection = selector.select("sicherer test")
+
+        self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
+
+    def test_dangerous_registered_target_is_blocked(self):
+        registry = ToolRegistry()
+        registry.register(DangerousTestTool())
+        rule = ToolIntentRule(
+            ("gefährlicher test",),
+            "test.dangerous",
+            "Gefahr",
+        )
+        selector = ToolIntentSelector(registry, (rule,))
+
+        selection = selector.select("gefährlicher test")
+
+        self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
+
+    def test_duplicate_normalized_phrases_are_rejected(self):
+        rules = (
+            ToolIntentRule(("Test",), "vector.list_actions", "A"),
+            ToolIntentRule((" test! ",), "vector.list_actions", "B"),
+        )
+
+        with self.assertRaisesRegex(ValueError, "unique"):
+            ToolIntentSelector(self.registry, rules)
+
+    def test_empty_phrases_and_duplicate_arguments_are_rejected(self):
+        with self.assertRaisesRegex(ValueError, "phrases"):
+            ToolIntentRule((), "vector.list_actions", "Liste")
+        with self.assertRaisesRegex(ValueError, "argument names"):
+            ToolIntentRule(
+                ("test",),
+                "vector.perform_action",
+                "Test",
+                (("action", "head_up"), ("action", "head_level")),
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()

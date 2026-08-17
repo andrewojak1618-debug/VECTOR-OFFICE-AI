@@ -47,7 +47,8 @@
 - ✅ sensible Audit-Parameter redigieren und Blockierungen testen
 - ✅ erste produktive Robot-Tools mit expliziter Mutationsfreigabe anbinden
 - ✅ Kopf, Lift, Kurzanimationen und Notfallstopp physisch prüfen
-- automatische Modellauswahl für Robot-Aktionen kontrolliert vorbereiten
+- ✅ deterministische Tool-Auswahl im Konsolen- und WirePod-Dialog ergänzen
+- strukturierte Modellvorschläge ohne Ausführungs- oder Berechtigungsrecht prüfen
 - lokale Audit-Persistenz mit Aufbewahrungsregeln ergänzen
 
 ## Robot Personality

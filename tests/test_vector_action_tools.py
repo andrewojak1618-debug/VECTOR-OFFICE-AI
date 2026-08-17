@@ -20,9 +20,22 @@ class VectorActionToolTests(unittest.TestCase):
 
     def test_runtime_registration_contains_only_reviewed_robot_tools(self):
         self.assertEqual(
-            ("vector.emergency_stop", "vector.perform_action"),
+            (
+                "vector.emergency_stop",
+                "vector.list_actions",
+                "vector.perform_action",
+            ),
             tuple(item.name for item in self.registry.definitions()),
         )
+
+    def test_action_list_is_read_only_and_has_no_physical_effect(self):
+        result = self.registry.execute("vector.list_actions", {})
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual("head_up, head_level", result.output["actions"])
+        self.assertEqual(2, result.output["count"])
+        self.actions.perform.assert_not_called()
+        self.actions.emergency_stop.assert_not_called()
 
     def test_action_requires_explicit_mutation_authority(self):
         result = self.registry.execute(

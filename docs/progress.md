@@ -250,3 +250,17 @@ Die deutsche TTS wurde schrittweise verbessert:
 - physische Vector-Abnahme mit TTS und Begrüßung mit 6/6 bestanden
 - Aussprache, Lautstärke, Wissensantwort und Bewegung subjektiv bestätigt
 - Version `0.2.0-rc.1` und Changelog vorbereitet; Git-Tag noch ausstehend
+
+## Kontrollierte Tool-Auswahl im Gespräch
+
+- feste deutsche Intent-Regeln ohne Sprachmodellzugriff eingeführt
+- Auswahl an die tatsächlich registrierten Tooldefinitionen gebunden
+- rein lesende Anzeige sicherer Aktionen automatisch freigegeben
+- Kopf-, Lift- und Animationsaktionen an ein separates Ja/Nein gebunden
+- offene Bestätigung über Konsolen- und WirePod-Turns hinweg begrenzt gehalten
+- zusätzliche oder unklare Anweisungen nicht als Toolaufruf interpretiert
+- gefährliche Tools im Gesprächspfad vollständig blockiert
+- Notfallstopp als sofortige Sicherheitsunterbrechung priorisiert
+- Modellaufrufe für ausgewählte, bestätigte und abgebrochene Tools ausgeschlossen
+- Leseabfrage, Rückfrage, separates Ja, Animation und Abschluss-TTS produktiv
+  mit dem physischen Vector erfolgreich geprüft

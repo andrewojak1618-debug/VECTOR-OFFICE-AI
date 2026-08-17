@@ -1,16 +1,24 @@
 """Console and WirePod conversation loops."""
 
 from brain.agent import Agent
+from tools.registry import ToolRegistry
+from tools.selection import ToolIntentSelector
 from vector.speech import VectorSpeech
 from voice.wirepod_input import WirePodTranscriptListener
 
 from application.commands import CommandResult, ConsoleCommandHandler
+from application.tool_conversation import ControlledToolConversation
 
 
 COMMAND_HELP = (
     "Commands: /remember, /feedback, /memories, /forget, /learn, "
     "/documents, /versions, /stale-vectors, /reindex, /reindex-all, "
     "/export-library, /export-memories, /forget-document, /clear, /exit"
+)
+TOOL_HELP = (
+    "Controlled tools: 'Welche Aktionen kannst du?', 'Begrüße mich', "
+    "'Schau nach oben', 'Lift nach oben', or 'Stopp sofort'. "
+    "Movements require a separate yes."
 )
 VOICE_EXIT_PHRASES = {
     "gespräch beenden",
@@ -46,7 +54,9 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
     """Run the interactive console conversation until the user exits."""
     print("\nConversation started.")
     print(COMMAND_HELP)
+    print(TOOL_HELP)
     command_handler = ConsoleCommandHandler(agent)
+    tool_conversation = _create_tool_conversation(agent)
     while True:
         user_text = _read_console_input()
         if user_text is None:
@@ -56,7 +66,11 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
         result = command_handler.handle(user_text)
         if result is CommandResult.EXIT:
             return
-        if result is CommandResult.NOT_HANDLED:
+        if result is CommandResult.NOT_HANDLED and not _handle_tool_turn(
+            tool_conversation,
+            speech,
+            user_text,
+        ):
             respond_and_speak(agent, speech, user_text)
 
 
@@ -79,6 +93,7 @@ def run_voice_conversation(
     """Run a private WirePod conversation until exit or the turn limit."""
     _print_voice_intro()
     listener.prime()
+    tool_conversation = _create_tool_conversation(agent)
     completed_turns = 0
     while max_turns is None or completed_turns < max_turns:
         try:
@@ -91,13 +106,15 @@ def run_voice_conversation(
         if user_text.casefold() in VOICE_EXIT_PHRASES:
             print("Conversation ended.")
             return
-        respond_and_speak(agent, speech, user_text)
+        if not _handle_tool_turn(tool_conversation, speech, user_text):
+            respond_and_speak(agent, speech, user_text)
         completed_turns += 1
 
 
 def _print_voice_intro() -> None:
     print("\nWirePod voice conversation started.")
     print("Say 'Hey Vector' followed by your question.")
+    print("Controlled movements require a separate spoken yes.")
     print("Say 'Vector beenden' to end the session.")
 
 
@@ -113,3 +130,29 @@ def _listen_for_user_text(
     user_text = event.text.strip()
     print(f"Du: {user_text}")
     return user_text
+
+
+def _create_tool_conversation(
+    agent: Agent,
+) -> ControlledToolConversation | None:
+    registry = getattr(agent, "tool_registry", None)
+    if not isinstance(registry, ToolRegistry):
+        return None
+    return ControlledToolConversation(agent, ToolIntentSelector(registry))
+
+
+def _handle_tool_turn(
+    controller: ControlledToolConversation | None,
+    speech: VectorSpeech,
+    user_text: str,
+) -> bool:
+    if controller is None:
+        return False
+    result = controller.handle(user_text)
+    if not result.handled:
+        return False
+    if result.message:
+        print(f"Vector: {result.message}")
+    if result.speak and result.message:
+        _speak_answer(speech, result.message)
+    return True

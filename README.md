@@ -255,6 +255,11 @@ enthält die feste Robot-Aktionsliste; `vector/behavior_control.py` verhindert
 Sprach- und Bewegungskonflikte. `memory/` enthält das lokale
 SQLite-Langzeitgedächtnis.
 
+Natürliche Tool-Absichten werden ausschließlich über feste Formulierungen in
+`tools/selection.py` erkannt. Lesende Abfragen dürfen automatisch laufen;
+Bewegungen benötigen ein separates „Ja“. OpenAI und Ollama erhalten weder freie
+Toolausführung noch die Möglichkeit, Berechtigungen selbst zu erzeugen.
+
 ## ⚙️ Installation
 
 ### Voraussetzungen
