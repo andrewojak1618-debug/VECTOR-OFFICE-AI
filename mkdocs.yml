@@ -46,6 +46,7 @@ nav:
   - Paraphrasen-Test: paraphrase-evaluation.md
   - Physischer Wissenstest: physical-knowledge-test.md
   - Persönlichkeit: personality.md
+  - Systemabnahme: release-acceptance.md
   - Roadmap: roadmap.md
   - API-Referenz:
       - Application: api/application.md

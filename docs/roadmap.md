@@ -1,5 +1,15 @@
 # Roadmap
 
+## Release-Stabilisierung
+
+- ✅ zentrale mehrstufige Systemabnahme implementieren
+- ✅ lokale SQLite-Sicherung und Wiederherstellung automatisiert prüfen
+- ✅ automatischen Kern vollständig abnehmen
+- ✅ eingesetzte Ollama- und OpenAI-Provider live prüfen
+- ✅ physischen Wissens- und Aktionspfad subjektiv bestätigen
+- ✅ Versionsnummer und Changelog für `0.2.0-rc.1` festlegen
+- ersten geprüften Git-Tag setzen
+
 ## Conversation Foundation
 
 - Retry- und Timeout-Verhalten weiter vereinheitlichen

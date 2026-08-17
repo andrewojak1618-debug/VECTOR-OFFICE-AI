@@ -20,8 +20,10 @@ from vector.speech import VectorSpeech
 
 TEST_DOCUMENT = BASE_DIR / "docs" / "paraphrase-evaluation.md"
 TEST_QUESTION = (
-    "Nenne den geeigneten Grenzparameter für robuste Bedeutungszuordnung trotz "
-    "belangloser Nebensätze. Antworte auf Deutsch in höchstens zwei kurzen Sätzen."
+    "Welcher produktive Mindestähnlichkeitswert bestand laut Dokument alle drei "
+    "relevanten Fragen, während der strengere Fehlversuch verworfen wurde? "
+    "Nenne nur den erfolgreichen Wert und antworte auf Deutsch in höchstens "
+    "zwei kurzen Sätzen."
 )
 EXPECTED_VALUES = ("0,35", "0.35")
 
@@ -69,10 +71,10 @@ def _prepare_answer() -> str | None:
         if not _report_semantic_match(search):
             return None
         answer = _generate_local_answer(library)
+        print(f"Ollama answer ({_sentence_count(answer)} sentence(s)): {answer}")
         if not _answer_has_expected_fact(answer):
             print("Ollama answer missed the expected knowledge value. [ERROR]")
             return None
-        print(f"Ollama answer ({_sentence_count(answer)} sentence(s)): {answer}")
         return answer
 
 
@@ -113,7 +115,11 @@ def _report_semantic_match(search: HybridKnowledgeSearch) -> bool:
 
 def _generate_local_answer(library: IndexedKnowledgeLibrary) -> str:
     agent = Agent(
-        OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL),
+        OllamaProvider(
+            settings.OLLAMA_HOST,
+            settings.OLLAMA_MODEL,
+            temperature=0.0,
+        ),
         knowledge_library=library,
         knowledge_context_limit=2,
         knowledge_context_enabled=True,

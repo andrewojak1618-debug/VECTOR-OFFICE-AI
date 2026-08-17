@@ -88,7 +88,21 @@ class ResponseQualityPolicyTests(unittest.TestCase):
         )
 
         self.assertIn("claimed_emotion", guidance)
+        self.assertIn("Es tut mir leid", guidance)
+        self.assertIn("Das klingt belastend", guidance)
         self.assertIn("Erwähne diese Korrektur nicht", guidance)
+
+    def test_sentence_limit_keeps_complete_leading_sentences(self):
+        compacted = self.policy.limit_sentences(
+            "Erster Satz. Zweiter Satz! Dritter Satz?",
+            2,
+        )
+
+        self.assertEqual("Erster Satz. Zweiter Satz!", compacted)
+
+    def test_sentence_limit_rejects_non_positive_maximum(self):
+        with self.assertRaisesRegex(ValueError, "positive"):
+            self.policy.limit_sentences("Ein Satz.", 0)
 
 
 if __name__ == "__main__":

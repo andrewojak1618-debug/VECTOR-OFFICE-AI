@@ -54,13 +54,17 @@ class OllamaProvider:
         base_url: str,
         model: str,
         timeout: float = 120.0,
+        temperature: float | None = None,
         client: httpx.Client | None = None,
     ):
         if not base_url.strip():
             raise ValueError("OLLAMA_HOST must not be empty.")
         if not model.strip():
             raise ValueError("OLLAMA_MODEL must not be empty.")
+        if temperature is not None and not 0.0 <= temperature <= 2.0:
+            raise ValueError("Ollama temperature must be between 0 and 2.")
         self.model = model
+        self.temperature = temperature
         self.client = client or httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout,
@@ -81,11 +85,14 @@ class OllamaProvider:
         return self._response_content(response)
 
     def _request_payload(self, messages: Sequence[ChatMessage]) -> dict:
-        return {
+        payload = {
             "model": self.model,
             "messages": _message_payload(messages),
             "stream": False,
         }
+        if self.temperature is not None:
+            payload["options"] = {"temperature": self.temperature}
+        return payload
 
     @staticmethod
     def _response_content(response: httpx.Response) -> str:

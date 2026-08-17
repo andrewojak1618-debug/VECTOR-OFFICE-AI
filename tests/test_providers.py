@@ -92,6 +92,29 @@ class ProviderTests(unittest.TestCase):
 
         self.assertEqual("Guten Tag!", provider.generate(MESSAGES))
 
+    def test_ollama_provider_can_request_deterministic_sampling(self):
+        def handle_request(request):
+            payload = __import__("json").loads(request.content)
+            self.assertEqual({"temperature": 0.0}, payload["options"])
+            return httpx.Response(200, json={"message": {"content": "Okay"}})
+
+        client = httpx.Client(
+            base_url="http://test",
+            transport=httpx.MockTransport(handle_request),
+        )
+        provider = OllamaProvider(
+            "http://test",
+            "test-model",
+            temperature=0.0,
+            client=client,
+        )
+
+        self.assertEqual("Okay", provider.generate(MESSAGES))
+
+    def test_ollama_provider_rejects_invalid_temperature(self):
+        with self.assertRaisesRegex(ValueError, "temperature"):
+            OllamaProvider("http://test", "test-model", temperature=2.1)
+
     def test_openai_and_ollama_receive_identical_personality_rules(self):
         messages = ConversationContext().messages()
         openai_client = FakeOpenAIClient()

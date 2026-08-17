@@ -161,9 +161,22 @@ class ResponseQualityPolicy:
             "Die vorige interne Antwort wurde wegen folgender Stilregel verworfen: "
             f"{codes}. Formuliere die Antwort neu: empathisch, sachlich, kompakt, "
             "ohne echte Gefühle zu behaupten, ohne falsche Gewissheit und ohne "
-            f"belehrenden Ton, mit höchstens {max_sentences} Sätzen. Erwähne "
-            "diese Korrektur nicht."
+            f"belehrenden Ton, mit höchstens {max_sentences} Sätzen. Verwende "
+            "nicht die Formel 'Es tut mir leid'; schreibe bei Bedarf stattdessen "
+            "'Das klingt belastend'. Erwähne diese Korrektur nicht."
         )
+
+    @staticmethod
+    def limit_sentences(response: str, maximum: int) -> str:
+        """Keep complete leading sentences up to a positive hard limit."""
+        if maximum < 1:
+            raise ValueError("Sentence limit must be positive.")
+        sentences = tuple(
+            sentence.strip()
+            for sentence in re.split(r"(?<=[.!?])\s+", response.strip())
+            if sentence.strip()
+        )
+        return " ".join(sentences[:maximum])
 
     @staticmethod
     def _sentence_count(response: str) -> int:

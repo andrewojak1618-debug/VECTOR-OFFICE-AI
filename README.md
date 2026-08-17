@@ -450,6 +450,20 @@ uv pip install --python .venv\Scripts\python.exe -r requirements-docs.txt
 Der statische Build wird mit `.venv\Scripts\python.exe -m mkdocs build`
 erzeugt. Das Ausgabe-Verzeichnis `site/` wird nicht committed.
 
+### Vollständige Systemabnahme
+
+Der sichere Standardlauf prüft Tests, Python-Syntax, Dokumentation und Git,
+ohne API-Anfragen oder physische Vector-Aktionen auszulösen:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.release_acceptance `
+  --report data/acceptance/core.json
+```
+
+Ollama, OpenAI und der physische Wissenspfad werden über getrennte, ausdrücklich
+gewählte Optionen ergänzt. Die vollständigen Freigabekriterien und Befehle
+stehen in [`docs/release-acceptance.md`](docs/release-acceptance.md).
+
 ### WirePod-Spracheingabe diagnostizieren
 
 Der erste Voice-Input-Baustein wartet auf ein neues deutsches Transkript aus
@@ -545,14 +559,16 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | Clean Core & Embedding Architecture | `eb055d9` | Clean-Code-Audit und lokaler Embedding-Vertrag |
 | Local Embedding Model | `1254524` | Reales `embeddinggemma`-Modell und Batch-Verarbeitung |
 
-Die Anwendung befindet sich weiterhin in Version **0.1.0**. Die Historie wird
-bewusst über kleine, überprüfbare Meilensteine aufgebaut.
+Die Anwendung befindet sich nach vollständiger Systemabnahme im ersten
+Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
+[`CHANGELOG.md`](CHANGELOG.md) zusammengefasst; der Git-Tag wird erst auf dem
+geprüften Commit gesetzt.
 
 ## 🚧 Aktueller Projektstatus
 
 ### Aktuelle Phase
 
-**Funktionaler KI-/Speech-Prototyp mit physischem Vector 2.0**
+**Release-Kandidat 0.2.0-rc.1 mit physischem Vector 2.0**
 
 - ✅ WirePod-Verbindung
 - ✅ direkte Vector-SDK-Verbindung

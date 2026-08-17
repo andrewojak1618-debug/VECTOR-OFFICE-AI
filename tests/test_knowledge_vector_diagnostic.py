@@ -1,6 +1,7 @@
 import unittest
 
 from diagnostics.knowledge_vector import (
+    TEST_QUESTION,
     _answer_has_expected_fact,
     _limit_to_two_sentences,
     _sentence_count,
@@ -8,6 +9,10 @@ from diagnostics.knowledge_vector import (
 
 
 class KnowledgeVectorDiagnosticTests(unittest.TestCase):
+    def test_question_does_not_reveal_expected_value(self):
+        self.assertNotIn("0,35", TEST_QUESTION)
+        self.assertNotIn("0.35", TEST_QUESTION)
+
     def test_answer_is_limited_to_two_short_sentences(self):
         answer = _limit_to_two_sentences(
             "Der Wert ist 0,35. Das ist der beste Kompromiss. Ein dritter Satz."

@@ -55,7 +55,9 @@ Ein Prompt allein garantiert keine Regelbefolgung. Deshalb prüft
 
 Bei einem Verstoß erhält derselbe Provider genau einen Korrekturversuch mit
 neutralen Fehlercodes, niemals mit protokolliertem Antwortinhalt. Verstößt auch
-die zweite Antwort gegen die Regeln, wird sie verworfen und nicht gesprochen.
+die zweite Antwort gegen eine Inhaltsregel, wird sie verworfen und nicht
+gesprochen. Bleibt ausschließlich die Satzgrenze verletzt, werden vollständige
+führende Sätze bis zum erlaubten Maximum übernommen und erneut validiert.
 
 ## Bestätigtes Feedback
 

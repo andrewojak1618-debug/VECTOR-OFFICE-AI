@@ -19,10 +19,19 @@ def main() -> int:
     if not runtime.ensure_available():
         print("Local Ollama is unavailable. [FAIL]")
         return 1
-    provider = OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL)
+    provider = OllamaProvider(
+        settings.OLLAMA_HOST,
+        settings.OLLAMA_MODEL,
+        temperature=0.0,
+    )
     for number, question in enumerate(EXAMPLE_DIALOGUES, start=1):
         agent = Agent(provider)
-        answer = agent.respond(question)
+        print(f"Running fixed personality example {number}...")
+        try:
+            answer = agent.respond(question)
+        except RuntimeError as exc:
+            print(f"Example {number} failed: {exc} [FAIL]")
+            return 1
         state = agent.emotional_state.state
         print(f"Example {number}: {question}")
         print(f"Answer: {answer}")

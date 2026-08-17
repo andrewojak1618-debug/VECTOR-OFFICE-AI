@@ -104,6 +104,7 @@ class AgentTests(unittest.TestCase):
         self.assertIn("Simulierte Gesprächshaltung: reflective", system)
         self.assertIn("Tatsachen von Deutung", system)
         self.assertIn("niemals, echte Gefühle", system)
+        self.assertIn("Das klingt belastend", system)
 
     def test_confirmed_feedback_is_json_data_and_grants_no_authority(self):
         model = RecordingLanguageModel("Ich antworte ruhig und knapp.")
@@ -142,6 +143,18 @@ class AgentTests(unittest.TestCase):
             agent.respond("Was soll ich tun?")
 
         self.assertEqual("user", agent.context.history[-1].role)
+
+    def test_repeated_length_only_violation_is_safely_compacted(self):
+        model = SequenceLanguageModel(
+            "Eins. Zwei. Drei.",
+            "Das klingt belastend. Wir gehen schrittweise vor. Danach prüfen wir neu.",
+        )
+        agent = Agent(model)
+
+        response = agent.respond("Ich bin überfordert.")
+
+        self.assertEqual("Das klingt belastend. Wir gehen schrittweise vor.", response)
+        self.assertEqual(response, agent.context.history[-1].content)
 
     def test_respond_rejects_empty_user_text(self):
         agent = Agent(RecordingLanguageModel("Antwort"))

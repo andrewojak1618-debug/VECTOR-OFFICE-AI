@@ -234,3 +234,19 @@ Die deutsche TTS wurde schrittweise verbessert:
 - reservierte Pfade und öffentliche Schnittstellen unverändert beibehalten
 - vollständige Unit-Test-, Syntax-, Dokumentations- und Git-Prüfung ausgeführt
 - private `.env`- und `data/`-Laufzeitdaten weiterhin aus Git ausgeschlossen
+
+## Systemabnahme und Release-Kandidat
+
+- zentralen Runner für Kern-, Live-Provider- und physische Prüfungen ergänzt
+- Standardlauf ohne API-Kosten, Sprachausgabe oder Robot-Aktion abgesichert
+- OpenAI-Erreichbarkeit als minimale, ausgabefreie Live-Diagnose vorbereitet
+- physische Prüfungen an eine zweite ausdrückliche Bestätigung gebunden
+- secretfreien lokalen JSON-Abnahmebericht unter `data/` ermöglicht
+- SQLite-Sicherung und Wiederherstellung automatisiert praktisch geprüft
+- Freigabekriterien für Versionsnummer, Changelog und Git-Tag dokumentiert
+- Kernabnahme mit 227 Tests und 4/4 Prüfschritten bestanden
+- lokale Ollama-Abnahme mit 7/7 Prüfschritten bestanden
+- minimale OpenAI-Live-Abnahme mit 5/5 Prüfschritten bestanden
+- physische Vector-Abnahme mit TTS und Begrüßung mit 6/6 bestanden
+- Aussprache, Lautstärke, Wissensantwort und Bewegung subjektiv bestätigt
+- Version `0.2.0-rc.1` und Changelog vorbereitet; Git-Tag noch ausstehend
