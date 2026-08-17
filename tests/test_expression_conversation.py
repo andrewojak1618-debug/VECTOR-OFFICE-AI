@@ -132,6 +132,15 @@ class ControlledExpressionConversationTests(unittest.TestCase):
         self.assertFalse(self.controller.awaiting_confirmation)
         self.assertEqual((), self.agent.context.history)
 
+    def test_observed_abort_variant_discards_prepared_answer(self):
+        self.controller.handle("Mit Ausdruck was bedeutet Freiheit")
+
+        result = self.controller.handle("abbruch")
+
+        self.assertEqual(ExpressionTurnStatus.CANCELLED, result.status)
+        self.assertFalse(self.controller.awaiting_confirmation)
+        self.assertEqual((), self.agent.context.history)
+
     def test_external_safety_event_can_discard_pending_answer(self):
         self.controller.handle("Mit Ausdruck was bedeutet Freiheit")
 

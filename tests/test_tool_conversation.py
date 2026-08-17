@@ -82,6 +82,14 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.assertEqual(ToolTurnStatus.NOT_HANDLED, ordinary.status)
         self.actions.perform.assert_not_called()
 
+    def test_observed_abort_variant_cancels_pending_action(self):
+        self.controller.handle("lift nach oben")
+
+        cancelled = self.controller.handle("abbruch")
+
+        self.assertEqual(ToolTurnStatus.CANCELLED, cancelled.status)
+        self.actions.perform.assert_not_called()
+
     def test_emergency_stop_overrides_pending_confirmation(self):
         self.controller.handle("begrüße mich")
 

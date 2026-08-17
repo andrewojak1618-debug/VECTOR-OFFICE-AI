@@ -1,5 +1,8 @@
 """Console and WirePod conversation loops."""
 
+import re
+import time
+
 from brain.agent import Agent
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
@@ -25,12 +28,20 @@ TOOL_HELP = (
     "Movements require a separate yes. Expressive response: "
     "'Mit Ausdruck was bedeutet Freiheit'."
 )
-VOICE_EXIT_PHRASES = {
+VOICE_EXIT_PHRASES = frozenset({
+    "beende das gespräch",
+    "bitte beenden",
+    "dialog beenden",
+    "gespräch abbrechen",
     "gespräch beenden",
     "programm beenden",
+    "vector bitte beenden",
     "vector beenden",
+    "vektor bitte beenden",
     "vektor beenden",
-}
+})
+MAX_CONSECUTIVE_VOICE_FAILURES = 3
+VOICE_RETRY_DELAY_SECONDS = 0.5
 
 
 def respond_and_speak(
@@ -103,22 +114,50 @@ def run_voice_conversation(
 ) -> None:
     """Run a private WirePod conversation until exit or the turn limit."""
     _print_voice_intro()
-    listener.prime()
     tool_conversation = _create_tool_conversation(agent)
     expression_conversation = _create_expression_conversation(agent, speech)
+    try:
+        if not _prime_voice_listener(listener):
+            return
+        _run_voice_turns(
+            agent,
+            speech,
+            listener,
+            tool_conversation,
+            expression_conversation,
+            listen_timeout,
+            max_turns,
+        )
+    except KeyboardInterrupt:
+        print("\nConversation ended.")
+    finally:
+        if expression_conversation is not None:
+            expression_conversation.cancel_pending()
+
+
+def _run_voice_turns(
+    agent: Agent,
+    speech: VectorSpeech,
+    listener: WirePodTranscriptListener,
+    tool_conversation: ControlledToolConversation | None,
+    expression_conversation: ControlledExpressionConversation | None,
+    listen_timeout: float,
+    max_turns: int | None,
+) -> None:
     completed_turns = 0
+    failures = 0
     while max_turns is None or completed_turns < max_turns:
         try:
             user_text = _listen_for_user_text(listener, listen_timeout)
-        except KeyboardInterrupt:
-            print("\nConversation ended.")
-            return
-        except RuntimeError as exc:
-            print(f"Voice input failed: {exc}")
-            return
+        except RuntimeError:
+            failures += 1
+            if not _retry_voice_input(failures):
+                return
+            continue
+        failures = 0
         if user_text is None:
             continue
-        if user_text.casefold() in VOICE_EXIT_PHRASES:
+        if _is_voice_exit_signal(user_text):
             print("Conversation ended.")
             return
         _handle_user_turn(
@@ -129,6 +168,35 @@ def run_voice_conversation(
             user_text,
         )
         completed_turns += 1
+
+
+def _prime_voice_listener(listener: WirePodTranscriptListener) -> bool:
+    for attempt in range(1, MAX_CONSECUTIVE_VOICE_FAILURES + 1):
+        try:
+            listener.prime()
+            return True
+        except RuntimeError:
+            if not _retry_voice_input(attempt):
+                return False
+    return False
+
+
+def _retry_voice_input(failure_count: int) -> bool:
+    if failure_count >= MAX_CONSECUTIVE_VOICE_FAILURES:
+        print("Voice input failed repeatedly. Conversation ended.")
+        return False
+    print(
+        "Voice input temporarily unavailable "
+        f"({failure_count}/{MAX_CONSECUTIVE_VOICE_FAILURES}). Retrying..."
+    )
+    time.sleep(VOICE_RETRY_DELAY_SECONDS)
+    return True
+
+
+def _is_voice_exit_signal(user_text: str) -> bool:
+    normalized = " ".join(user_text.casefold().strip().split())
+    normalized = re.sub(r"[.!?,;:]+$", "", normalized).strip()
+    return normalized in VOICE_EXIT_PHRASES
 
 
 def _print_voice_intro() -> None:

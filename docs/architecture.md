@@ -20,6 +20,12 @@
 | `vector/` | WirePod-Healthcheck, SDK-Verbindung, deutsche TTS und kontrollierte Aktionen |
 | `voice/` | WirePod-Transcript-Listener und Voice-Eingabe |
 | `tools/` | Registry, Parameterschemata und explizite Aktionsberechtigungen |
+
+OpenAI und Ollama verwenden dieselben konfigurierten Grenzen für Anfragezeit
+und maximale Versuche. OpenAI erhält diese Werte direkt beim SDK-Aufbau;
+Ollama wiederholt nur vorübergehende Transport-, Drosselungs- und Serverfehler.
+Dauerhafte Clientfehler werden nicht erneut gesendet. Erst nach ausgeschöpften
+Primärversuchen greift der bestehende lokale Provider-Fallback.
 | `tests/` | Automatisierte Regressionstests |
 
 `main.py` ist ausschließlich der schlanke Einstiegspunkt. Die Zusammensetzung

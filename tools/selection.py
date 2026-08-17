@@ -74,7 +74,12 @@ DEFAULT_INTENT_RULES = (
         (("action", "head_level"),),
     ),
     ToolIntentRule(
-        ("hebe deinen lift", "lift nach oben", "hebe deinen arm"),
+        (
+            "hebe deinen lift",
+            "hebe deine lift",
+            "lift nach oben",
+            "hebe deinen arm",
+        ),
         "vector.perform_action",
         "Lift anheben",
         (("action", "lift_up"),),

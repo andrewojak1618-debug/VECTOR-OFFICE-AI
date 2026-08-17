@@ -338,6 +338,9 @@ OPENAI_MODEL=gpt-5.6-luna
 OLLAMA_HOST=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.2:3b
 OLLAMA_EXECUTABLE=
+LLM_REQUEST_TIMEOUT=120
+LLM_MAX_ATTEMPTS=2
+LLM_RETRY_DELAY=0.5
 
 EMBEDDING_PROVIDER=ollama
 OLLAMA_EMBEDDING_MODEL=embeddinggemma
@@ -515,10 +518,29 @@ Für die vollständige Sprachpipeline kann anschließend in `.env`
 Agent, gemeinsames Memory, Provider-Fallback und deutsche Vector-TTS. Der
 Konsolenmodus bleibt mit `INPUT_MODE=console` verfügbar.
 
+Mehrfach protokollierte WirePod-Erkennungen desselben Textes und Geräts werden
+innerhalb von drei Sekunden lokal über begrenzte SHA-256-Fingerabdrücke
+zusammengeführt. Dadurch löst ein einzelner Sprachturn nicht versehentlich zwei
+Antworten oder eine zweite Bestätigung aus; spätere bewusste Wiederholungen
+bleiben möglich.
+
+Vorübergehende WirePod-Ausfälle werden begrenzt wiederholt. Eindeutige
+Abbruchsignale werden unabhängig von Großschreibung und abschließenden
+Satzzeichen erkannt; offene Ausdrucksbestätigungen werden beim Sitzungsende
+sicher verworfen.
+
 Sprachtranskripte bleiben mit `VOICE_ALLOW_CLOUD=false` vollständig lokal und
 werden direkt mit Ollama verarbeitet. Erst `VOICE_ALLOW_CLOUD=true` erlaubt im
 WirePod-Modus die Übergabe erkannter Sprache an den konfigurierten
 Cloud-Provider.
+
+Diese Einstellung kontrolliert ausschließlich Vector Office AI. Ein separat
+aktivierter WirePod Knowledge Graph kann dieselbe Frage unabhängig davon an
+seinen eigenen Provider senden und selbst sprechen. Für den lokal geprüften
+Einzelstimmenbetrieb sind deshalb in WirePod `Enable intent-graph` und
+`Enable conversations via "I have a question"` deaktiviert. WirePod liefert
+weiterhin das Transkript, während ausschließlich die deutsche Anwendungstimme
+antwortet.
 
 ## 🔐 Sicherheit und Secrets
 
@@ -629,7 +651,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ Export, Reindexierung und Dokumentversionsverwaltung ergänzt
 - ✅ automatisierte Tests
 - ✅ WirePod-Transcript-Listener für deutsche Spracheingabe
-- 🧪 Spracheingabe mit Agent, Memory, Fallback und TTS verbunden
+- ✅ Spracheingabe mit Agent, Memory, Fallback und TTS physisch geprüft
 - ✅ hybride semantische und lexikalische Suche
 - ✅ Tool Registry und Berechtigungsmodell
 - ✅ kontrollierte Kopf-, Lift- und Kurzanimationsaktionen
@@ -649,7 +671,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 ### Version 0.2 – Conversation Foundation
 
 - interaktive Gesprächsschleife weiter stabilisieren
-- Timeout-, Retry- und Provider-Fallback-Verhalten ergänzen
+- ✅ Timeout-, Retry- und Provider-Fallback-Verhalten vereinheitlichen
 - Ollama lokal installieren und mit geeignetem Modell testen
 - Providerwechsel vollständig über Konfiguration absichern
 - strukturierte Logs und Diagnoseausgaben einführen

@@ -1,6 +1,8 @@
-"""Language-model adapters and provider composition."""
+"""Language-model adapters and bounded provider resilience."""
 
-from typing import Any, Sequence
+import time
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import httpx
 from openai import OpenAI, OpenAIError
@@ -24,13 +26,20 @@ class OpenAIProvider:
         api_key: str,
         model: str,
         client: Any | None = None,
+        timeout: float = 120.0,
+        max_attempts: int = 2,
     ):
         if not api_key.strip():
             raise ValueError("OPENAI_API_KEY is required for the OpenAI provider.")
         if not model.strip():
             raise ValueError("OPENAI_MODEL must not be empty.")
+        _validate_request_policy(timeout, max_attempts, 0.0)
         self.model = model
-        self.client = client or OpenAI(api_key=api_key)
+        self.client = client or OpenAI(
+            api_key=api_key,
+            timeout=timeout,
+            max_retries=max_attempts - 1,
+        )
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
         """Return one model response without exposing provider exceptions."""
@@ -54,8 +63,11 @@ class OllamaProvider:
         base_url: str,
         model: str,
         timeout: float = 120.0,
+        max_attempts: int = 2,
+        retry_delay: float = 0.5,
         temperature: float | None = None,
         client: httpx.Client | None = None,
+        sleeper: Callable[[float], None] = time.sleep,
     ):
         if not base_url.strip():
             raise ValueError("OLLAMA_HOST must not be empty.")
@@ -63,8 +75,12 @@ class OllamaProvider:
             raise ValueError("OLLAMA_MODEL must not be empty.")
         if temperature is not None and not 0.0 <= temperature <= 2.0:
             raise ValueError("Ollama temperature must be between 0 and 2.")
+        _validate_request_policy(timeout, max_attempts, retry_delay)
         self.model = model
         self.temperature = temperature
+        self.max_attempts = max_attempts
+        self.retry_delay = retry_delay
+        self.sleeper = sleeper
         self.client = client or httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout,
@@ -72,17 +88,35 @@ class OllamaProvider:
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
         """Return one local response and sanitize transport failures."""
-        try:
-            response = self.client.post(
-                "/api/chat",
-                json=self._request_payload(messages),
-            )
-            response.raise_for_status()
-        except httpx.HTTPError:
-            raise RuntimeError(
-                "Ollama request failed. Check service, host, and model."
-            ) from None
+        response = self._request(messages)
         return self._response_content(response)
+
+    def _request(self, messages: Sequence[ChatMessage]) -> httpx.Response:
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                response = self.client.post(
+                    "/api/chat",
+                    json=self._request_payload(messages),
+                )
+                response.raise_for_status()
+                return response
+            except httpx.HTTPError as exc:
+                if not self._may_retry(exc, attempt):
+                    break
+                self.sleeper(self.retry_delay)
+        raise RuntimeError(
+            "Ollama request failed. Check service, host, and model."
+        ) from None
+
+    def _may_retry(self, error: httpx.HTTPError, attempt: int) -> bool:
+        if attempt >= self.max_attempts:
+            return False
+        if isinstance(error, httpx.RequestError):
+            return True
+        if isinstance(error, httpx.HTTPStatusError):
+            status = error.response.status_code
+            return status in {408, 409, 429} or status >= 500
+        return False
 
     def _request_payload(self, messages: Sequence[ChatMessage]) -> dict:
         payload = {
@@ -143,7 +177,12 @@ def create_language_model(settings) -> LanguageModel:
 
 
 def _create_openai_model(settings) -> LanguageModel:
-    primary = OpenAIProvider(settings.OPENAI_API_KEY, settings.OPENAI_MODEL)
+    primary = OpenAIProvider(
+        settings.OPENAI_API_KEY,
+        settings.OPENAI_MODEL,
+        timeout=_request_timeout(settings),
+        max_attempts=_max_attempts(settings),
+    )
     fallback = settings.LLM_FALLBACK_PROVIDER.casefold().strip()
     if fallback == "none":
         return primary
@@ -153,4 +192,31 @@ def _create_openai_model(settings) -> LanguageModel:
 
 
 def _create_ollama_model(settings) -> OllamaProvider:
-    return OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL)
+    return OllamaProvider(
+        settings.OLLAMA_HOST,
+        settings.OLLAMA_MODEL,
+        timeout=_request_timeout(settings),
+        max_attempts=_max_attempts(settings),
+        retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
+    )
+
+
+def _request_timeout(settings) -> float:
+    return getattr(settings, "LLM_REQUEST_TIMEOUT", 120.0)
+
+
+def _max_attempts(settings) -> int:
+    return getattr(settings, "LLM_MAX_ATTEMPTS", 2)
+
+
+def _validate_request_policy(
+    timeout: float,
+    max_attempts: int,
+    retry_delay: float,
+) -> None:
+    if not 1.0 <= timeout <= 600.0:
+        raise ValueError("LLM request timeout must be between 1 and 600 seconds.")
+    if type(max_attempts) is not int or not 1 <= max_attempts <= 5:
+        raise ValueError("LLM max attempts must be between 1 and 5.")
+    if not 0.0 <= retry_delay <= 10.0:
+        raise ValueError("LLM retry delay must be between 0 and 10 seconds.")

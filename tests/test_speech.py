@@ -55,12 +55,24 @@ class VectorSpeechTests(unittest.TestCase):
                 SpeechStyle.REFLECTIVE,
             )
 
-        self.assertIn('<prosody rate="-5%">', content)
-        self.assertNotIn("pitch=", content)
+        self.assertIn('<prosody rate="+5%">', content)
+        self.assertIn(
+            '<prosody volume="loud" pitch="+3%">Freiheit &amp;</prosody>',
+            content,
+        )
+        self.assertIn(
+            '<prosody volume="loud" pitch="+3%">Eine mögliche</prosody>',
+            content,
+        )
+        self.assertIn(
+            '<prosody volume="soft" pitch="-5%">Sichtweise?</prosody>',
+            content,
+        )
         self.assertIn('<break time="180ms"/>', content)
         self.assertIn('Ich schätze<break time="320ms"/>', content)
         self.assertIn('<break time="190ms"/>', content)
-        self.assertIn("Freiheit &amp; Verantwortung.", content)
+        self.assertIn("Freiheit &amp;", content)
+        self.assertIn("Verantwortung.", content)
 
     def test_each_reflective_prelude_can_be_selected_independently(self):
         self.assertEqual(
@@ -107,15 +119,34 @@ class VectorSpeechTests(unittest.TestCase):
                     content,
                 )
 
-    def test_neutral_style_preserves_plain_text(self):
+    def test_neutral_style_uses_faster_bounded_sentence_prosody(self):
         text = "Guten Tag & willkommen."
 
         with patch("vector.speech.secrets.choice") as choose:
-            self.assertEqual(
-                text,
-                VectorSpeech._speech_content(text, SpeechStyle.NEUTRAL),
-            )
+            content = VectorSpeech._speech_content(text, SpeechStyle.NEUTRAL)
+
+        self.assertIn('<prosody rate="+8%">', content)
+        self.assertIn(
+            '<prosody volume="loud" pitch="+3%">Guten Tag</prosody>',
+            content,
+        )
+        self.assertIn(
+            '<prosody volume="soft" pitch="-5%">&amp; willkommen.</prosody>',
+            content,
+        )
         choose.assert_not_called()
+
+    def test_short_sentence_keeps_opening_and_ending_separate(self):
+        content = VectorSpeech._speech_content("Guten Morgen.", SpeechStyle.NEUTRAL)
+
+        self.assertIn(
+            '<prosody volume="loud" pitch="+3%">Guten</prosody>',
+            content,
+        )
+        self.assertIn(
+            '<prosody volume="soft" pitch="-5%">Morgen.</prosody>',
+            content,
+        )
 
     def test_invalid_speech_style_is_rejected(self):
         speech = VectorSpeech(FakeVectorClient())

@@ -84,8 +84,11 @@ class SpeechStyle(Enum):
 
 REFLECTIVE_SENTENCE_BREAK_MS = 190
 REFLECTIVE_LEADING_BREAK_MS = 180
-REFLECTIVE_RATE = "-5%"
+NEUTRAL_RATE = "+8%"
+REFLECTIVE_RATE = "+5%"
 REFLECTIVE_HUM_RATE = "-32%"
+SENTENCE_OPENING_WORDS = 2
+SENTENCE_ENDING_WORDS = 3
 
 
 @dataclass(frozen=True)
@@ -187,7 +190,7 @@ class VectorSpeech:
             "__TEXT__": self._encode(content),
             "__VOICE__": self._encode(self.voice),
             "__OUTPUT__": self._encode(str(output_path)),
-            "__IS_SSML__": str(style is SpeechStyle.REFLECTIVE).lower(),
+            "__IS_SSML__": "true",
         }
         script = ONECORE_TTS_SCRIPT
         for marker, value in replacements.items():
@@ -196,20 +199,56 @@ class VectorSpeech:
 
     @staticmethod
     def _speech_content(text: str, style: SpeechStyle) -> str:
-        if style is SpeechStyle.NEUTRAL:
-            return text
         sentences = re.split(r"(?<=[.!?])\s+", text.strip())
         pause = f'<break time="{REFLECTIVE_SENTENCE_BREAK_MS}ms"/>'
-        body = pause.join(escape(sentence) for sentence in sentences)
-        prelude = secrets.choice(REFLECTIVE_PRELUDES)
+        body = pause.join(
+            VectorSpeech._shape_sentence(sentence)
+            for sentence in sentences
+            if sentence
+        )
+        rate = NEUTRAL_RATE
+        prelude_markup = ""
+        if style is SpeechStyle.REFLECTIVE:
+            rate = REFLECTIVE_RATE
+            prelude = secrets.choice(REFLECTIVE_PRELUDES)
+            prelude_markup = (
+                f'<break time="{REFLECTIVE_LEADING_BREAK_MS}ms"/>'
+                f'{prelude.markup}<break time="{prelude.break_ms}ms"/>'
+            )
         return (
             '<speak version="1.0" '
             'xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="de-DE">'
-            f'<prosody rate="{REFLECTIVE_RATE}">'
-            f'<break time="{REFLECTIVE_LEADING_BREAK_MS}ms"/>{prelude.markup}'
-            f'<break time="{prelude.break_ms}ms"/>{body}'
+            f'<prosody rate="{rate}">{prelude_markup}{body}'
             "</prosody></speak>"
         )
+
+    @staticmethod
+    def _shape_sentence(sentence: str) -> str:
+        """Give one sentence a present opening and a gently falling ending."""
+        words = sentence.split()
+        if not words:
+            return ""
+        if len(words) == 1:
+            return (
+                '<prosody volume="soft" pitch="-3%">'
+                f'{escape(words[0])}</prosody>'
+            )
+        opening_count = min(SENTENCE_OPENING_WORDS, len(words) - 1)
+        ending_count = min(SENTENCE_ENDING_WORDS, len(words) - opening_count)
+        opening = escape(" ".join(words[:opening_count]))
+        middle = escape(" ".join(words[opening_count:-ending_count]))
+        ending = escape(" ".join(words[-ending_count:]))
+        parts = [
+            '<prosody volume="loud" pitch="+3%">'
+            f'{opening}</prosody>'
+        ]
+        if middle:
+            parts.append(middle)
+        parts.append(
+            '<prosody volume="soft" pitch="-5%">'
+            f'{ending}</prosody>'
+        )
+        return " ".join(parts)
 
     @staticmethod
     def _encode(value: str) -> str:

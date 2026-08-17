@@ -25,7 +25,11 @@ EXPRESSION_REQUEST_PREFIXES = (
 )
 CONFIRMATION_PHRASES = frozenset({"ja", "ja bitte", "bestätigen", "ausführen"})
 DECLINE_PHRASES = frozenset({"nein", "ohne animation"})
-CANCELLATION_PHRASES = frozenset({"abbrechen", "antwort verwerfen"})
+CANCELLATION_PHRASES = frozenset({
+    "abbrechen",
+    "abbruch",
+    "antwort verwerfen",
+})
 CONFIRMATION_MESSAGE = (
     "Soll ich die Antwort mit einer ruhigen Kopf- und Augenbewegung ausgeben? "
     "Antworte mit Ja oder Nein."

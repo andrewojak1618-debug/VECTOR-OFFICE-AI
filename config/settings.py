@@ -163,6 +163,27 @@ class Settings:
         "llama3.2:3b",
     )
 
+    LLM_REQUEST_TIMEOUT = get_float_setting(
+        "LLM_REQUEST_TIMEOUT",
+        default=120.0,
+        minimum=1.0,
+        maximum=600.0,
+    )
+
+    LLM_MAX_ATTEMPTS = get_int_setting(
+        "LLM_MAX_ATTEMPTS",
+        default=2,
+        minimum=1,
+        maximum=5,
+    )
+
+    LLM_RETRY_DELAY = get_float_setting(
+        "LLM_RETRY_DELAY",
+        default=0.5,
+        minimum=0.0,
+        maximum=10.0,
+    )
+
     OLLAMA_EXECUTABLE = os.getenv(
         "OLLAMA_EXECUTABLE",
         "",

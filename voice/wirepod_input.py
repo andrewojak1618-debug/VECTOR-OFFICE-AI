@@ -1,9 +1,12 @@
 """Private voice transcript input from the local WirePod log endpoint."""
 
 import argparse
+import hashlib
+import math
 import re
 import time
 from dataclasses import dataclass
+from datetime import datetime
 
 import httpx
 
@@ -17,6 +20,9 @@ DEFAULT_POLL_INTERVAL = 0.5
 REQUEST_TIMEOUT_SECONDS = 5.0
 MAX_SEEN_LINES = 200
 RETAINED_SEEN_LINES = 50
+DUPLICATE_TRANSCRIPT_WINDOW_SECONDS = 3.0
+MAX_RECENT_TRANSCRIPTS = 50
+WIREPOD_TIMESTAMP_FORMAT = "%Y.%m.%d %H:%M:%S"
 
 
 @dataclass(frozen=True)
@@ -37,14 +43,19 @@ class WirePodTranscriptListener:
         self,
         wirepod_host: str,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
+        duplicate_window: float = DUPLICATE_TRANSCRIPT_WINDOW_SECONDS,
         client: httpx.Client | None = None,
     ):
+        if not math.isfinite(duplicate_window) or not 0 <= duplicate_window <= 30:
+            raise ValueError("Duplicate transcript window must be between 0 and 30.")
         self.poll_interval = poll_interval
+        self.duplicate_window = duplicate_window
         self.client = client or httpx.Client(
             base_url=wirepod_host.rstrip("/"),
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
-        self._seen_lines: set[str] = set()
+        self._seen_line_fingerprints: set[str] = set()
+        self._recent_transcripts: dict[str, datetime] = {}
         self._primed = False
 
     @staticmethod
@@ -62,8 +73,13 @@ class WirePodTranscriptListener:
         match = TRANSCRIPT_PATTERN.match(normalized_line)
         if match is None:
             return None
+        timestamp = match.group("timestamp")
+        try:
+            datetime.strptime(timestamp, WIREPOD_TIMESTAMP_FORMAT)
+        except ValueError:
+            return None
         return TranscriptEvent(
-            timestamp=match.group("timestamp"),
+            timestamp=timestamp,
             intent=match.group("intent"),
             text=match.group("text").strip(),
             device=match.group("device"),
@@ -73,20 +89,27 @@ class WirePodTranscriptListener:
     def prime(self) -> None:
         """Mark current log entries as seen before accepting new speech."""
         events = self._fetch_events()
-        self._seen_lines = {event.raw_line for event in events}
+        self._seen_line_fingerprints = {
+            self._line_fingerprint(event) for event in events
+        }
         self._primed = True
 
     def poll(self) -> tuple[TranscriptEvent, ...]:
         """Return only events not emitted by an earlier poll."""
         events = self._fetch_events()
         new_events = tuple(
-            event for event in events if event.raw_line not in self._seen_lines
+            event
+            for event in events
+            if self._line_fingerprint(event) not in self._seen_line_fingerprints
         )
-        self._seen_lines.update(event.raw_line for event in events)
+        self._seen_line_fingerprints.update(
+            self._line_fingerprint(event) for event in events
+        )
 
-        if len(self._seen_lines) > MAX_SEEN_LINES:
-            self._seen_lines = {
-                event.raw_line for event in events[-RETAINED_SEEN_LINES:]
+        if len(self._seen_line_fingerprints) > MAX_SEEN_LINES:
+            self._seen_line_fingerprints = {
+                self._line_fingerprint(event)
+                for event in events[-RETAINED_SEEN_LINES:]
             }
 
         self._primed = True
@@ -104,10 +127,9 @@ class WirePodTranscriptListener:
 
         while time.monotonic() < deadline:
             events = self.poll()
-            spoken_events = self._spoken_events(events)
-
-            if spoken_events:
-                return spoken_events[-1]
+            event = self._latest_unique_spoken_event(events)
+            if event is not None:
+                return event
 
             time.sleep(self.poll_interval)
 
@@ -120,6 +142,52 @@ class WirePodTranscriptListener:
             for event in events
             if event.text and event.intent != "intent_system_noaudio"
         )
+
+    def _latest_unique_spoken_event(
+        self,
+        events: tuple[TranscriptEvent, ...],
+    ) -> TranscriptEvent | None:
+        for event in reversed(self._spoken_events(events)):
+            if self._accept_transcript(event):
+                return event
+        return None
+
+    def _accept_transcript(self, event: TranscriptEvent) -> bool:
+        fingerprint = self._transcript_fingerprint(event)
+        event_time = datetime.strptime(
+            event.timestamp,
+            WIREPOD_TIMESTAMP_FORMAT,
+        )
+        previous_time = self._recent_transcripts.get(fingerprint)
+        if previous_time is not None:
+            elapsed = abs((event_time - previous_time).total_seconds())
+            if elapsed <= self.duplicate_window:
+                return False
+        self._recent_transcripts[fingerprint] = event_time
+        self._limit_recent_transcripts()
+        return True
+
+    def _limit_recent_transcripts(self) -> None:
+        if len(self._recent_transcripts) <= MAX_RECENT_TRANSCRIPTS:
+            return
+        newest = sorted(
+            self._recent_transcripts.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )[:MAX_RECENT_TRANSCRIPTS]
+        self._recent_transcripts = dict(newest)
+
+    @staticmethod
+    def _transcript_fingerprint(event: TranscriptEvent) -> str:
+        normalized_text = " ".join(
+            event.text.casefold().strip().rstrip(".!?").split()
+        )
+        value = f"{event.device.casefold()}\0{normalized_text}"
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _line_fingerprint(event: TranscriptEvent) -> str:
+        return hashlib.sha256(event.raw_line.encode("utf-8")).hexdigest()
 
     def _fetch_events(self) -> tuple[TranscriptEvent, ...]:
         try:

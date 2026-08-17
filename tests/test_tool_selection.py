@@ -54,6 +54,12 @@ class ToolIntentSelectorTests(unittest.TestCase):
 
         self.assertEqual(ToolSelectionStatus.NO_MATCH, selection.status)
 
+    def test_observed_vosk_lift_variant_selects_allowlisted_action(self):
+        selection = self.selector.select("hebe deine lift")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("lift_up", selection.arguments["action"])
+
     def test_read_only_action_list_is_selected_from_registry(self):
         selection = self.selector.select("Welche Bewegungen kannst du?")
 

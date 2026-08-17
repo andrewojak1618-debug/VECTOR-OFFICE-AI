@@ -25,6 +25,20 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - unnatürlich ausgesprochene Varianten `Hmmm` und `Mmmm` nach Hörprobe entfernt
 - physisch ausgewählten IPA-Summton mit 1,5 Sekunden Denkpause übernommen
 - IPA-Summton nach A/B-Hörprobe um rund eine halbe Sekunde verlängert
+- doppelte WirePod-Transkripte innerhalb eines kurzen lokalen Fensters unterdrückt
+- Voice-Wiedererkennung auf begrenzte SHA-256-Fingerabdrücke beschränkt
+- WirePod-Initialisierung und laufende Erkennung begrenzt wiederholbar gemacht
+- normalisierte Voice-Abbruchsignale und sichere Sitzungsbereinigung ergänzt
+- im Hardwaretest beobachtete Vosk-Varianten gezielt in bestehende Allowlists aufgenommen
+- Voice-Cloud-Hinweis auf die tatsächliche Anwendungsgrenze präzisiert
+- parallele englische WirePod-Stimme durch deaktivierten Intent-Graph- und
+  Konversationspfad beseitigt und den lokalen Transkriptpfad physisch bestätigt
+- neutrale deutsche TTS moderat beschleunigt und eine präsente, nicht
+  verlangsamte Satzöffnung mit leise fallendem Satzende ergänzt
+- neue deutsche Satzkontur am physischen Vector erfolgreich hörgeprüft
+- gemeinsame konfigurierbare LLM-Zeitlimits und maximale Versuche eingeführt
+- lokale Ollama-Wiederholung auf vorübergehende Transport- und Serverfehler begrenzt
+- OpenAI-SDK-Retries explizit an dieselbe Versuchszahl gebunden
 - Pause nach `Lass mich überlegen` auf zwei Sekunden abgestimmt
 - `vektor beenden` und sauberen Abbruch der Voice-Schleife per `Ctrl+C` ergänzt
 - reflektiertes Bewegungs- und Sprachprofil physisch erfolgreich als Verbesserung bewertet

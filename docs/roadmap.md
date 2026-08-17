@@ -12,15 +12,15 @@
 
 ## Conversation Foundation
 
-- Retry- und Timeout-Verhalten weiter vereinheitlichen
+- ✅ Retry- und Timeout-Verhalten weiter vereinheitlichen
 - strukturierte Logs und Diagnoseausgaben ergänzen
 - Providerwechsel in längeren Sitzungen testen
 
 ## Voice Input
 
-- mehrturnigen physischen Voice-Dialog stabilisieren
-- Erkennungsfehler und Abbruchsignale behandeln
-- doppelte WirePod-Reaktionen verhindern
+- ✅ mehrturnigen physischen Voice-Dialog stabilisieren
+- ✅ Erkennungsfehler und Abbruchsignale behandeln
+- ✅ doppelte WirePod-Reaktionen verhindern
 - optionalen Cloud-Voice-Pfad nur mit Zustimmung testen
 
 ## Memory und Bibliothek
@@ -63,5 +63,5 @@
 - ✅ stärkeres festes Reflexionsprofil für Bewegung und Prosodie implementieren
 - ✅ erstes reflektiertes Bewegungs- und Sprachprofil physisch verbessern und abnehmen
 - ✅ natürliche Satzmelodie und eigenständiger wirkende Reflexion technisch fein abstimmen
-- fein abgestimmte Satzmelodie am physischen Vector subjektiv abnehmen
+- ✅ fein abgestimmte Satzmelodie am physischen Vector subjektiv abnehmen
 - ✅ drei lokale zufällige Reflexionseinleitungen physisch auf Natürlichkeit prüfen

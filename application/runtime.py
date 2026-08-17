@@ -201,8 +201,15 @@ def _print_index_progress(progress: IndexProgress) -> None:
 def _create_language_model(settings, mode: RuntimeMode):
     if not mode.local_voice_required:
         return create_language_model(settings)
-    print("Voice privacy: using local Ollama (cloud disabled).")
-    return OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL)
+    print("Application voice model: local Ollama (cloud disabled here).")
+    print("WirePod Knowledge Graph privacy must be configured separately.")
+    return OllamaProvider(
+        settings.OLLAMA_HOST,
+        settings.OLLAMA_MODEL,
+        timeout=getattr(settings, "LLM_REQUEST_TIMEOUT", 120.0),
+        max_attempts=getattr(settings, "LLM_MAX_ATTEMPTS", 2),
+        retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
+    )
 
 
 def _knowledge_enabled(settings, mode: RuntimeMode) -> bool:

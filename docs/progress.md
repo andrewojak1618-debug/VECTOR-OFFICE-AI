@@ -352,14 +352,18 @@ Die deutsche TTS wurde schrittweise verbessert:
 
 ## Natürlichere Satzmelodie
 
-- reflektierte Verlangsamung von neun auf fünf Prozent reduziert
+- neutrale Antworten auf acht Prozent und reflektierte Antworten auf fünf
+  Prozent Beschleunigung eingestellt
 - globale Absenkung der Tonhöhe entfernt und native Intonation erhalten
+- die ersten beiden Wörter ohne Tempoänderung präsenter gestaltet
+- die letzten drei Wörter mit leiserer und fallender Kontur ausklingen lassen
 - Anfangspause auf 180 und Satzpause auf 190 Millisekunden verkürzt
 - Lexikon- und Manuskripteinstiege in allen providerneutralen Regeln ausgeschlossen
 - reflektierte Sätze möglichst auf weniger als 18 Wörter ausgerichtet
 - reale lokale SSML-WAV-Erzeugung mit dem neuen Profil erfolgreich geprüft
 - deterministische Ollama-Beispiele mit kürzeren gesprochenen Gedanken bestanden
-- neutrale TTS, Lautheitskompression und Bewegungssicherheit unverändert gelassen
+- Lautheitskompression und Bewegungssicherheit unverändert gelassen
+- feste deutsche Hörprobe am physischen Vector erfolgreich abgenommen
 
 ## Variable Reflexionseinleitung
 
@@ -377,3 +381,48 @@ Die deutsche TTS wurde schrittweise verbessert:
 - längere Variante nach positiver Hörabnahme produktiv übernommen
 - Pause nach `Lass mich überlegen` nach Nutzerfeedback auf 2.000 Millisekunden gesetzt
 - Pause nach `Ich schätze` unverändert bei 320 Millisekunden gelassen
+
+## WirePod-Duplikatschutz
+
+- identische Rohlogzeilen weiterhin nur einmal verarbeitet
+- gleiche normalisierte Transkripte mit neuem Zeitstempel zusätzlich erkannt
+- Duplikate desselben Geräts innerhalb von drei Sekunden unterdrückt
+- bewusste Wiederholungen nach Ablauf des Fensters wieder zugelassen
+- identische Texte verschiedener Geräte unabhängig behandelt
+- Exit-, Notfall- und Bestätigungssignale beim ersten Auftreten sofort durchgereicht
+- nur SHA-256-Fingerabdrücke in begrenzten sitzungslokalen Wiedererkennungslisten gehalten
+- beschädigte WirePod-Zeitstempel ohne Abbruch der Voice-Schleife ignoriert
+
+## Voice-Fehler und Abbruchsignale
+
+- eindeutige Voice-Endsignale gegen Großschreibung, Leerraum und Satzzeichen normalisiert
+- bewusste Varianten für Vector, Vektor, Gespräch und Dialog zugelassen
+- ein einzelnes `Abbrechen` weiterhin nur für offene Bestätigungen verwendet
+- Initialisierung und laufenden WirePod-Abruf auf drei Fehlversuche begrenzt
+- kurze Pause zwischen lokalen Wiederholungsversuchen eingeführt
+- interne Fehlerdetails aus der normalen Dialogausgabe ferngehalten
+- `Ctrl+C` in der gesamten Voice-Verarbeitung ohne Traceback behandelt
+- offene Ausdrucksantworten bei jedem Sitzungsende kontrolliert zurückgerollt
+
+## Physischer Mehrturntest
+
+- freie deutsche Frage lokal erkannt, mit Ollama beantwortet und vollständig gesprochen
+- kontrollierte Kopfbewegung erst nach separatem `Ja bitte` einmalig ausgeführt
+- Hörtimeout ohne Sitzungsabbruch erfolgreich durchlaufen
+- offene Kopfaktion mit `Abbrechen` ohne Bewegung verworfen
+- reale Vosk-Varianten `hebe deine Lift`, `Abbruch` und `bitte beenden` abgesichert
+- parallele englisch klingende WirePod-OpenAI-Stimme als separate Ausgabequelle identifiziert
+- irreführende globale Cloud-Ausgabe auf anwendungsspezifische Aussage korrigiert
+- WirePod-Optionen `Enable intent-graph` und die Konversation über
+  `I have a question` gezielt deaktiviert
+- Transkriptpfad anschließend ohne englische Zweitstimme physisch bestätigt
+
+## Einheitliche Provider-Resilienz
+
+- gemeinsames konfigurierbares Anfragezeitlimit für OpenAI und Ollama ergänzt
+- maximale Modellversuche auf einen Wert zwischen eins und fünf begrenzt
+- OpenAI-SDK-Retries ausdrücklich statt über versteckte Standardwerte gesetzt
+- Ollama-Wiederholung auf Transportfehler, 408, 409, 429 und Serverfehler begrenzt
+- dauerhafte Clientfehler ohne unnötigen zweiten Aufruf beendet
+- Fehlermeldungen weiterhin ohne Transportdetails oder sensible Inhalte gehalten
+- bestehenden Wechsel von OpenAI zum lokalen Ollama-Fallback unverändert bewahrt

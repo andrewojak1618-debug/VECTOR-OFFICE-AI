@@ -15,7 +15,12 @@ from tools.selection import (
 
 EMERGENCY_TOOL_NAME = "vector.emergency_stop"
 CONFIRMATION_PHRASES = frozenset({"ja", "ja bitte", "bestätigen", "ausführen"})
-CANCELLATION_PHRASES = frozenset({"nein", "abbrechen", "nicht ausführen"})
+CANCELLATION_PHRASES = frozenset({
+    "nein",
+    "abbrechen",
+    "abbruch",
+    "nicht ausführen",
+})
 
 
 class ToolTurnStatus(Enum):
