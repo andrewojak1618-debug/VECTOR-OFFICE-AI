@@ -50,6 +50,17 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - einmalige lokale Kollektiv-Offline-Ansage vor der Ollama-Antwort ergänzt
 - separate ehrliche Meldung für den Ausfall von Cloud und lokalem Fallback ergänzt
 - beide lokalen Offline-Meldungen am physischen Vector erfolgreich abgenommen
+- aktive WirePod-Sprachsitzungen an die gemeinsame Wiederholungsstaffel angebunden
+- einmalige deutsche Wiederherstellungsansage nach einem WirePod-Ausfall ergänzt
+- Wiederherstellungsansage am physischen Vector verständlich hörgeprüft und bestätigt
+- lokalen Windows-Autostart mit verzögerter Einzelinstanz-Aufgabe ergänzt
+- Host-Watchdog für fehlenden WirePod-Prozess und begrenzte App-Neustarts ergänzt
+- sauberen Prozessbaum-Stopp beim Beenden der Windows-Aufgabe abgesichert
+- installierten Windows-Aufgabenstart und rückstandsfreien Stopp praktisch geprüft
+- aktive WirePod-Wiederherstellung auf fünf Prüfungen und 18 Sekunden erweitert
+- Voice-Recovery verhaltensneutral aus der allgemeinen Gesprächsschleife ausgelagert
+- native Windows-Prozessprüfung mit expliziten 64-Bit-Signaturen abgesichert
+- vollständigen VECTOR-PY-CLEANUP nach Karte 18 mit 366 Tests abgeschlossen
 - Pause nach `Lass mich überlegen` auf zwei Sekunden abgestimmt
 - `vektor beenden` und sauberen Abbruch der Voice-Schleife per `Ctrl+C` ergänzt
 - reflektiertes Bewegungs- und Sprachprofil physisch erfolgreich als Verbesserung bewertet

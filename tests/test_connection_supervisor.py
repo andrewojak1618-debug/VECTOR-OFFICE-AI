@@ -31,6 +31,15 @@ class ConnectionSupervisorTests(unittest.TestCase):
         self.assertEqual(0, recovered.consecutive_failures)
         self.assertEqual(0, recovered.retry_after_seconds)
         self.assertTrue(recovered.changed)
+        self.assertTrue(supervisor.consume_recovery("vector-sdk"))
+        self.assertFalse(supervisor.consume_recovery("vector-sdk"))
+
+    def test_initial_success_does_not_create_recovery_notice(self):
+        supervisor = ConnectionSupervisor()
+
+        supervisor.observe("wirepod", True)
+
+        self.assertFalse(supervisor.consume_recovery("wirepod"))
 
     def test_bounded_wait_stops_after_success(self):
         results = iter((False, False, True))

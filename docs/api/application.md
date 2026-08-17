@@ -6,6 +6,24 @@
     options:
       members: true
 
+## Lokaler Host-Watchdog
+
+::: application.host_watchdog
+    options:
+      members: true
+
+## Lokale Prozesskontrolle
+
+::: application.process_control
+    options:
+      members: true
+
+## Voice-Wiederherstellung
+
+::: application.voice_recovery
+    options:
+      members: true
+
 ## Gesprächsschleifen
 
 ::: application.conversation

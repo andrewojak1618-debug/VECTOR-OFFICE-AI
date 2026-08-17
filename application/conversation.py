@@ -3,19 +3,20 @@
 import re
 import time
 
+from application.commands import CommandResult, ConsoleCommandHandler
+from application.connection_supervisor import ConnectionSupervisor
+from application.expression_conversation import ControlledExpressionConversation
+from application.expression_delivery import ExpressionResponseCoordinator
+from application.tool_conversation import ControlledToolConversation
+from application.voice_recovery import VoiceRecovery
 from brain.agent import Agent
+from brain.expression_actions import ExpressionActionMapper
 from brain.providers import ProviderNotice
+from tools.proposals import ToolProposalReviewer
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
 from vector.speech import VectorSpeech
 from voice.wirepod_input import WirePodTranscriptListener
-
-from application.commands import CommandResult, ConsoleCommandHandler
-from application.expression_conversation import ControlledExpressionConversation
-from application.expression_delivery import ExpressionResponseCoordinator
-from application.tool_conversation import ControlledToolConversation
-from brain.expression_actions import ExpressionActionMapper
-from tools.proposals import ToolProposalReviewer
 
 
 COMMAND_HELP = (
@@ -41,8 +42,6 @@ VOICE_EXIT_PHRASES = frozenset({
     "vektor bitte beenden",
     "vektor beenden",
 })
-MAX_CONSECUTIVE_VOICE_FAILURES = 3
-VOICE_RETRY_DELAY_SECONDS = 0.5
 CLOUD_OFFLINE_NOTICE = (
     "Ich kann das Kollektiv gerade nicht erreichen. "
     "Ich arbeite vorübergehend lokal weiter."
@@ -136,13 +135,19 @@ def run_voice_conversation(
     listener: WirePodTranscriptListener,
     listen_timeout: float = 120.0,
     max_turns: int | None = None,
+    connections: ConnectionSupervisor | None = None,
 ) -> None:
     """Run a private WirePod conversation until exit or the turn limit."""
     _print_voice_intro()
     tool_conversation = _create_tool_conversation(agent)
     expression_conversation = _create_expression_conversation(agent, speech)
+    recovery = VoiceRecovery(
+        connections,
+        lambda answer: _speak_answer(speech, answer),
+        sleeper=time.sleep,
+    )
     try:
-        if not _prime_voice_listener(listener):
+        if not _prime_voice_listener(listener, recovery):
             return
         _run_voice_turns(
             agent,
@@ -152,6 +157,7 @@ def run_voice_conversation(
             expression_conversation,
             listen_timeout,
             max_turns,
+            recovery,
         )
     except KeyboardInterrupt:
         print("\nConversation ended.")
@@ -168,6 +174,7 @@ def _run_voice_turns(
     expression_conversation: ControlledExpressionConversation | None,
     listen_timeout: float,
     max_turns: int | None,
+    recovery: VoiceRecovery,
 ) -> None:
     completed_turns = 0
     failures = 0
@@ -176,9 +183,10 @@ def _run_voice_turns(
             user_text = _listen_for_user_text(listener, listen_timeout)
         except RuntimeError:
             failures += 1
-            if not _retry_voice_input(failures):
+            if not recovery.retry_failure(failures):
                 return
             continue
+        recovery.complete()
         failures = 0
         if user_text is None:
             continue
@@ -195,27 +203,19 @@ def _run_voice_turns(
         completed_turns += 1
 
 
-def _prime_voice_listener(listener: WirePodTranscriptListener) -> bool:
-    for attempt in range(1, MAX_CONSECUTIVE_VOICE_FAILURES + 1):
+def _prime_voice_listener(
+    listener: WirePodTranscriptListener,
+    recovery: VoiceRecovery,
+) -> bool:
+    for attempt in range(1, recovery.max_failures + 1):
         try:
             listener.prime()
+            recovery.complete()
             return True
         except RuntimeError:
-            if not _retry_voice_input(attempt):
+            if not recovery.retry_failure(attempt):
                 return False
     return False
-
-
-def _retry_voice_input(failure_count: int) -> bool:
-    if failure_count >= MAX_CONSECUTIVE_VOICE_FAILURES:
-        print("Voice input failed repeatedly. Conversation ended.")
-        return False
-    print(
-        "Voice input temporarily unavailable "
-        f"({failure_count}/{MAX_CONSECUTIVE_VOICE_FAILURES}). Retrying..."
-    )
-    time.sleep(VOICE_RETRY_DELAY_SECONDS)
-    return True
 
 
 def _is_voice_exit_signal(user_text: str) -> bool:

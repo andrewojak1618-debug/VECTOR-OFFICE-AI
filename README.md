@@ -203,8 +203,12 @@ Memory oder Antwortverlauf.
 VECTOR OFFICE AI CORE/
 ├── application/
 │   ├── commands.py
+│   ├── connection_supervisor.py
 │   ├── conversation.py
-│   └── runtime.py
+│   ├── host_watchdog.py
+│   ├── process_control.py
+│   ├── runtime.py
+│   └── voice_recovery.py
 ├── assets/
 │   └── Vevtor_illustration_README.png
 ├── brain/
@@ -239,6 +243,10 @@ VECTOR OFFICE AI CORE/
 │   ├── knowledge_schema.py
 │   ├── library.py
 │   └── models.py
+├── scripts/
+│   ├── install_windows_startup.ps1
+│   ├── start_vector_office.ps1
+│   └── uninstall_windows_startup.ps1
 ├── tests/
 │   ├── test_agent.py
 │   ├── test_code_quality.py
@@ -320,6 +328,10 @@ Kopiere `.env.example` nach `.env` und trage nur deine lokalen Werte ein:
 VECTOR_NAME=Vector
 VECTOR_SERIAL=deine_vector_seriennummer
 WIREPOD_HOST=http://127.0.0.1:8080
+HOST_WATCHDOG_WIREPOD_EXECUTABLE=C:\Program Files\wire-pod\chipper\chipper.exe
+HOST_WATCHDOG_POLL_INTERVAL=0.5
+HOST_WATCHDOG_STARTUP_ATTEMPTS=5
+HOST_WATCHDOG_APP_RESTART_ATTEMPTS=3
 
 TTS_VOICE=Microsoft Stefan
 TTS_VOLUME=90
@@ -387,6 +399,22 @@ Ist Ollama nicht verfügbar, bleibt die lexikalische Suche automatisch aktiv.
 ```powershell
 .venv\Scripts\python.exe main.py
 ```
+
+### Automatisch mit Windows starten
+
+Für den lokalen Hintergrundstart muss `INPUT_MODE=wirepod` gesetzt sein. Der
+Installer legt eine einzelne Aufgabe mit 20 Sekunden Anmeldeverzögerung an:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File scripts\install_windows_startup.ps1 -DelaySeconds 20
+```
+
+Zuvor kann derselbe Aufbau mit `-WhatIf` ohne Systemänderung geprüft werden.
+Der Watchdog startet einen fehlenden WirePod-Prozess, verwendet Ollamas
+bestehenden lokalen Startpfad und startet die Anwendung nach einem echten
+Fehlercode begrenzt neu. Details und Entfernung stehen unter
+[`docs/windows-startup.md`](docs/windows-startup.md).
 
 Kommandos während einer Sitzung:
 

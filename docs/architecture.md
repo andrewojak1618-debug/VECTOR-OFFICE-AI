@@ -28,7 +28,9 @@ Dauerhafte Clientfehler werden nicht erneut gesendet. Erst nach ausgeschöpften
 Primärversuchen greift der bestehende lokale Provider-Fallback.
 | `tests/` | Automatisierte Regressionstests |
 
-`main.py` ist ausschließlich der schlanke Einstiegspunkt. Die Zusammensetzung
+`main.py` ist ausschließlich der schlanke Einstiegspunkt. Der optionale lokale
+Windows-Start wird in `application/host_watchdog.py` überwacht und bleibt von
+der eigentlichen Laufzeitkomposition getrennt. Die Zusammensetzung
 der Abhängigkeiten liegt in `application/runtime.py`; Konsolen- und
 WirePod-Dialoge liegen in `application/conversation.py` und die expliziten
 Verwaltungsbefehle in `application/commands.py`.

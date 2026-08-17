@@ -4,6 +4,8 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from main import run_voice_conversation
+from application.connection_supervisor import ConnectionSupervisor
+from application.voice_recovery import CONNECTION_RECOVERY_NOTICE
 
 
 class FakeAgent:
@@ -104,6 +106,31 @@ class VoiceConversationRecoveryTests(unittest.TestCase):
         self.assertIn("temporarily unavailable", output.getvalue())
         self.assertNotIn("private endpoint detail", output.getvalue())
 
+    def test_transient_poll_recovery_is_spoken_once_with_supervisor_delay(self):
+        listener = SequenceVoiceListener(
+            [RuntimeError("private endpoint detail"), "hallo vector"],
+        )
+        connections = ConnectionSupervisor()
+
+        with patch("application.conversation.time.sleep") as sleep, patch(
+            "sys.stdout",
+            new_callable=io.StringIO,
+        ):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                max_turns=1,
+                connections=connections,
+            )
+
+        sleep.assert_called_once_with(1.0)
+        self.assertEqual(
+            [CONNECTION_RECOVERY_NOTICE, "Antwort auf: hallo vector"],
+            self.speech.spoken,
+        )
+        self.assertFalse(connections.consume_recovery("wirepod"))
+
     def test_transient_prime_failure_is_retried(self):
         listener = SequenceVoiceListener(["hallo"], prime_failures=1)
 
@@ -121,8 +148,29 @@ class VoiceConversationRecoveryTests(unittest.TestCase):
         self.assertEqual(2, listener.prime_count)
         self.assertEqual(["hallo"], self.agent.requests)
 
-    def test_three_consecutive_poll_failures_end_session(self):
-        failures = [RuntimeError("private detail") for _ in range(3)]
+    def test_transient_prime_recovery_is_spoken_before_first_answer(self):
+        listener = SequenceVoiceListener(["hallo"], prime_failures=1)
+        connections = ConnectionSupervisor()
+
+        with patch("application.conversation.time.sleep"), patch(
+            "sys.stdout",
+            new_callable=io.StringIO,
+        ):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                max_turns=1,
+                connections=connections,
+            )
+
+        self.assertEqual(
+            [CONNECTION_RECOVERY_NOTICE, "Antwort auf: hallo"],
+            self.speech.spoken,
+        )
+
+    def test_five_consecutive_poll_failures_end_session(self):
+        failures = [RuntimeError("private detail") for _ in range(5)]
         listener = SequenceVoiceListener(failures)
 
         with patch("application.conversation.time.sleep"), patch(
@@ -131,7 +179,7 @@ class VoiceConversationRecoveryTests(unittest.TestCase):
         ) as output:
             run_voice_conversation(self.agent, self.speech, listener)
 
-        self.assertEqual(3, listener.wait_count)
+        self.assertEqual(5, listener.wait_count)
         self.assertIn("failed repeatedly", output.getvalue())
         self.assertNotIn("private detail", output.getvalue())
         self.assertEqual([], self.agent.requests)

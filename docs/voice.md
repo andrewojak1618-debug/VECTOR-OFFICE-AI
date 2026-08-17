@@ -23,9 +23,9 @@ wartet die Anwendung nach einem fehlgeschlagenen Aufnahmeversuch auf den
 nächsten tatsächlichen Text.
 
 Temporäre Fehler des lokalen WirePod-Endpunkts beenden den Dialog nicht mehr
-sofort. Initialisierung und laufende Erkennung werden bis zu dreimal mit einer
-kurzen Pause erneut versucht. Erst drei aufeinanderfolgende Fehler beenden die
-Sitzung kontrolliert. Die Fehlermeldung übernimmt dabei weder interne
+sofort. Initialisierung und laufende Erkennung werden bis zu fünfmal mit der
+begrenzten Staffel 1, 2, 5 und 10 Sekunden erneut versucht. Erst fünf
+aufeinanderfolgende Fehler beenden die Sitzung kontrolliert. Die Fehlermeldung übernimmt dabei weder interne
 HTTP-Fehlerdetails noch zusätzliche Transkriptinhalte.
 
 ## Abbruchsignale

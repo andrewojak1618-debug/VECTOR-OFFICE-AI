@@ -398,7 +398,8 @@ Die deutsche TTS wurde schrittweise verbessert:
 - eindeutige Voice-Endsignale gegen Großschreibung, Leerraum und Satzzeichen normalisiert
 - bewusste Varianten für Vector, Vektor, Gespräch und Dialog zugelassen
 - ein einzelnes `Abbrechen` weiterhin nur für offene Bestätigungen verwendet
-- Initialisierung und laufenden WirePod-Abruf auf drei Fehlversuche begrenzt
+- Initialisierung und laufenden WirePod-Abruf auf fünf Fehlversuche begrenzt
+- Wartezeiten dafür auf 1, 2, 5 und 10 Sekunden festgelegt
 - kurze Pause zwischen lokalen Wiederholungsversuchen eingeführt
 - interne Fehlerdetails aus der normalen Dialogausgabe ferngehalten
 - `Ctrl+C` in der gesamten Voice-Verarbeitung ohne Traceback behandelt
@@ -465,3 +466,44 @@ Die deutsche TTS wurde schrittweise verbessert:
 - bei Totalausfall keine unzutreffende Behauptung lokalen Weiterbetriebs verwendet
 - Ansage vollständig über den bestehenden lokalen deutschen TTS-Pfad ausgegeben
 - beide Offline-Varianten am physischen Vector erfolgreich hörgeprüft und bestätigt
+
+## Lokale Wiederherstellungsansage
+
+- laufende WirePod-Sprachabfragen an den gemeinsamen ConnectionSupervisor angebunden
+- vorübergehende Fehler mit der gemeinsamen 1-, 2-, 5- und 10-Sekunden-Staffel wiederholt
+- erfolgreiche Wiederverbindung als einmalig konsumierbaren Übergang modelliert
+- lokale deutsche Ansage erst nach wiederhergestelltem Audioweg ausgegeben
+- Wiederholungen innerhalb desselben Ausfalls zuverlässig unterdrückt
+- initial verfügbare Verbindung ausdrücklich nicht als Wiederherstellung behandelt
+- Runtime-Weitergabe desselben Supervisors durch einen Regressionstest abgesichert
+- produktiven Recovery-Übergang bis zur physischen Vector-TTS erfolgreich ausgeführt
+- vollständige Verständlichkeit der deutschen Ansage vom Benutzer bestätigt
+
+## Windows-Autostart und Host-Watchdog
+
+- testbaren Host-Watchdog als getrennte Anwendungsschicht ergänzt
+- lokale Einzelinstanz über geplante Aufgabe und Dateisperre abgesichert
+- fehlenden WirePod-Prozess ohne Doppelstart kontrolliert wiederanlaufen lassen
+- bestehende Ollama-Startlogik statt einer zweiten Implementierung weiterverwendet
+- Anwendung nur nach Fehlercodes mit 2-, 5- und 10-Sekunden-Staffel neu gestartet
+- bewusstes Sitzungsende ohne unerwünschten Wiederanlauf erhalten
+- Voice-Wiederanlauffenster auf fünf begrenzte Versuche erweitert
+- Installation und Rückbau als secretfreie PowerShell-Skripte bereitgestellt
+- Aufgabenaufbau mit `-WhatIf` ohne Systemänderung erfolgreich geprüft
+- Besitzer-PID und gezielte Prozessbaumbereinigung für Aufgabenstopps ergänzt
+- betriebssystemspezifische Prozesskontrolle aus dem Watchdog-Fachmodul getrennt
+- geplante Aufgabe lokal mit 20 Sekunden Anmeldeverzögerung installiert
+- realen Start bis WirePod, Ollama, Vector-SDK und Voice-Modus bestätigt
+- manuellen Aufgabenstopp ohne verwaiste Projektprozesse erfolgreich abgenommen
+- Voice-Recovery beim Cleanup aus der allgemeinen Gesprächsschleife ausgelagert
+
+## VECTOR-PY-CLEANUP nach Karte 18
+
+- allgemeine Gesprächsschleife von 369 auf 323 Zeilen reduziert
+- Voice-Recovery als eigenes dokumentiertes Fachmodul erhalten
+- native Windows-Prozessgrenze mit expliziten 64-Bit-Signaturen gehärtet
+- unbenutzten Testimport und veraltete Drei-Versuche-Angaben entfernt
+- sämtliche produktiven Python-Module weiterhin unter 400 Zeilen gehalten
+- sämtliche Funktionen weiterhin auf höchstens 35 physische Zeilen begrenzt
+- 366 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- `.env`, Laufzeitdaten und Secrets weiterhin aus dem Git-Stand ausgeschlossen

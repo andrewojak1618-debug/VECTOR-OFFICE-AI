@@ -17,6 +17,8 @@
 - ✅ Providerwechsel in längeren Sitzungen testen
 - ✅ zentralen ConnectionSupervisor mit begrenzter Wiederverbindung ergänzen
 - ✅ einmalige lokale Offline-Ansage bei Cloud-Ausfall ergänzen
+- ✅ einmalige lokale Wiederherstellungsansage nach WirePod-Ausfall ergänzen
+- ✅ lokalen Windows-Autostart und Host-Watchdog implementieren
 
 ## Voice Input
 

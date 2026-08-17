@@ -1,11 +1,12 @@
 import unittest
 from types import SimpleNamespace
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from application.runtime import (
     _create_tool_registry,
     _knowledge_enabled,
+    _run_input_mode,
     get_runtime_mode,
 )
 
@@ -80,6 +81,26 @@ class RuntimeModeTests(unittest.TestCase):
         settings = make_settings(INPUT_MODE="wirepod")
 
         self.assertTrue(_knowledge_enabled(settings, get_runtime_mode(settings)))
+
+    @patch("application.runtime._run_wirepod_input")
+    def test_wirepod_mode_receives_shared_connection_supervisor(self, run_input):
+        settings = make_settings(INPUT_MODE="wirepod")
+        mode = get_runtime_mode(settings)
+        agent = MagicMock()
+        speech = MagicMock()
+        diagnostics = MagicMock()
+        connections = MagicMock()
+
+        _run_input_mode(
+            settings,
+            mode,
+            agent,
+            speech,
+            diagnostics,
+            connections,
+        )
+
+        run_input.assert_called_once_with(settings, agent, speech, connections)
 
 
 if __name__ == "__main__":

@@ -95,6 +95,37 @@ class Settings:
         "http://127.0.0.1:8080",
     )
 
+    HOST_WATCHDOG_WIREPOD_EXECUTABLE = os.getenv(
+        "HOST_WATCHDOG_WIREPOD_EXECUTABLE",
+        str(
+            Path(os.getenv("PROGRAMFILES", r"C:\Program Files"))
+            / "wire-pod"
+            / "chipper"
+            / "chipper.exe"
+        ),
+    )
+
+    HOST_WATCHDOG_POLL_INTERVAL = get_float_setting(
+        "HOST_WATCHDOG_POLL_INTERVAL",
+        default=0.5,
+        minimum=0.25,
+        maximum=30.0,
+    )
+
+    HOST_WATCHDOG_STARTUP_ATTEMPTS = get_int_setting(
+        "HOST_WATCHDOG_STARTUP_ATTEMPTS",
+        default=5,
+        minimum=1,
+        maximum=5,
+    )
+
+    HOST_WATCHDOG_APP_RESTART_ATTEMPTS = get_int_setting(
+        "HOST_WATCHDOG_APP_RESTART_ATTEMPTS",
+        default=3,
+        minimum=0,
+        maximum=4,
+    )
+
     VECTOR_SERIAL = os.getenv("VECTOR_SERIAL", "")
 
     TTS_VOICE = os.getenv(

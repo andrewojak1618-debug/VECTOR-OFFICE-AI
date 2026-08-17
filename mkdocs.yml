@@ -50,6 +50,7 @@ nav:
   - Laufzeitdiagnose: diagnostics.md
   - Provider-Sitzungen: provider-sessions.md
   - Verbindungsaufsicht: connections.md
+  - Windows-Autostart: windows-startup.md
   - Roadmap: roadmap.md
   - API-Referenz:
       - Application: api/application.md

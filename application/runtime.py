@@ -78,7 +78,7 @@ def run_application(settings) -> None:
     audit_store = _create_audit_store(settings)
     registry = _create_tool_registry(actions, audit_store)
     agent = _create_agent(settings, mode, registry, diagnostics)
-    _run_input_mode(settings, mode, agent, speech, diagnostics)
+    _run_input_mode(settings, mode, agent, speech, diagnostics, connections)
     diagnostics.emit(
         DiagnosticLevel.INFO,
         "application",
@@ -314,25 +314,14 @@ def _run_input_mode(
     agent: Agent,
     speech: VectorSpeech,
     diagnostics: StructuredDiagnosticReporter,
+    connections: ConnectionSupervisor,
 ) -> None:
-    diagnostics.emit(
-        DiagnosticLevel.INFO,
-        "conversation",
-        "input.started",
-        input_mode=mode.input_mode,
-        cloud_allowed=not mode.local_voice_required,
-    )
+    _report_input_started(diagnostics, mode)
     if mode.input_mode == "console":
         run_conversation(agent, speech)
         return
     if mode.input_mode == "wirepod":
-        listener = WirePodTranscriptListener(settings.WIREPOD_HOST)
-        run_voice_conversation(
-            agent,
-            speech,
-            listener,
-            listen_timeout=settings.VOICE_LISTEN_TIMEOUT,
-        )
+        _run_wirepod_input(settings, agent, speech, connections)
         return
     print("INPUT_MODE must be either 'console' or 'wirepod'.")
     diagnostics.emit(
@@ -341,4 +330,25 @@ def _run_input_mode(
         "input.invalid",
         input_mode=mode.input_mode,
         reason_code="unsupported-input-mode",
+    )
+
+
+def _report_input_started(diagnostics, mode) -> None:
+    diagnostics.emit(
+        DiagnosticLevel.INFO,
+        "conversation",
+        "input.started",
+        input_mode=mode.input_mode,
+        cloud_allowed=not mode.local_voice_required,
+    )
+
+
+def _run_wirepod_input(settings, agent, speech, connections) -> None:
+    listener = WirePodTranscriptListener(settings.WIREPOD_HOST)
+    run_voice_conversation(
+        agent,
+        speech,
+        listener,
+        listen_timeout=settings.VOICE_LISTEN_TIMEOUT,
+        connections=connections,
     )

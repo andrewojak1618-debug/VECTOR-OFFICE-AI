@@ -48,6 +48,7 @@ class ConnectionSupervisor:
         self.retry_delays = retry_delays
         self.sleeper = sleeper
         self._statuses: dict[str, ConnectionStatus] = {}
+        self._pending_recoveries: set[str] = set()
 
     def observe(self, service: str, available: bool) -> ConnectionStatus:
         """Record one health result and return the bounded next retry state."""
@@ -70,6 +71,7 @@ class ConnectionSupervisor:
             previous is None or previous.state is not state,
         )
         self._statuses[service] = status
+        self._update_recovery(previous, status)
         self._emit(status)
         return status
 
@@ -77,6 +79,14 @@ class ConnectionSupervisor:
         """Return the last snapshot for one validated service name."""
         self._validate_service(service)
         return self._statuses.get(service)
+
+    def consume_recovery(self, service: str) -> bool:
+        """Return one recovered transition once without exposing service data."""
+        self._validate_service(service)
+        if service not in self._pending_recoveries:
+            return False
+        self._pending_recoveries.remove(service)
+        return True
 
     def wait_until_available(
         self,
@@ -112,6 +122,13 @@ class ConnectionSupervisor:
     def _retry_delay(self, failure_count: int) -> float:
         index = min(failure_count - 1, len(self.retry_delays) - 1)
         return self.retry_delays[index]
+
+    def _update_recovery(self, previous, current: ConnectionStatus) -> None:
+        if current.state is ConnectionState.UNAVAILABLE:
+            self._pending_recoveries.discard(current.service)
+            return
+        if previous is not None and previous.state is ConnectionState.UNAVAILABLE:
+            self._pending_recoveries.add(current.service)
 
     @staticmethod
     def _next_failure_count(previous: ConnectionStatus | None) -> int:

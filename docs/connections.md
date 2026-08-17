@@ -12,6 +12,26 @@ Endzustand ebenfalls an den Supervisor. Strukturierte Ereignisse entstehen nur
 bei einem Zustandswechsel und enthalten keine Adressen, Transkripte oder
 Zugangsdaten.
 
+Während einer laufenden WirePod-Sprachsitzung werden vorübergehende Abruffehler
+ebenfalls an den Supervisor gemeldet. Die vier Wiederholungen warten gemäß der
+gemeinsamen Staffel 1, 2, 5 und 10 Sekunden. Kehrt die Verbindung innerhalb der
+fünf begrenzten Versuche zurück, spricht Vector genau
+einmal: „Meine Verbindung war kurz unterbrochen. Jetzt bin ich wieder
+erreichbar.“ Die Ansage wird erst nach erfolgreicher Wiederherstellung
+ausgegeben und innerhalb desselben Ausfalls nicht wiederholt.
+Diese begrenzte Voice-Koordination ist getrennt in
+`application/voice_recovery.py` gekapselt; die allgemeine Gesprächsschleife
+enthält dadurch keine dienstspezifische Wiederanlauflogik.
+
+Der optionale Windows-Host-Watchdog prüft zusätzlich, ob der lokale
+`chipper.exe`-Prozess fehlt, und startet ausschließlich dann die konfigurierte
+WirePod-Datei neu. Architektur, Installation und Rückbau sind unter
+[Windows-Autostart und Host-Watchdog](windows-startup.md) beschrieben.
+
+Die feste Wiederherstellungsansage wurde am 17. August 2026 über denselben
+produktiven Supervisor- und TTS-Pfad am physischen Vector abgespielt. Der
+Benutzer bestätigte vollständige Verständlichkeit und passende Wiedergabe.
+
 ## Grenze ohne lokalen Host
 
 Ohne Verbindung zwischen Vector und einem laufenden lokalen Host kann die
