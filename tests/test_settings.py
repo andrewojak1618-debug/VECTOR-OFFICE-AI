@@ -4,6 +4,8 @@ from unittest.mock import patch
 
 from config.settings import (
     DEFAULT_EMBEDDING_PROVIDER,
+    DEFAULT_DIAGNOSTICS_ENABLED,
+    DEFAULT_DIAGNOSTICS_MAX_BYTES,
     DEFAULT_KNOWLEDGE_ALLOW_CLOUD,
     DEFAULT_TOOL_AUDIT_ENABLED,
     DEFAULT_TOOL_AUDIT_MAX_ENTRIES,
@@ -22,6 +24,10 @@ class SettingsTests(unittest.TestCase):
         self.assertTrue(DEFAULT_TOOL_AUDIT_ENABLED)
         self.assertEqual(30, DEFAULT_TOOL_AUDIT_RETENTION_DAYS)
         self.assertEqual(1_000, DEFAULT_TOOL_AUDIT_MAX_ENTRIES)
+
+    def test_diagnostics_defaults_are_local_enabled_and_bounded(self):
+        self.assertTrue(DEFAULT_DIAGNOSTICS_ENABLED)
+        self.assertEqual(1_000_000, DEFAULT_DIAGNOSTICS_MAX_BYTES)
 
     def test_bool_setting_accepts_true_value(self):
         with patch.dict(os.environ, {"TEST_BOOLEAN": "true"}):

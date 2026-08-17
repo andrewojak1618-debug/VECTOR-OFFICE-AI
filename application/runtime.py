@@ -7,6 +7,7 @@ from brain.agent import Agent
 from brain.ollama_runtime import OllamaRuntime
 from brain.providers import OllamaProvider, create_language_model
 from brain.reflection import ReflectionPolicy
+from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
 from memory.database import SQLiteMemoryStore
 from memory.embedding_store import SQLiteEmbeddingStore
 from memory.embeddings import create_embedding_provider
@@ -28,6 +29,7 @@ from vector.speech import VectorSpeech
 from voice.wirepod_input import WirePodTranscriptListener
 
 from application.conversation import run_conversation, run_voice_conversation
+from application.connection_supervisor import ConnectionSupervisor
 
 
 @dataclass(frozen=True)
@@ -65,18 +67,72 @@ def run_application(settings) -> None:
     """Start services, compose dependencies, and run the selected input mode."""
     _print_header(settings)
     mode = get_runtime_mode(settings)
-    if not _ensure_ollama(settings, mode):
-        return
-    behavior_control = BehaviorControl()
-    vector = _connect_vector(settings, behavior_control)
+    diagnostics = _create_diagnostics(settings)
+    connections = ConnectionSupervisor(diagnostics)
+    _emit_runtime_start(diagnostics, mode)
+    vector = _prepare_vector(settings, mode, diagnostics, connections)
     if vector is None:
         return
     speech = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
     audit_store = _create_audit_store(settings)
     registry = _create_tool_registry(actions, audit_store)
-    agent = _create_agent(settings, mode, registry)
-    _run_input_mode(settings, mode, agent, speech)
+    agent = _create_agent(settings, mode, registry, diagnostics)
+    _run_input_mode(settings, mode, agent, speech, diagnostics)
+    diagnostics.emit(
+        DiagnosticLevel.INFO,
+        "application",
+        "runtime.stopped",
+        status="completed",
+    )
+
+
+def _prepare_vector(
+    settings,
+    mode,
+    diagnostics,
+    connections,
+) -> VectorSDKClient | None:
+    if not _ensure_ollama(settings, mode, diagnostics, connections):
+        _emit_startup_blocked(diagnostics, "ollama-unavailable")
+        return None
+    vector = _connect_vector(settings, BehaviorControl(), connections)
+    if vector is None:
+        _emit_startup_blocked(diagnostics, "vector-unavailable")
+    return vector
+
+
+def _emit_startup_blocked(diagnostics, reason_code: str) -> None:
+    diagnostics.emit(
+        DiagnosticLevel.ERROR,
+        "application",
+        "startup.blocked",
+        reason_code=reason_code,
+    )
+
+
+def _create_diagnostics(settings) -> StructuredDiagnosticReporter:
+    """Create the bounded local runtime diagnostic sink."""
+    return StructuredDiagnosticReporter(
+        getattr(settings, "DIAGNOSTICS_PATH", "data/diagnostics/events.jsonl"),
+        getattr(settings, "DIAGNOSTICS_ENABLED", True),
+        getattr(settings, "DIAGNOSTICS_MAX_BYTES", 1_000_000),
+    )
+
+
+def _emit_runtime_start(
+    diagnostics: StructuredDiagnosticReporter,
+    mode: RuntimeMode,
+) -> None:
+    diagnostics.emit(
+        DiagnosticLevel.INFO,
+        "application",
+        "runtime.started",
+        provider=mode.provider,
+        fallback=mode.fallback_provider,
+        input_mode=mode.input_mode,
+        local=mode.local_voice_required,
+    )
 
 
 def _print_header(settings) -> None:
@@ -87,7 +143,7 @@ def _print_header(settings) -> None:
     print(f"WirePod: {settings.WIREPOD_HOST}")
 
 
-def _ensure_ollama(settings, mode: RuntimeMode) -> bool:
+def _ensure_ollama(settings, mode: RuntimeMode, diagnostics, connections) -> bool:
     if not mode.needs_ollama:
         return True
     print("\nChecking local Ollama service...")
@@ -95,9 +151,25 @@ def _ensure_ollama(settings, mode: RuntimeMode) -> bool:
         base_url=settings.OLLAMA_HOST,
         executable=settings.OLLAMA_EXECUTABLE,
     ).ensure_available()
+    connections.observe("ollama", ready)
     if ready:
+        diagnostics.emit(
+            DiagnosticLevel.INFO,
+            "ollama",
+            "service.ready",
+            local=True,
+            status="available",
+        )
         return True
-    return _handle_unavailable_ollama(mode)
+    allowed = _handle_unavailable_ollama(mode)
+    diagnostics.emit(
+        DiagnosticLevel.WARNING if allowed else DiagnosticLevel.ERROR,
+        "ollama",
+        "service.unavailable",
+        local=True,
+        status="fallback-allowed" if allowed else "required",
+    )
+    return allowed
 
 
 def _handle_unavailable_ollama(mode: RuntimeMode) -> bool:
@@ -111,24 +183,39 @@ def _handle_unavailable_ollama(mode: RuntimeMode) -> bool:
 def _connect_vector(
     settings,
     behavior_control: BehaviorControl | None = None,
+    connections: ConnectionSupervisor | None = None,
 ) -> VectorSDKClient | None:
     print("\nChecking WirePod connection...")
-    if not VectorClient(settings.WIREPOD_HOST).check_wirepod():
+    client = VectorClient(settings.WIREPOD_HOST)
+    ready = _wait_for_connection(connections, "wirepod", client.check_wirepod)
+    if not ready:
         print("WirePod is not reachable. [ERROR]")
         return None
     print("WirePod is online. [OK]\n")
     print("Starting Vector SDK test...")
     vector = VectorSDKClient(settings.VECTOR_SERIAL, behavior_control)
-    return vector if vector.test_connection() else None
+    connected = _wait_for_connection(
+        connections,
+        "vector-sdk",
+        vector.test_connection,
+    )
+    return vector if connected else None
+
+
+def _wait_for_connection(connections, service, health_check) -> bool:
+    if connections is None:
+        return health_check()
+    return connections.wait_until_available(service, health_check, max_attempts=3)
 
 
 def _create_agent(
     settings,
     mode: RuntimeMode,
     tool_registry: ToolRegistry | None = None,
+    diagnostics: StructuredDiagnosticReporter | None = None,
 ) -> Agent:
     print(f"\nLLM provider: {settings.LLM_PROVIDER}")
-    language_model = _create_language_model(settings, mode)
+    language_model = _create_language_model(settings, mode, diagnostics)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
     library = _create_knowledge_library(settings)
     return Agent(
@@ -198,9 +285,9 @@ def _print_index_progress(progress: IndexProgress) -> None:
     print(f"Semantic indexing: {progress.completed}/{progress.total} sections")
 
 
-def _create_language_model(settings, mode: RuntimeMode):
+def _create_language_model(settings, mode: RuntimeMode, diagnostics=None):
     if not mode.local_voice_required:
-        return create_language_model(settings)
+        return create_language_model(settings, diagnostics)
     print("Application voice model: local Ollama (cloud disabled here).")
     print("WirePod Knowledge Graph privacy must be configured separately.")
     return OllamaProvider(
@@ -209,6 +296,7 @@ def _create_language_model(settings, mode: RuntimeMode):
         timeout=getattr(settings, "LLM_REQUEST_TIMEOUT", 120.0),
         max_attempts=getattr(settings, "LLM_MAX_ATTEMPTS", 2),
         retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
+        diagnostics=diagnostics,
     )
 
 
@@ -220,7 +308,20 @@ def _knowledge_enabled(settings, mode: RuntimeMode) -> bool:
     )
 
 
-def _run_input_mode(settings, mode, agent: Agent, speech: VectorSpeech) -> None:
+def _run_input_mode(
+    settings,
+    mode,
+    agent: Agent,
+    speech: VectorSpeech,
+    diagnostics: StructuredDiagnosticReporter,
+) -> None:
+    diagnostics.emit(
+        DiagnosticLevel.INFO,
+        "conversation",
+        "input.started",
+        input_mode=mode.input_mode,
+        cloud_allowed=not mode.local_voice_required,
+    )
     if mode.input_mode == "console":
         run_conversation(agent, speech)
         return
@@ -234,3 +335,10 @@ def _run_input_mode(settings, mode, agent: Agent, speech: VectorSpeech) -> None:
         )
         return
     print("INPUT_MODE must be either 'console' or 'wirepod'.")
+    diagnostics.emit(
+        DiagnosticLevel.ERROR,
+        "conversation",
+        "input.invalid",
+        input_mode=mode.input_mode,
+        reason_code="unsupported-input-mode",
+    )

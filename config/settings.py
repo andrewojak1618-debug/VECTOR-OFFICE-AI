@@ -12,6 +12,8 @@ DEFAULT_KNOWLEDGE_ALLOW_CLOUD = False
 DEFAULT_TOOL_AUDIT_ENABLED = True
 DEFAULT_TOOL_AUDIT_RETENTION_DAYS = 30
 DEFAULT_TOOL_AUDIT_MAX_ENTRIES = 1_000
+DEFAULT_DIAGNOSTICS_ENABLED = True
+DEFAULT_DIAGNOSTICS_MAX_BYTES = 1_000_000
 
 load_dotenv(BASE_DIR / ".env", override=True)
 
@@ -244,6 +246,25 @@ class Settings:
         default=DEFAULT_TOOL_AUDIT_MAX_ENTRIES,
         minimum=1,
         maximum=100_000,
+    )
+
+    DIAGNOSTICS_ENABLED = get_bool_setting(
+        "DIAGNOSTICS_ENABLED",
+        default=DEFAULT_DIAGNOSTICS_ENABLED,
+    )
+
+    DIAGNOSTICS_PATH = Path(
+        os.getenv(
+            "DIAGNOSTICS_PATH",
+            str(BASE_DIR / "data" / "diagnostics" / "events.jsonl"),
+        )
+    )
+
+    DIAGNOSTICS_MAX_BYTES = get_int_setting(
+        "DIAGNOSTICS_MAX_BYTES",
+        default=DEFAULT_DIAGNOSTICS_MAX_BYTES,
+        minimum=1_024,
+        maximum=10_000_000,
     )
 
     KNOWLEDGE_ALLOW_CLOUD = get_bool_setting(

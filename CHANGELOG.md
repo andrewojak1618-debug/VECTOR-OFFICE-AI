@@ -39,6 +39,17 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - gemeinsame konfigurierbare LLM-Zeitlimits und maximale Versuche eingeführt
 - lokale Ollama-Wiederholung auf vorübergehende Transport- und Serverfehler begrenzt
 - OpenAI-SDK-Retries explizit an dieselbe Versuchszahl gebunden
+- lokale strukturierte JSONL-Diagnose mit stabilen Ereigniscodes ergänzt
+- Diagnosefelder durch feste Metadaten-Allowlist gegen private Inhalte abgesichert
+- begrenzte Dateirotation sowie Startup-, Service-, Retry- und Fallback-Ereignisse ergänzt
+- mehrturnigen Wechsel vom Primäranbieter zu Ollama und zurück abgesichert
+- gemeinsame Kontexterhaltung nach einer lokalen Fallback-Antwort nachgewiesen
+- unbeantwortete Runde bei Ausfall beider Provider transaktional zurückgerollt
+- zentralen ConnectionSupervisor mit begrenzter exponentieller Staffel ergänzt
+- WirePod, Ollama und Vector-SDK an datenschutzsichere Zustandswechsel angebunden
+- einmalige lokale Kollektiv-Offline-Ansage vor der Ollama-Antwort ergänzt
+- separate ehrliche Meldung für den Ausfall von Cloud und lokalem Fallback ergänzt
+- beide lokalen Offline-Meldungen am physischen Vector erfolgreich abgenommen
 - Pause nach `Lass mich überlegen` auf zwei Sekunden abgestimmt
 - `vektor beenden` und sauberen Abbruch der Voice-Schleife per `Ctrl+C` ergänzt
 - reflektiertes Bewegungs- und Sprachprofil physisch erfolgreich als Verbesserung bewertet

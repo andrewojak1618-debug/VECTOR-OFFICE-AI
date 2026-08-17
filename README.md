@@ -341,6 +341,9 @@ OLLAMA_EXECUTABLE=
 LLM_REQUEST_TIMEOUT=120
 LLM_MAX_ATTEMPTS=2
 LLM_RETRY_DELAY=0.5
+DIAGNOSTICS_ENABLED=true
+DIAGNOSTICS_PATH=data/diagnostics/events.jsonl
+DIAGNOSTICS_MAX_BYTES=1000000
 
 EMBEDDING_PROVIDER=ollama
 OLLAMA_EMBEDDING_MODEL=embeddinggemma
@@ -673,8 +676,8 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - interaktive Gesprächsschleife weiter stabilisieren
 - ✅ Timeout-, Retry- und Provider-Fallback-Verhalten vereinheitlichen
 - Ollama lokal installieren und mit geeignetem Modell testen
-- Providerwechsel vollständig über Konfiguration absichern
-- strukturierte Logs und Diagnoseausgaben einführen
+- ✅ Providerwechsel und gemeinsame Kontexterhaltung über mehrere Runden prüfen
+- ✅ strukturierte lokale Logs und Diagnoseausgaben einführen
 
 ### Version 0.3 – Voice Input
 

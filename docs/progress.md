@@ -426,3 +426,42 @@ Die deutsche TTS wurde schrittweise verbessert:
 - dauerhafte Clientfehler ohne unnötigen zweiten Aufruf beendet
 - Fehlermeldungen weiterhin ohne Transportdetails oder sensible Inhalte gehalten
 - bestehenden Wechsel von OpenAI zum lokalen Ollama-Fallback unverändert bewahrt
+
+## Strukturierte Laufzeitdiagnose
+
+- lokales JSONL-Ereignisschema mit Version, UTC-Zeit, Stufe und Ereigniscode ergänzt
+- zulässige Detailfelder auf harmlose technische Metadaten begrenzt
+- Transkript-, Prompt-, Antwort-, Dokument-, Secret- und Vektorfelder blockiert
+- Anwendungsstart, lokale Dienste, SDK-Zugriff und Betriebsmodus angebunden
+- Ollama-Wiederholungen und Provider-Fallback ohne Anfrageinhalte sichtbar gemacht
+- Dateigröße begrenzt und genau eine lokale Vorgängerversion vorgesehen
+- Diagnosefehler vom eigentlichen Roboterbetrieb entkoppelt
+
+## Mehrturnige Providerwechsel
+
+- deterministische Sitzung mit der Folge OpenAI, Ollama-Fallback und OpenAI geprüft
+- Primäranbieter in jeder neuen Runde erneut bevorzugt statt dauerhaft umgeschaltet
+- validierte Fallback-Antwort in den gemeinsamen Gesprächskontext übernommen
+- vollständigen Verlauf beim wieder verfügbaren Primäranbieter nachgewiesen
+- Totalausfall beider Anbieter ohne verwaiste Benutzerfrage zurückgerollt
+- Fallback-Ereignis ohne Gesprächsinhalte in der lokalen Diagnose bestätigt
+
+## ConnectionSupervisor
+
+- zentrale Zustände für lokale und externe Dienste vorbereitet
+- Wiederholungsstaffel auf 1, 2, 5, 10 und höchstens 30 Sekunden begrenzt
+- WirePod- und Vector-SDK-Startprüfung mit drei Versuchen angebunden
+- Ollama-Endzustand in dieselbe Verbindungsaufsicht aufgenommen
+- Fehlerzähler nach erfolgreicher Wiederverbindung zurückgesetzt
+- nur Zustandswechsel ohne Adressen oder Gesprächsinhalte protokolliert
+- Firmware-Autonomie als separaten OSKR-Forschungspfad dokumentiert
+
+## Lokale Offline-Ansage
+
+- ersten Cloud-Ausfall als einmaligen konsumierbaren Providerzustand modelliert
+- lokale Meldung vor der erfolgreichen Ollama-Fallback-Antwort gesprochen
+- Wiederholung während desselben Ausfalls unterdrückt
+- neuen Hinweis nach zwischenzeitlicher Cloud-Erholung wieder zugelassen
+- bei Totalausfall keine unzutreffende Behauptung lokalen Weiterbetriebs verwendet
+- Ansage vollständig über den bestehenden lokalen deutschen TTS-Pfad ausgegeben
+- beide Offline-Varianten am physischen Vector erfolgreich hörgeprüft und bestätigt

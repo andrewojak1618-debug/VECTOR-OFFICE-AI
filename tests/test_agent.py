@@ -162,7 +162,7 @@ class AgentTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "personality policy"):
             agent.respond("Was soll ich tun?")
 
-        self.assertEqual("user", agent.context.history[-1].role)
+        self.assertEqual((), agent.context.history)
 
     def test_repeated_length_only_violation_is_safely_compacted(self):
         model = SequenceLanguageModel(

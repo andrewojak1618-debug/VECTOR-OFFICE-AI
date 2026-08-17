@@ -47,6 +47,9 @@ nav:
   - Physischer Wissenstest: physical-knowledge-test.md
   - Persönlichkeit: personality.md
   - Systemabnahme: release-acceptance.md
+  - Laufzeitdiagnose: diagnostics.md
+  - Provider-Sitzungen: provider-sessions.md
+  - Verbindungsaufsicht: connections.md
   - Roadmap: roadmap.md
   - API-Referenz:
       - Application: api/application.md

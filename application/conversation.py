@@ -4,6 +4,7 @@ import re
 import time
 
 from brain.agent import Agent
+from brain.providers import ProviderNotice
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
 from vector.speech import VectorSpeech
@@ -42,6 +43,14 @@ VOICE_EXIT_PHRASES = frozenset({
 })
 MAX_CONSECUTIVE_VOICE_FAILURES = 3
 VOICE_RETRY_DELAY_SECONDS = 0.5
+CLOUD_OFFLINE_NOTICE = (
+    "Ich kann das Kollektiv gerade nicht erreichen. "
+    "Ich arbeite vorübergehend lokal weiter."
+)
+PROVIDER_OFFLINE_NOTICE = (
+    "Ich kann das Kollektiv gerade nicht erreichen. "
+    "Offenbar besteht ein Verbindungsproblem."
+)
 
 
 def respond_and_speak(
@@ -54,10 +63,26 @@ def respond_and_speak(
     try:
         answer = agent.respond(user_text)
     except (RuntimeError, ValueError) as exc:
+        _speak_provider_notice(agent, speech)
         print(f"Brain request failed: {exc}")
         return False
     print(f"Vector: {answer}")
+    _speak_provider_notice(agent, speech)
     return _speak_answer(speech, answer)
+
+
+def _speak_provider_notice(agent: Agent, speech: VectorSpeech) -> None:
+    language_model = getattr(agent, "language_model", None)
+    consume = getattr(language_model, "consume_notice", None)
+    if not callable(consume):
+        return
+    notice = consume()
+    if notice is ProviderNotice.LOCAL_FALLBACK:
+        print(f"Vector: {CLOUD_OFFLINE_NOTICE}")
+        _speak_answer(speech, CLOUD_OFFLINE_NOTICE)
+    elif notice is ProviderNotice.ALL_UNAVAILABLE:
+        print(f"Vector: {PROVIDER_OFFLINE_NOTICE}")
+        _speak_answer(speech, PROVIDER_OFFLINE_NOTICE)
 
 
 def _speak_answer(speech: VectorSpeech, answer: str) -> bool:

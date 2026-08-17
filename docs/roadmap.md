@@ -13,8 +13,10 @@
 ## Conversation Foundation
 
 - ✅ Retry- und Timeout-Verhalten weiter vereinheitlichen
-- strukturierte Logs und Diagnoseausgaben ergänzen
-- Providerwechsel in längeren Sitzungen testen
+- ✅ strukturierte Logs und Diagnoseausgaben ergänzen
+- ✅ Providerwechsel in längeren Sitzungen testen
+- ✅ zentralen ConnectionSupervisor mit begrenzter Wiederverbindung ergänzen
+- ✅ einmalige lokale Offline-Ansage bei Cloud-Ausfall ergänzen
 
 ## Voice Input
 

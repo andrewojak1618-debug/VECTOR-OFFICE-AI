@@ -151,19 +151,21 @@ class Agent:
     def respond(self, user_text: str) -> str:
         """Generate and store one validated assistant response."""
         normalized_text = user_text.strip()
-
         if not normalized_text:
             raise ValueError("User text must not be empty.")
-
+        checkpoint = self.context.checkpoint()
         self.emotional_state.observe(normalized_text)
         reflection = self.reflection_policy.prepare(normalized_text)
         self.context.add_user_message(normalized_text)
         messages = self._messages_with_local_context(normalized_text, reflection)
-        response = self._generate_valid_response(
-            messages,
-            reflection.max_sentences,
-        )
-
+        try:
+            response = self._generate_valid_response(
+                messages,
+                reflection.max_sentences,
+            )
+        except (RuntimeError, ValueError):
+            self.context.restore(checkpoint)
+            raise
         self.context.add_assistant_message(response)
         return response
 
