@@ -23,6 +23,18 @@ class SequencedClient:
         raise httpx.ConnectError("offline")
 
 
+class RecordingClient:
+    def __init__(self, post_error=None):
+        self.post_error = post_error
+        self.posts = []
+
+    def post(self, url, **kwargs):
+        self.posts.append((url, kwargs))
+        if self.post_error is not None:
+            raise self.post_error
+        return FakeResponse()
+
+
 class OllamaRuntimeTests(unittest.TestCase):
     def test_does_not_launch_when_service_is_already_available(self):
         launches = []
@@ -65,6 +77,42 @@ class OllamaRuntimeTests(unittest.TestCase):
         )
 
         self.assertFalse(runtime.ensure_available())
+
+    def test_preload_uses_empty_local_request_with_bounded_keep_alive(self):
+        client = RecordingClient()
+        runtime = OllamaRuntime("http://127.0.0.1:11434", client=client)
+
+        self.assertTrue(runtime.preload_model("llama3.2:3b", timeout=90))
+
+        url, arguments = client.posts[0]
+        self.assertEqual("http://127.0.0.1:11434/api/generate", url)
+        self.assertEqual(90, arguments["timeout"])
+        self.assertEqual(
+            {
+                "model": "llama3.2:3b",
+                "stream": False,
+                "keep_alive": "30m",
+            },
+            arguments["json"],
+        )
+        self.assertNotIn("prompt", arguments["json"])
+
+    def test_preload_failure_is_sanitized(self):
+        client = RecordingClient(httpx.ConnectError("private transport detail"))
+        runtime = OllamaRuntime("http://127.0.0.1:11434", client=client)
+
+        self.assertFalse(runtime.preload_model("llama3.2:3b", timeout=90))
+
+    def test_preload_rejects_empty_model_or_non_positive_timeout(self):
+        runtime = OllamaRuntime(
+            "http://127.0.0.1:11434",
+            client=RecordingClient(),
+        )
+
+        with self.assertRaises(ValueError):
+            runtime.preload_model(" ", timeout=90)
+        with self.assertRaises(ValueError):
+            runtime.preload_model("llama3.2:3b", timeout=0)
 
 
 if __name__ == "__main__":

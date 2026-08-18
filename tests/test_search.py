@@ -115,6 +115,12 @@ class HybridKnowledgeSearchTests(unittest.TestCase):
         self.assertEqual([semantic.id, lexical.id], [chunk.id for chunk in results])
         self.assertEqual(["Suchwort"], self.provider.embedded_queries)
 
+    def test_empty_library_skips_local_embedding_request(self):
+        results = self._search().search("Unnötige Modellanfrage")
+
+        self.assertEqual((), results)
+        self.assertEqual([], self.provider.embedded_queries)
+
     def test_minimum_similarity_excludes_weak_semantic_only_match(self):
         self._add_document("weak.txt", "Inhalt ohne Abfragewort", (0.7, 0.714))
         search = self._search(minimum_similarity=0.8)

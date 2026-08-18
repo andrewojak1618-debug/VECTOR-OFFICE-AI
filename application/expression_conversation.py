@@ -8,6 +8,7 @@ from application.expression_delivery import (
     ExpressionDeliveryStatus,
     ExpressionResponseCoordinator,
 )
+from application.thinking import generate_with_thinking
 from brain.agent import Agent
 from brain.context import ConversationCheckpoint
 from brain.expression_actions import (
@@ -122,7 +123,11 @@ class ControlledExpressionConversation:
     def _prepare(self, request: str) -> ExpressionTurnResult:
         checkpoint = self._agent.context.checkpoint()
         try:
-            answer = self._agent.respond(request)
+            answer = generate_with_thinking(
+                self._agent,
+                self._coordinator.speech_output,
+                request,
+            )
             suggestion = self._mapper.suggest(self._agent.emotional_state.state)
         except (RuntimeError, ValueError):
             self._agent.context.restore(checkpoint)

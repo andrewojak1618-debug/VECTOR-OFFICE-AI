@@ -13,6 +13,12 @@ from brain.context import ChatMessage
 from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
 
 
+DEFAULT_OLLAMA_TEMPERATURE = 0.25
+DEFAULT_OLLAMA_MAX_OUTPUT_TOKENS = 96
+DEFAULT_OLLAMA_CONTEXT_WINDOW = 4_096
+DEFAULT_OLLAMA_KEEP_ALIVE = "30m"
+
+
 def _message_payload(messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
     return [
         {"role": message.role, "content": message.content}
@@ -90,7 +96,10 @@ class OllamaProvider:
         timeout: float = 120.0,
         max_attempts: int = 2,
         retry_delay: float = 0.5,
-        temperature: float | None = None,
+        temperature: float = DEFAULT_OLLAMA_TEMPERATURE,
+        max_output_tokens: int = DEFAULT_OLLAMA_MAX_OUTPUT_TOKENS,
+        context_window: int = DEFAULT_OLLAMA_CONTEXT_WINDOW,
+        keep_alive: str = DEFAULT_OLLAMA_KEEP_ALIVE,
         client: httpx.Client | None = None,
         sleeper: Callable[[float], None] = time.sleep,
         diagnostics: StructuredDiagnosticReporter | None = None,
@@ -99,11 +108,14 @@ class OllamaProvider:
             raise ValueError("OLLAMA_HOST must not be empty.")
         if not model.strip():
             raise ValueError("OLLAMA_MODEL must not be empty.")
-        if temperature is not None and not 0.0 <= temperature <= 2.0:
-            raise ValueError("Ollama temperature must be between 0 and 2.")
+        generation = (temperature, max_output_tokens, context_window, keep_alive)
+        _validate_ollama_generation_policy(*generation)
         _validate_request_policy(timeout, max_attempts, retry_delay)
         self.model = model
         self.temperature = temperature
+        self.max_output_tokens = max_output_tokens
+        self.context_window = context_window
+        self.keep_alive = keep_alive.strip()
         self.max_attempts = max_attempts
         self.retry_delay = retry_delay
         self.sleeper = sleeper
@@ -187,9 +199,13 @@ class OllamaProvider:
             "model": self.model,
             "messages": _message_payload(messages),
             "stream": False,
+            "keep_alive": self.keep_alive,
+            "options": {
+                "temperature": self.temperature,
+                "num_predict": self.max_output_tokens,
+                "num_ctx": self.context_window,
+            },
         }
-        if self.temperature is not None:
-            payload["options"] = {"temperature": self.temperature}
         return payload
 
     @staticmethod
@@ -310,6 +326,21 @@ def _create_ollama_model(settings, diagnostics=None) -> OllamaProvider:
         timeout=_request_timeout(settings),
         max_attempts=_max_attempts(settings),
         retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
+        temperature=getattr(
+            settings,
+            "OLLAMA_TEMPERATURE",
+            DEFAULT_OLLAMA_TEMPERATURE,
+        ),
+        max_output_tokens=getattr(
+            settings,
+            "OLLAMA_MAX_OUTPUT_TOKENS",
+            DEFAULT_OLLAMA_MAX_OUTPUT_TOKENS,
+        ),
+        context_window=getattr(
+            settings,
+            "OLLAMA_CONTEXT_WINDOW",
+            DEFAULT_OLLAMA_CONTEXT_WINDOW,
+        ),
         diagnostics=diagnostics,
     )
 
@@ -333,6 +364,22 @@ def _validate_request_policy(
         raise ValueError("LLM max attempts must be between 1 and 5.")
     if not 0.0 <= retry_delay <= 10.0:
         raise ValueError("LLM retry delay must be between 0 and 10 seconds.")
+
+
+def _validate_ollama_generation_policy(
+    temperature: float,
+    max_output_tokens: int,
+    context_window: int,
+    keep_alive: str,
+) -> None:
+    if not 0.0 <= temperature <= 2.0:
+        raise ValueError("Ollama temperature must be between 0 and 2.")
+    if type(max_output_tokens) is not int or not 16 <= max_output_tokens <= 512:
+        raise ValueError("Ollama output limit must be between 16 and 512.")
+    if type(context_window) is not int or not 1_024 <= context_window <= 32_768:
+        raise ValueError("Ollama context window must be between 1024 and 32768.")
+    if not keep_alive.strip():
+        raise ValueError("Ollama keep-alive must not be empty.")
 
 
 def _emit_provider(diagnostics, level, component, code, **details) -> None:

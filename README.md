@@ -69,6 +69,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - optionale philosophische Reflexion mit Fakten- und Perspektivtrennung
 - gemeinsame C1-Persönlichkeitsregeln für OpenAI und Ollama
 - Antwortprüfung gegen falsche Gewissheit, belehrenden Ton und Überlänge
+- drei lokale Überlegungseinleitungen parallel zur Modellberechnung
 - kontrollierte, noch nicht ausführbare Zuordnung von Ausdruckshinweisen
 - kontrollierte lokale Bibliothek für bewusst importierte `.md`- und `.txt`-Dateien
 - Quellen-, Prüfsummen- und Abschnittsverwaltung für importiertes Wissen
@@ -330,7 +331,7 @@ VECTOR_SERIAL=deine_vector_seriennummer
 WIREPOD_HOST=http://127.0.0.1:8080
 HOST_WATCHDOG_WIREPOD_EXECUTABLE=C:\Program Files\wire-pod\chipper\chipper.exe
 HOST_WATCHDOG_POLL_INTERVAL=0.5
-HOST_WATCHDOG_STARTUP_ATTEMPTS=5
+HOST_WATCHDOG_STARTUP_ATTEMPTS=6
 HOST_WATCHDOG_APP_RESTART_ATTEMPTS=3
 
 TTS_VOICE=Microsoft Stefan
@@ -349,6 +350,9 @@ OPENAI_MODEL=gpt-5.6-luna
 
 OLLAMA_HOST=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.2:3b
+OLLAMA_TEMPERATURE=0.25
+OLLAMA_MAX_OUTPUT_TOKENS=96
+OLLAMA_CONTEXT_WINDOW=4096
 OLLAMA_EXECUTABLE=
 LLM_REQUEST_TIMEOUT=120
 LLM_MAX_ATTEMPTS=2
@@ -383,6 +387,12 @@ lokalen Dienst beim Start und startet ihn bei Bedarf unsichtbar. Die ausführbar
 Datei wird über den `PATH` und die üblichen Windows-Installationsordner gesucht.
 Nur bei einer abweichenden Installation muss `OLLAMA_EXECUTABLE` als absoluter
 Pfad gesetzt werden.
+
+Für vorhersehbare lokale Sprachantworten begrenzt das Projekt Ollama auf 96
+Ausgabetokens und 4096 Kontexttokens. Das Modell bleibt nach einer Anfrage 30
+Minuten geladen. Eine leere Dokumentbibliothek löst keine unnötige
+Embedding-Anfrage aus. Im lokalen Agententest sank die Antwortzeit dadurch von
+18,02 Sekunden auf 1,91 bis 3,03 Sekunden, ohne unvollständige Sätze auszugeben.
 
 Die Embedding-Integration verwendet ausschließlich den lokalen Ollama-Endpunkt
 `/api/embed`. `embeddinggemma` verarbeitet einzelne Texte und mehrere Abschnitte

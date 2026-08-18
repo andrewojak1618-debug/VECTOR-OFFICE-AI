@@ -114,9 +114,9 @@ class Settings:
 
     HOST_WATCHDOG_STARTUP_ATTEMPTS = get_int_setting(
         "HOST_WATCHDOG_STARTUP_ATTEMPTS",
-        default=5,
+        default=6,
         minimum=1,
-        maximum=5,
+        maximum=6,
     )
 
     HOST_WATCHDOG_APP_RESTART_ATTEMPTS = get_int_setting(
@@ -194,6 +194,27 @@ class Settings:
     OLLAMA_MODEL = os.getenv(
         "OLLAMA_MODEL",
         "llama3.2:3b",
+    )
+
+    OLLAMA_TEMPERATURE = get_float_setting(
+        "OLLAMA_TEMPERATURE",
+        default=0.25,
+        minimum=0.0,
+        maximum=2.0,
+    )
+
+    OLLAMA_MAX_OUTPUT_TOKENS = get_int_setting(
+        "OLLAMA_MAX_OUTPUT_TOKENS",
+        default=96,
+        minimum=16,
+        maximum=512,
+    )
+
+    OLLAMA_CONTEXT_WINDOW = get_int_setting(
+        "OLLAMA_CONTEXT_WINDOW",
+        default=4_096,
+        minimum=1_024,
+        maximum=32_768,
     )
 
     LLM_REQUEST_TIMEOUT = get_float_setting(

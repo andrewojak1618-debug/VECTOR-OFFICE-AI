@@ -10,6 +10,9 @@ from typing import Callable
 import httpx
 
 
+DEFAULT_MODEL_KEEP_ALIVE = "30m"
+
+
 class OllamaRuntime:
     """Ensure that the configured local Ollama service is reachable."""
 
@@ -42,6 +45,34 @@ class OllamaRuntime:
         if not self._start_service(executable):
             return False
         return self._wait_until_ready()
+
+    def preload_model(
+        self,
+        model_name: str,
+        timeout: float,
+        keep_alive: str = DEFAULT_MODEL_KEEP_ALIVE,
+    ) -> bool:
+        """Load one local model through an empty, content-free request."""
+        normalized_name = model_name.strip()
+        if not normalized_name or timeout <= 0:
+            raise ValueError("Ollama preload settings are invalid.")
+        payload = {
+            "model": normalized_name,
+            "stream": False,
+            "keep_alive": keep_alive,
+        }
+        try:
+            response = self.client.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError:
+            print("Ollama model preload failed. [WARNING]")
+            return False
+        print("Ollama model is preloaded. [OK]")
+        return True
 
     def _start_service(self, executable: Path) -> bool:
         try:

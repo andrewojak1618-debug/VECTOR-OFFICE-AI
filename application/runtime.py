@@ -147,10 +147,16 @@ def _ensure_ollama(settings, mode: RuntimeMode, diagnostics, connections) -> boo
     if not mode.needs_ollama:
         return True
     print("\nChecking local Ollama service...")
-    ready = OllamaRuntime(
+    runtime = OllamaRuntime(
         base_url=settings.OLLAMA_HOST,
         executable=settings.OLLAMA_EXECUTABLE,
-    ).ensure_available()
+    )
+    ready = runtime.ensure_available()
+    if ready and mode.local_voice_required:
+        ready = runtime.preload_model(
+            settings.OLLAMA_MODEL,
+            settings.LLM_REQUEST_TIMEOUT,
+        )
     connections.observe("ollama", ready)
     if ready:
         diagnostics.emit(
@@ -296,6 +302,9 @@ def _create_language_model(settings, mode: RuntimeMode, diagnostics=None):
         timeout=getattr(settings, "LLM_REQUEST_TIMEOUT", 120.0),
         max_attempts=getattr(settings, "LLM_MAX_ATTEMPTS", 2),
         retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
+        temperature=getattr(settings, "OLLAMA_TEMPERATURE", 0.25),
+        max_output_tokens=getattr(settings, "OLLAMA_MAX_OUTPUT_TOKENS", 96),
+        context_window=getattr(settings, "OLLAMA_CONTEXT_WINDOW", 4_096),
         diagnostics=diagnostics,
     )
 

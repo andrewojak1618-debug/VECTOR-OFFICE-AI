@@ -106,6 +106,8 @@ class HybridKnowledgeSearch:
             return ()
         if limit < 1:
             raise ValueError("Knowledge limit must be at least 1.")
+        if not self.library.list_documents(limit=1):
+            return ()
         lexical = self.library.search(normalized_query, self.config.candidate_limit)
         try:
             semantic = self._semantic_matches(normalized_query)

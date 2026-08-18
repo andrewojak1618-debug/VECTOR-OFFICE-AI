@@ -90,6 +90,9 @@ class ProviderTests(unittest.TestCase):
             payload = __import__("json").loads(request.content)
             self.assertEqual("test-model", payload["model"])
             self.assertFalse(payload["stream"])
+            self.assertEqual("30m", payload["keep_alive"])
+            self.assertEqual(96, payload["options"]["num_predict"])
+            self.assertEqual(4096, payload["options"]["num_ctx"])
             self.assertEqual("Hallo", payload["messages"][1]["content"])
             return httpx.Response(
                 200,
@@ -111,7 +114,7 @@ class ProviderTests(unittest.TestCase):
     def test_ollama_provider_can_request_deterministic_sampling(self):
         def handle_request(request):
             payload = __import__("json").loads(request.content)
-            self.assertEqual({"temperature": 0.0}, payload["options"])
+            self.assertEqual(0.0, payload["options"]["temperature"])
             return httpx.Response(200, json={"message": {"content": "Okay"}})
 
         client = httpx.Client(
@@ -130,6 +133,14 @@ class ProviderTests(unittest.TestCase):
     def test_ollama_provider_rejects_invalid_temperature(self):
         with self.assertRaisesRegex(ValueError, "temperature"):
             OllamaProvider("http://test", "test-model", temperature=2.1)
+
+    def test_ollama_provider_rejects_unbounded_generation_settings(self):
+        with self.assertRaisesRegex(ValueError, "output limit"):
+            OllamaProvider("http://test", "test-model", max_output_tokens=513)
+        with self.assertRaisesRegex(ValueError, "context window"):
+            OllamaProvider("http://test", "test-model", context_window=512)
+        with self.assertRaisesRegex(ValueError, "keep-alive"):
+            OllamaProvider("http://test", "test-model", keep_alive=" ")
 
     def test_openai_and_ollama_receive_identical_personality_rules(self):
         messages = ConversationContext().messages()
@@ -159,6 +170,25 @@ class ProviderTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             create_language_model(settings)
+
+    def test_factory_applies_bounded_local_generation_settings(self):
+        settings = SimpleNamespace(
+            LLM_PROVIDER="ollama",
+            OLLAMA_HOST="http://test",
+            OLLAMA_MODEL="test-model",
+            LLM_REQUEST_TIMEOUT=45.0,
+            LLM_MAX_ATTEMPTS=1,
+            LLM_RETRY_DELAY=0.0,
+            OLLAMA_TEMPERATURE=0.1,
+            OLLAMA_MAX_OUTPUT_TOKENS=72,
+            OLLAMA_CONTEXT_WINDOW=2048,
+        )
+
+        provider = create_language_model(settings)
+
+        self.assertEqual(0.1, provider.temperature)
+        self.assertEqual(72, provider.max_output_tokens)
+        self.assertEqual(2048, provider.context_window)
 
     def test_ollama_provider_sanitizes_connection_errors(self):
         def handle_request(request):

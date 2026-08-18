@@ -507,3 +507,38 @@ Die deutsche TTS wurde schrittweise verbessert:
 - sämtliche Funktionen weiterhin auf höchstens 35 physische Zeilen begrenzt
 - 366 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - `.env`, Laufzeitdaten und Secrets weiterhin aus dem Git-Stand ausgeschlossen
+
+## Karte 19 – Windows-Kaltstart und Bereitschaftsstatus
+
+- rein lesenden, wiederholbaren Autostart-Prüfbefehl ergänzt
+- Aufgabenregistrierung, Startaktion, Zustand und letztes Ergebnis einbezogen
+- lokale WirePod- und Ollama-Endpunkte ohne Cloudzugriff geprüft
+- doppelte Watchdog-, Anwendungs- und WirePod-Prozesse erkennbar gemacht
+- Vorabmodus für eine bewusst beendete Aufgabe von der Kaltstart-Abnahme getrennt
+- Ausgabe auf technische Zustände ohne Secrets oder Gesprächsinhalte begrenzt
+- ersten echten Kaltstart als fehlgeschlagenen 18-Sekunden-Grenzfall erkannt
+- begrenztes WirePod-Startfenster mit sechstem Versuch auf rund 48 Sekunden erweitert
+- langsamen erfolgreichen sechsten WirePod-Start automatisiert abgesichert
+- wiederholten Kaltstartabbruch auf eine CP-1252/OEM-Decodierung von `tasklist` zurückgeführt
+- Prozessnamensprüfung auf codierungsunabhängige ASCII-Bytes umgestellt
+- unerwartete Watchdog-Grenzfehler inhaltsfrei diagnostiziert und kontrolliert beendet
+- beide wiederholten Lernfragen als korrekt erkannte WirePod-Ereignisse nachgewiesen
+- verzögerte erste Antwort auf den kalten lokalen Ollama-Modellstart eingegrenzt
+- lokales Chatmodell vor Voice-Bereitschaft mit leerer inhaltsfreier Anfrage vorgewärmt
+- dauerhafte PowerShell-Aufgabenhülle mit verborgenem Fenstermodus konfiguriert
+- geplante Aufgabe zusätzlich als verborgen markiert
+- sichtbares Fenster dem von Windows 11 vorgeschalteten Windows Terminal zugeordnet
+- feste argumentlose WScript-Hülle für einen tatsächlich windowlosen Start ergänzt
+- WScript-Aufgabenprozess als tatsächlichen Watchdog-Besitzer angebunden
+- windowlosen Aufgabenstart mit null sichtbaren Terminalfenstern praktisch abgenommen
+- vollständige Startdiagnose für Aufgabe, Dienste und Einzelinstanzen bestanden
+- echte lokale Agentenantwort vor der Optimierung mit 18,02 Sekunden gemessen
+- Embedding-Aufruf bei einer leeren Dokumentbibliothek vollständig vermieden
+- lokale Ausgabe auf 96 Tokens, 4096 Kontexttokens und Temperatur 0,25 begrenzt
+- Ollama-Sprachmodell für Gesprächspausen 30 Minuten im Speicher gehalten
+- vier vollständige lokale Antworten nach der Optimierung in 1,91 bis 3,03 Sekunden erzeugt
+- drei vorhandene lokale Überlegungseinleitungen vor jede Modellantwort verschoben
+- Antwortberechnung und Einleitung kontrolliert parallelisiert
+- Antwortwiedergabe weiterhin strikt nach dem vollständigen Einleitungsende gestartet
+- direkte Tools, Bestätigungen und Sicherheitsaktionen von der Denkphase ausgenommen
+- alle drei zufälligen Überlegungsausgaben am physischen Vector erfolgreich gehört

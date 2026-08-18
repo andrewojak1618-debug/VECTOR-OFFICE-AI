@@ -54,7 +54,7 @@ erhalten bleibt. Normale Antworten bleiben unverändert. Die produktive
 Gesprächsschleife aktiviert den Pfad nur nach `Mit Ausdruck ...` und einer
 separaten Bestätigung der Bewegung.
 
-Vor der reflektierten Antwort wählt die lokale TTS-Schicht unabhängig und mit
+Vor jeder modellgestützten Antwort wählt die lokale TTS-Schicht unabhängig und mit
 gleicher Chance genau eine feste Gesprächseinleitung: einen synthetischen
 IPA-Summton, `Ich schätze` oder `Lass mich überlegen`. Die Auswahl besitzt
 keinen Sitzungszustand;
@@ -66,6 +66,12 @@ erzeugt und dauert lokal gemessen rund 1,54 Sekunden. Anschließend folgen 1.500
 Millisekunden Pause. `Lass mich überlegen` erhält 2.000 Millisekunden und
 `Ich schätze` bleibt bei 320 Millisekunden. Geschriebene Varianten wie `Hmmm`
 oder `Mmmm` wurden entfernt, weil OneCore sie unnatürlich aussprach.
+
+Die Antwortberechnung beginnt unmittelbar nach der erkannten Frage in einem
+einzelnen Hintergrundarbeiter. Währenddessen wird die gewählte Einleitung lokal
+gesprochen. Die eigentliche Antwort wartet auf das Ende der Einleitung, sodass
+keine Audios gleichzeitig laufen. Direkte Befehle, Sicherheitsaktionen und
+Bestätigungen erhalten keine künstliche Denkphase.
 
 ## Optionale Reflexionsschicht
 

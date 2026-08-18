@@ -48,8 +48,7 @@ class VectorSpeechTests(unittest.TestCase):
             self.assertFalse(speech.say("Guten Tag"))
 
     def test_reflective_style_builds_bounded_ssml_with_safe_text(self):
-        estimate = REFLECTIVE_PRELUDES[1]
-        with patch("vector.speech.secrets.choice", return_value=estimate):
+        with patch("vector.speech.secrets.choice") as choose:
             content = VectorSpeech._speech_content(
                 "Freiheit & Verantwortung. Eine mögliche Sichtweise?",
                 SpeechStyle.REFLECTIVE,
@@ -68,27 +67,29 @@ class VectorSpeechTests(unittest.TestCase):
             '<prosody volume="soft" pitch="-5%">Sichtweise?</prosody>',
             content,
         )
-        self.assertIn('<break time="180ms"/>', content)
-        self.assertIn('Ich schätze<break time="320ms"/>', content)
+        self.assertNotIn('<break time="180ms"/>', content)
         self.assertIn('<break time="190ms"/>', content)
         self.assertIn("Freiheit &amp;", content)
         self.assertIn("Verantwortung.", content)
+        choose.assert_not_called()
 
     def test_each_reflective_prelude_can_be_selected_independently(self):
         self.assertEqual(
             ("IPA-Summton", "Ich schätze", "Lass mich überlegen"),
             tuple(prelude.label for prelude in REFLECTIVE_PRELUDES),
         )
+        speech = VectorSpeech(FakeVectorClient())
         for prelude in REFLECTIVE_PRELUDES:
             with self.subTest(prelude=prelude.label), patch(
                 "vector.speech.secrets.choice",
                 return_value=prelude,
-            ) as choose:
-                content = VectorSpeech._speech_content(
-                    "Freiheit braucht Verantwortung.",
-                    SpeechStyle.REFLECTIVE,
-                )
-                self.assertIn(prelude.markup, content)
+            ) as choose, patch.object(
+                speech,
+                "_prepare_ssml_and_play",
+                return_value=True,
+            ) as play:
+                self.assertTrue(speech.say_thinking_prelude())
+                self.assertIn(prelude.markup, play.call_args.args[0])
                 choose.assert_called_once_with(REFLECTIVE_PRELUDES)
 
     def test_ipa_hum_uses_the_physically_selected_longer_rate(self):
@@ -106,14 +107,8 @@ class VectorSpeechTests(unittest.TestCase):
         }
 
         for prelude in REFLECTIVE_PRELUDES:
-            with self.subTest(prelude=prelude.label), patch(
-                "vector.speech.secrets.choice",
-                return_value=prelude,
-            ):
-                content = VectorSpeech._speech_content(
-                    "Eine kurze Antwort.",
-                    SpeechStyle.REFLECTIVE,
-                )
+            with self.subTest(prelude=prelude.label):
+                content = VectorSpeech._thinking_content(prelude)
                 self.assertIn(
                     f'{prelude.markup}<break time="{expected_breaks[prelude.label]}ms"/>',
                     content,

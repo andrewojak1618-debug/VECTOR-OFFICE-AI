@@ -7,6 +7,7 @@ from application.commands import CommandResult, ConsoleCommandHandler
 from application.connection_supervisor import ConnectionSupervisor
 from application.expression_conversation import ControlledExpressionConversation
 from application.expression_delivery import ExpressionResponseCoordinator
+from application.thinking import generate_with_thinking
 from application.tool_conversation import ControlledToolConversation
 from application.voice_recovery import VoiceRecovery
 from brain.agent import Agent
@@ -60,7 +61,7 @@ def respond_and_speak(
     """Generate one answer and play it through Vector."""
     print("Thinking...")
     try:
-        answer = agent.respond(user_text)
+        answer = generate_with_thinking(agent, speech, user_text)
     except (RuntimeError, ValueError) as exc:
         _speak_provider_notice(agent, speech)
         print(f"Brain request failed: {exc}")

@@ -110,12 +110,12 @@ def wirepod_process_running() -> bool:
             ["tasklist", "/FI", "IMAGENAME eq chipper.exe", "/NH"],
             check=False,
             capture_output=True,
-            text=True,
             creationflags=hidden_process_flags(),
         )
     except OSError:
         return False
-    return "chipper.exe" in result.stdout.casefold()
+    output = result.stdout or b""
+    return b"chipper.exe" in output.lower()
 
 
 def _windows_process_exists(process_id: int) -> bool:

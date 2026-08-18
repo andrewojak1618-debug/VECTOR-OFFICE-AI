@@ -44,8 +44,8 @@ class HostWatchdogConfig:
     def __post_init__(self) -> None:
         if not 0.25 <= self.poll_interval <= 30.0:
             raise ValueError("Watchdog poll interval must be between 0.25 and 30.")
-        if not 1 <= self.startup_attempts <= 5:
-            raise ValueError("Watchdog startup attempts must be between 1 and 5.")
+        if not 1 <= self.startup_attempts <= 6:
+            raise ValueError("Watchdog startup attempts must be between 1 and 6.")
         if not 0 <= self.app_restart_attempts <= len(APP_RESTART_DELAYS):
             raise ValueError("Watchdog application restart attempts are invalid.")
         if self.owner_process_id is not None and self.owner_process_id <= 0:
@@ -133,6 +133,14 @@ class HostWatchdog:
         except KeyboardInterrupt:
             self._stop_application()
             return 0
+        except Exception:
+            self._stop_application()
+            self._emit(
+                DiagnosticLevel.ERROR,
+                "watchdog.crashed",
+                reason_code="unexpected-runtime-error",
+            )
+            return 1
         finally:
             self.instance_lock.release()
 

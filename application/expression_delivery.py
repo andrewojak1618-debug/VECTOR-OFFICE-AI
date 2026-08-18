@@ -78,6 +78,11 @@ class ExpressionResponseCoordinator:
         self._registry = registry
         self._speech = speech
 
+    @property
+    def speech_output(self) -> SpeechOutput:
+        """Expose the bounded speech boundary for a pre-response prelude."""
+        return self._speech
+
     def deliver(
         self,
         answer: str,

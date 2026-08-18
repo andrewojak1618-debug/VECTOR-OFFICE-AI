@@ -19,6 +19,8 @@
 - ✅ einmalige lokale Offline-Ansage bei Cloud-Ausfall ergänzen
 - ✅ einmalige lokale Wiederherstellungsansage nach WirePod-Ausfall ergänzen
 - ✅ lokalen Windows-Autostart und Host-Watchdog implementieren
+- ✅ vollständigen Windows-Kaltstart und Bereitschaftsstatus praktisch abnehmen
+- ✅ lokale Ollama-Antwortlatenz für den Voice-Modus begrenzen und praktisch messen
 
 ## Voice Input
 

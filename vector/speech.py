@@ -154,11 +154,30 @@ class VectorSpeech:
             print(f"Reason: {exc}")
             return False
 
+    def say_thinking_prelude(self) -> bool:
+        """Select and play one local pre-response thinking phrase."""
+        try:
+            prelude = secrets.choice(REFLECTIVE_PRELUDES)
+            return self._prepare_ssml_and_play(self._thinking_content(prelude))
+        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+            print("German thinking prelude generation failed.")
+            print(f"Reason: {exc}")
+            return False
+
     def _prepare_and_play(self, text: str, style: SpeechStyle) -> bool:
         with tempfile.TemporaryDirectory(prefix="vector-speech-") as temp_dir:
             source_path = Path(temp_dir) / "source.wav"
             vector_path = Path(temp_dir) / "vector.wav"
             self._synthesize_german_wav(text, source_path, style)
+            self._convert_for_vector(source_path, vector_path)
+            self._validate_vector_wav(vector_path)
+            return self.vector_client.play_wav(vector_path, volume=self.volume)
+
+    def _prepare_ssml_and_play(self, content: str) -> bool:
+        with tempfile.TemporaryDirectory(prefix="vector-speech-") as temp_dir:
+            source_path = Path(temp_dir) / "source.wav"
+            vector_path = Path(temp_dir) / "vector.wav"
+            self._synthesize_german_ssml_wav(content, source_path)
             self._convert_for_vector(source_path, vector_path)
             self._validate_vector_wav(vector_path)
             return self.vector_client.play_wav(vector_path, volume=self.volume)
@@ -169,11 +188,19 @@ class VectorSpeech:
         output_path: Path,
         style: SpeechStyle = SpeechStyle.NEUTRAL,
     ) -> None:
+        content = self._speech_content(text, style)
+        self._synthesize_german_ssml_wav(content, output_path)
+
+    def _synthesize_german_ssml_wav(
+        self,
+        content: str,
+        output_path: Path,
+    ) -> None:
         powershell = self._require_executable(
             "powershell",
             "Windows PowerShell is required for German TTS.",
         )
-        script = self._create_tts_script(text, output_path, style)
+        script = self._create_tts_script_for_content(content, output_path)
         result = self._run_process(
             [powershell, "-NoProfile", "-NonInteractive", "-Command", script]
         )
@@ -186,6 +213,13 @@ class VectorSpeech:
         style: SpeechStyle = SpeechStyle.NEUTRAL,
     ) -> str:
         content = self._speech_content(text, style)
+        return self._create_tts_script_for_content(content, output_path)
+
+    def _create_tts_script_for_content(
+        self,
+        content: str,
+        output_path: Path,
+    ) -> str:
         replacements = {
             "__TEXT__": self._encode(content),
             "__VOICE__": self._encode(self.voice),
@@ -207,18 +241,23 @@ class VectorSpeech:
             if sentence
         )
         rate = NEUTRAL_RATE
-        prelude_markup = ""
         if style is SpeechStyle.REFLECTIVE:
             rate = REFLECTIVE_RATE
-            prelude = secrets.choice(REFLECTIVE_PRELUDES)
-            prelude_markup = (
-                f'<break time="{REFLECTIVE_LEADING_BREAK_MS}ms"/>'
-                f'{prelude.markup}<break time="{prelude.break_ms}ms"/>'
-            )
         return (
             '<speak version="1.0" '
             'xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="de-DE">'
-            f'<prosody rate="{rate}">{prelude_markup}{body}'
+            f'<prosody rate="{rate}">{body}'
+            "</prosody></speak>"
+        )
+
+    @staticmethod
+    def _thinking_content(prelude: _ReflectivePrelude) -> str:
+        return (
+            '<speak version="1.0" '
+            'xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="de-DE">'
+            f'<prosody rate="{REFLECTIVE_RATE}">'
+            f'<break time="{REFLECTIVE_LEADING_BREAK_MS}ms"/>'
+            f'{prelude.markup}<break time="{prelude.break_ms}ms"/>'
             "</prosody></speak>"
         )
 

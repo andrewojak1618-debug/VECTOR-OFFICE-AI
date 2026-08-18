@@ -7,17 +7,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 $taskName = "Vector Office AI"
-$startScript = (Resolve-Path -LiteralPath (
-    Join-Path $PSScriptRoot "start_vector_office.ps1"
+$launcherScript = (Resolve-Path -LiteralPath (
+    Join-Path $PSScriptRoot "start_vector_office_hidden.vbs"
 )).Path
-$powerShellExecutable = Join-Path $PSHOME "powershell.exe"
+$scriptHostExecutable = Join-Path $env:WINDIR "System32\wscript.exe"
 $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$startScript`""
+$arguments = "`"$launcherScript`""
 
 $action = New-ScheduledTaskAction `
-    -Execute $powerShellExecutable `
+    -Execute $scriptHostExecutable `
     -Argument $arguments `
-    -WorkingDirectory (Split-Path -Parent $startScript)
+    -WorkingDirectory (Split-Path -Parent $launcherScript)
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
 $trigger.Delay = "PT${DelaySeconds}S"
 $principal = New-ScheduledTaskPrincipal `
@@ -25,6 +25,7 @@ $principal = New-ScheduledTaskPrincipal `
     -LogonType Interactive `
     -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet `
+    -Hidden `
     -MultipleInstances IgnoreNew `
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 1) `

@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from application.runtime import (
     _create_tool_registry,
+    _ensure_ollama,
     _knowledge_enabled,
     _run_input_mode,
     get_runtime_mode,
@@ -48,6 +49,53 @@ class RuntimeModeTests(unittest.TestCase):
 
         self.assertTrue(mode.needs_ollama)
         self.assertTrue(mode.local_voice_required)
+
+    @patch("application.runtime.OllamaRuntime")
+    def test_private_wirepod_voice_preloads_local_chat_model(self, runtime_type):
+        settings = make_settings(
+            INPUT_MODE="wirepod",
+            OLLAMA_HOST="http://127.0.0.1:11434",
+            OLLAMA_EXECUTABLE="",
+            OLLAMA_MODEL="llama3.2:3b",
+            LLM_REQUEST_TIMEOUT=90.0,
+        )
+        runtime = runtime_type.return_value
+        runtime.ensure_available.return_value = True
+        runtime.preload_model.return_value = True
+        diagnostics = MagicMock()
+        connections = MagicMock()
+
+        self.assertTrue(
+            _ensure_ollama(
+                settings,
+                get_runtime_mode(settings),
+                diagnostics,
+                connections,
+            )
+        )
+        runtime.preload_model.assert_called_once_with("llama3.2:3b", 90.0)
+
+    @patch("application.runtime.OllamaRuntime")
+    def test_private_voice_blocks_when_model_preload_fails(self, runtime_type):
+        settings = make_settings(
+            INPUT_MODE="wirepod",
+            OLLAMA_HOST="http://127.0.0.1:11434",
+            OLLAMA_EXECUTABLE="",
+            OLLAMA_MODEL="llama3.2:3b",
+            LLM_REQUEST_TIMEOUT=90.0,
+        )
+        runtime = runtime_type.return_value
+        runtime.ensure_available.return_value = True
+        runtime.preload_model.return_value = False
+
+        self.assertFalse(
+            _ensure_ollama(
+                settings,
+                get_runtime_mode(settings),
+                MagicMock(),
+                MagicMock(),
+            )
+        )
 
     def test_unknown_provider_does_not_activate_fallback_implicitly(self):
         mode = get_runtime_mode(make_settings(
