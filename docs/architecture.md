@@ -20,20 +20,28 @@
 | `vector/` | WirePod-Healthcheck, SDK-Verbindung, deutsche TTS und kontrollierte Aktionen |
 | `voice/` | WirePod-Transcript-Listener und Voice-Eingabe |
 | `tools/` | Registry, Parameterschemata und explizite Aktionsberechtigungen |
+| `tests/` | Automatisierte Regressionstests |
 
 OpenAI und Ollama verwenden dieselben konfigurierten Grenzen für Anfragezeit
 und maximale Versuche. OpenAI erhält diese Werte direkt beim SDK-Aufbau;
 Ollama wiederholt nur vorübergehende Transport-, Drosselungs- und Serverfehler.
 Dauerhafte Clientfehler werden nicht erneut gesendet. Erst nach ausgeschöpften
 Primärversuchen greift der bestehende lokale Provider-Fallback.
-| `tests/` | Automatisierte Regressionstests |
 
 `main.py` ist ausschließlich der schlanke Einstiegspunkt. Der optionale lokale
 Windows-Start wird in `application/host_watchdog.py` überwacht und bleibt von
 der eigentlichen Laufzeitkomposition getrennt. Die Zusammensetzung
 der Abhängigkeiten liegt in `application/runtime.py`; Konsolen- und
 WirePod-Dialoge liegen in `application/conversation.py` und die expliziten
-Verwaltungsbefehle in `application/commands.py`.
+Verwaltungsbefehle in `application/commands.py`. Die Vorbereitung und Ausgabe
+von Modellantworten liegt getrennt in `application/response_delivery.py`.
+
+`config/environment.py` validiert ausschließlich skalare Umgebungswerte;
+`config/settings.py` setzt daraus die Anwendungskonfiguration zusammen und
+behält die bisherigen öffentlichen Importpfade bei. `brain/providers.py`
+enthält die OpenAI-/Ollama-Adapter und ihre Fabrik. Der Zustandsübergang zum
+lokalen Ersatzmodell ist in `brain/fallback_provider.py` gekapselt, während
+`brain/provider_diagnostics.py` nur inhaltsfreie Provider-Metadaten ausgibt.
 
 ## Providerfluss
 

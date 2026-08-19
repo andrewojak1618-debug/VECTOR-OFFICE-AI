@@ -28,6 +28,26 @@ begrenzten Staffel 1, 2, 5 und 10 Sekunden erneut versucht. Erst fünf
 aufeinanderfolgende Fehler beenden die Sitzung kontrolliert. Die Fehlermeldung übernimmt dabei weder interne
 HTTP-Fehlerdetails noch zusätzliche Transkriptinhalte.
 
+## Wakeword-Annahme
+
+„Hey Vector“ wird bereits in Vectors Firmware erkannt. Erst nach erfolgreicher
+Aktivierung sendet der Roboter Audio an WirePod; Python-Polling,
+`VOICE_LISTEN_TIMEOUT` und eine nachträgliche Verstärkung können daher keine
+vollständig überhörten Wakewords retten. Die lokale WirePod-Version bietet
+keinen freigegebenen Regler für Mikrofonverstärkung oder Wakeword-Schwelle.
+
+Vector und Vosk sind für den deutschen Betrieb beide auf `de-DE` eingestellt.
+Vectors interne Lautstärke steht testweise auf `Mute`; der unabhängige externe
+ElevenLabs-Audiostream bleibt trotzdem hörbar. Die Rückentaste ist weiterhin
+als alternative Wakeword-Aktivierung konfiguriert.
+
+Der physische Vergleich am 19. August 2026 zeigte bei einem bewegten Vector nur
+eine von fünf Aktivierungen beim ersten Ruf. Ruhig auf der Ladestation wurden
+fünf von fünf Versuchen sofort erkannt, einschließlich eines vollständigen
+Dialogs aus ungefähr 90 Zentimetern Entfernung. Lautsprechertöne sind damit
+nicht die einzige Störquelle: mechanische Kopf-, Lift- und Radgeräusche können
+weiterhin direkt in das Mikrofonarray einkoppeln.
+
 ## Abbruchsignale
 
 Groß- und Kleinschreibung, mehrfache Leerzeichen sowie abschließende

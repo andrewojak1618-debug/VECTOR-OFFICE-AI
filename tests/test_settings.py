@@ -12,10 +12,21 @@ from config.settings import (
     DEFAULT_TOOL_AUDIT_RETENTION_DAYS,
     get_bool_setting,
     get_float_setting,
+    get_int_setting,
+)
+from config.environment import (
+    get_bool_setting as environment_bool_setting,
+    get_float_setting as environment_float_setting,
+    get_int_setting as environment_int_setting,
 )
 
 
 class SettingsTests(unittest.TestCase):
+    def test_setting_helpers_keep_compatible_import_paths(self):
+        self.assertIs(environment_bool_setting, get_bool_setting)
+        self.assertIs(environment_float_setting, get_float_setting)
+        self.assertIs(environment_int_setting, get_int_setting)
+
     def test_privacy_defaults_keep_embeddings_local_and_cloud_knowledge_off(self):
         self.assertEqual("ollama", DEFAULT_EMBEDDING_PROVIDER)
         self.assertFalse(DEFAULT_KNOWLEDGE_ALLOW_CLOUD)

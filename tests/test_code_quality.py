@@ -21,6 +21,7 @@ MAX_FUNCTION_LINES = 35
 MAX_MODULE_LINES = 399
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
 ARCHITECTURE_MODULE_DOCS = {
+    Path("application/response_delivery.py"): Path("docs/architecture.md"),
     Path("application/host_watchdog.py"): Path("docs/windows-startup.md"),
     Path("application/process_control.py"): Path("docs/windows-startup.md"),
     Path("application/voice_recovery.py"): Path("docs/connections.md"),
@@ -31,6 +32,9 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("brain/emotions.py"): Path("docs/personality.md"),
     Path("brain/expression_actions.py"): Path("docs/personality.md"),
     Path("brain/reflection.py"): Path("docs/personality.md"),
+    Path("brain/fallback_provider.py"): Path("docs/architecture.md"),
+    Path("brain/provider_diagnostics.py"): Path("docs/architecture.md"),
+    Path("config/environment.py"): Path("docs/architecture.md"),
     Path("memory/document_text.py"): Path("docs/architecture.md"),
     Path("memory/embedding_records.py"): Path("docs/architecture.md"),
     Path("memory/embedding_schema.py"): Path("docs/architecture.md"),

@@ -2,7 +2,6 @@
 
 import time
 from collections.abc import Callable, Sequence
-from enum import Enum
 from typing import Any
 
 import httpx
@@ -10,6 +9,8 @@ from openai import OpenAI, OpenAIError
 
 from brain.agent import LanguageModel
 from brain.context import ChatMessage
+from brain.fallback_provider import FallbackProvider, ProviderNotice
+from brain.provider_diagnostics import emit_provider
 from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
 
 
@@ -24,13 +25,6 @@ def _message_payload(messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
         {"role": message.role, "content": message.content}
         for message in messages
     ]
-
-
-class ProviderNotice(Enum):
-    """Describe one consumable provider transition without response content."""
-
-    LOCAL_FALLBACK = "local_fallback"
-    ALL_UNAVAILABLE = "all_unavailable"
 
 
 class OpenAIProvider:
@@ -66,7 +60,7 @@ class OpenAIProvider:
                 input=_message_payload(messages),
             )
         except OpenAIError:
-            _emit_provider(
+            emit_provider(
                 self.diagnostics,
                 DiagnosticLevel.ERROR,
                 "openai",
@@ -76,7 +70,7 @@ class OpenAIProvider:
             raise RuntimeError(
                 "OpenAI request failed. Check API key, model access, and billing."
             ) from None
-        _emit_provider(
+        emit_provider(
             self.diagnostics,
             DiagnosticLevel.INFO,
             "openai",
@@ -142,7 +136,7 @@ class OllamaProvider:
                 continue
             self._report_success(attempt)
             return response
-        _emit_provider(
+        emit_provider(
             self.diagnostics,
             DiagnosticLevel.ERROR,
             "ollama",
@@ -163,7 +157,7 @@ class OllamaProvider:
         return response
 
     def _report_retry(self, attempt: int) -> None:
-        _emit_provider(
+        emit_provider(
             self.diagnostics,
             DiagnosticLevel.WARNING,
             "ollama",
@@ -174,7 +168,7 @@ class OllamaProvider:
         )
 
     def _report_success(self, attempt: int) -> None:
-        _emit_provider(
+        emit_provider(
             self.diagnostics,
             DiagnosticLevel.INFO,
             "ollama",
@@ -215,76 +209,6 @@ class OllamaProvider:
         if not isinstance(content, str):
             raise RuntimeError("Ollama returned an invalid response.")
         return content
-
-
-class FallbackProvider:
-    """Use a secondary model only when the primary model is unavailable."""
-
-    def __init__(
-        self,
-        primary: LanguageModel,
-        fallback: LanguageModel,
-        diagnostics: StructuredDiagnosticReporter | None = None,
-    ):
-        self.primary = primary
-        self.fallback = fallback
-        self.diagnostics = diagnostics
-        self._primary_unavailable = False
-        self._pending_notice: ProviderNotice | None = None
-
-    def generate(self, messages: Sequence[ChatMessage]) -> str:
-        """Return the primary response or deliberately use the fallback."""
-        content = self._try_primary(messages)
-        if content:
-            return content
-        print("OpenAI unavailable. Using local Ollama fallback.")
-        _emit_provider(
-            self.diagnostics,
-            DiagnosticLevel.WARNING,
-            "provider",
-            "fallback.activated",
-            provider="openai",
-            fallback="ollama",
-            reason_code="primary-unavailable",
-        )
-        return self._generate_fallback(messages)
-
-    def _try_primary(self, messages: Sequence[ChatMessage]) -> str:
-        try:
-            content = self.primary.generate(messages).strip()
-        except RuntimeError:
-            self._mark_primary_unavailable()
-            return ""
-        if not content:
-            self._mark_primary_unavailable()
-            return ""
-        self._primary_unavailable = False
-        self._pending_notice = None
-        return content
-
-    def _generate_fallback(self, messages: Sequence[ChatMessage]) -> str:
-        try:
-            content = self.fallback.generate(messages)
-        except RuntimeError:
-            if self._pending_notice is not None:
-                self._pending_notice = ProviderNotice.ALL_UNAVAILABLE
-            raise RuntimeError(
-                "OpenAI and the local Ollama fallback both failed."
-            ) from None
-        if self._pending_notice is not None:
-            self._pending_notice = ProviderNotice.LOCAL_FALLBACK
-        return content
-
-    def consume_notice(self) -> ProviderNotice | None:
-        """Return one outage transition once and clear its pending state."""
-        notice = self._pending_notice
-        self._pending_notice = None
-        return notice
-
-    def _mark_primary_unavailable(self) -> None:
-        if not self._primary_unavailable:
-            self._pending_notice = ProviderNotice.ALL_UNAVAILABLE
-        self._primary_unavailable = True
 
 
 def create_language_model(
@@ -381,8 +305,3 @@ def _validate_ollama_generation_policy(
         raise ValueError("Ollama context window must be between 1024 and 32768.")
     if not keep_alive.strip():
         raise ValueError("Ollama keep-alive must not be empty.")
-
-
-def _emit_provider(diagnostics, level, component, code, **details) -> None:
-    if diagnostics is not None:
-        diagnostics.emit(level, component, code, **details)

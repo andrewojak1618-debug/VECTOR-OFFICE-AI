@@ -581,3 +581,19 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Korrekturversuch weiterhin inhaltsfrei über einen neutralen Fehlercode ausgelöst
 - persönliche Statusfrage mit `qwen3:4b-instruct` erfolgreich real getestet
 - 405 Tests, Kompilierung, strikten Dokumentationsbau und Diff-Prüfung bestanden
+
+## VECTOR-PY-CLEANUP nach Sprachintegration
+
+- Python-Regeln aus `docs/quality.md` und die relevante 400-Zeilen-Vorgabe abgeglichen
+- validierte Umgebungswerte aus `config/settings.py` nach `config/environment.py` ausgelagert
+- Provider-Fallback und inhaltsfreie Diagnostik aus der Provider-Fassade getrennt
+- Antwortvorbereitung und Sprachausgabe aus der Gesprächsschleife ausgelagert
+- bestehende öffentliche Importpfade als kompatible Fassaden beibehalten und getestet
+- `config/settings.py` von 393 auf 335 Zeilen reduziert
+- `brain/providers.py` von 388 auf 307 Zeilen reduziert
+- `application/conversation.py` von 376 auf 276 Zeilen reduziert
+- Wakeword-A/B-Test mit deutschem Locale, stummen Systemtönen und ruhiger Ladestation dokumentiert
+- fünf von fünf Wakeword-Aktivierungen bis ungefähr 90 Zentimeter sofort erkannt
+- sämtliche produktiven Python-Module unter 400 und Funktionen unter 36 Zeilen gehalten
+- 407 Tests, Kompilierung, strikten Dokumentationsbau und Diff-Prüfung bestanden
+- `.env`, lokale Audiodaten, Diagnosen und Secrets weiterhin vom Git-Stand ausgeschlossen

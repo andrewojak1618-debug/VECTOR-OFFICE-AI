@@ -9,7 +9,12 @@ from brain.providers import (
     FallbackProvider,
     OllamaProvider,
     OpenAIProvider,
+    ProviderNotice,
     create_language_model,
+)
+from brain.fallback_provider import (
+    FallbackProvider as ExtractedFallbackProvider,
+    ProviderNotice as ExtractedProviderNotice,
 )
 
 
@@ -34,6 +39,10 @@ class FakeOpenAIClient:
 
 
 class ProviderTests(unittest.TestCase):
+    def test_fallback_provider_keeps_compatible_import_path(self):
+        self.assertIs(ExtractedFallbackProvider, FallbackProvider)
+        self.assertIs(ExtractedProviderNotice, ProviderNotice)
+
     def test_fallback_provider_uses_primary_when_available(self):
         primary = SimpleNamespace(generate=lambda messages: "Cloud-Antwort")
         fallback = SimpleNamespace(generate=lambda messages: "Lokal-Antwort")
