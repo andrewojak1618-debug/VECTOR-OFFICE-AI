@@ -1,5 +1,6 @@
 """Spoken local notices for cloud and complete provider outages."""
 
+import threading
 import unittest
 
 from application.conversation import (
@@ -9,6 +10,7 @@ from application.conversation import (
 )
 from brain.agent import Agent
 from brain.providers import FallbackProvider
+from vector.speech import SpeechStyle
 
 
 class ScriptedProvider:
@@ -25,9 +27,42 @@ class ScriptedProvider:
 class RecordingSpeech:
     def __init__(self):
         self.messages = []
+        self.styles = []
 
-    def say(self, text):
+    def say(self, text, style=SpeechStyle.CONVERSATIONAL):
         self.messages.append(text)
+        self.styles.append(style)
+        return True
+
+
+class FakePreparedSpeech:
+    def __init__(self):
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+
+class PreparingSpeech:
+    def __init__(self):
+        self.events = []
+        self.prepared = threading.Event()
+        self.styles = []
+
+    def say_thinking_prelude(self):
+        self.events.append("prelude:start")
+        self.prepared.wait(timeout=1)
+        self.events.append("prelude:end")
+        return True
+
+    def prepare(self, _text, style):
+        self.events.append("prepare")
+        self.styles.append(style)
+        self.prepared.set()
+        return FakePreparedSpeech()
+
+    def play_prepared(self, _prepared):
+        self.events.append("play")
         return True
 
 
@@ -89,6 +124,42 @@ class OfflineNoticeTests(unittest.TestCase):
             respond_and_speak(agent, speech, question)
 
         self.assertEqual(2, speech.messages.count(CLOUD_OFFLINE_NOTICE))
+
+    def test_ordinary_supportive_turn_selects_supportive_speech(self):
+        speech = RecordingSpeech()
+        agent = Agent(ScriptedProvider("Das klingt schwer. Wir gehen ruhig vor."))
+
+        completed = respond_and_speak(
+            agent,
+            speech,
+            "Ich bin traurig und überfordert.",
+        )
+
+        self.assertTrue(completed)
+        self.assertEqual([SpeechStyle.SUPPORTIVE], speech.styles)
+
+    def test_ordinary_risk_turn_selects_cautious_speech(self):
+        speech = RecordingSpeech()
+        agent = Agent(ScriptedProvider("Das ist unsicher. Prüfe es bitte zuerst."))
+
+        completed = respond_and_speak(agent, speech, "Ist das gefährlich?")
+
+        self.assertTrue(completed)
+        self.assertEqual([SpeechStyle.CAUTIOUS], speech.styles)
+
+    def test_answer_audio_is_prepared_before_thinking_prelude_finishes(self):
+        speech = PreparingSpeech()
+        agent = Agent(ScriptedProvider("Das klingt schwer. Wir gehen ruhig vor."))
+
+        completed = respond_and_speak(agent, speech, "Ich bin traurig.")
+
+        self.assertTrue(completed)
+        self.assertLess(
+            speech.events.index("prepare"),
+            speech.events.index("prelude:end"),
+        )
+        self.assertEqual("play", speech.events[-1])
+        self.assertEqual([SpeechStyle.SUPPORTIVE], speech.styles)
 
 
 if __name__ == "__main__":

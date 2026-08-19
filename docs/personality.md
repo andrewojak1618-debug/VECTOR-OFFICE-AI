@@ -47,12 +47,30 @@ Vorschlag lokal blockiert. Die produktive Aktivierung, eine separate
 Benutzerbestätigung und die tatsächliche Roboterausführung bleiben getrennt.
 `application/expression_delivery.py` stellt den sicheren sequenziellen Ablauf
 bereit: zuerst die vollständig abgeschlossene feste Ausdruckssequenz, danach
-TTS. Ein reflektierter Cue wählt dabei ein begrenztes SSML-Profil mit nur leicht
-reduziertem Tempo und kurzen Denkpausen. Eine globale Tonhöhenverschiebung wird
-nicht mehr gesetzt, damit die natürliche deutsche Satzmelodie der Stimme
-erhalten bleibt. Normale Antworten bleiben unverändert. Die produktive
-Gesprächsschleife aktiviert den Pfad nur nach `Mit Ausdruck ...` und einer
-separaten Bestätigung der Bewegung.
+TTS. `vector/speech_prosody.py` ordnet jedem Cue ausschließlich ein festes,
+lokales SSML-Profil zu. Das normale Gesprächsprofil behält die physisch
+bestätigte Satzmelodie. `supportive` spricht etwas ruhiger und sanfter,
+`attentive` markiert Grenzen mit geringfügig längeren Pausen und `reflective`
+behält das bereits abgestimmte Reflexionsprofil. Die dynamische Prosodie gilt
+auch für normale Antworten; Bewegungen bleiben weiterhin ausschließlich nach
+`Mit Ausdruck ...` und einer separaten Bestätigung möglich.
+
+| Ausdruckshinweis | Sprachprofil | begrenzte Wirkung |
+|---|---|---|
+| `neutral` | `CONVERSATIONAL` | bestätigte natürliche Gesprächsprosodie |
+| `supportive` | `SUPPORTIVE` | etwas ruhigeres Tempo und sanftere Gesamtlage |
+| `attentive` | `CAUTIOUS` | ruhige Grenzmarkierung mit kurzen Zusatzpausen |
+| `reflective` | `REFLECTIVE` | leicht reduziertes Tempo für Reflexion |
+
+Die Zuordnung verändert weder Antworttext noch Gesprächstyp und behauptet keine
+echten Gefühle. Unbekannte oder fehlende Zustände fallen auf das bestätigte
+Gesprächsprofil zurück.
+
+Jeder vollständige Satz bleibt innerhalb eines einzigen Prosodieblocks. Es gibt
+keine getrennten Lautstärke- oder Tonhöhenblöcke für Satzanfang, Satzmitte und
+Satzende mehr. Dadurch kann OneCore die deutsche Aussprache und Satzmelodie
+durchgehend formen; nur zwischen vollständigen Sätzen liegt eine kurze,
+profilabhängige Pause.
 
 Vor jeder modellgestützten Antwort wählt die lokale TTS-Schicht unabhängig und mit
 gleicher Chance genau eine feste Gesprächseinleitung: einen synthetischen
@@ -69,9 +87,11 @@ oder `Mmmm` wurden entfernt, weil OneCore sie unnatürlich aussprach.
 
 Die Antwortberechnung beginnt unmittelbar nach der erkannten Frage in einem
 einzelnen Hintergrundarbeiter. Währenddessen wird die gewählte Einleitung lokal
-gesprochen. Die eigentliche Antwort wartet auf das Ende der Einleitung, sodass
-keine Audios gleichzeitig laufen. Direkte Befehle, Sicherheitsaktionen und
-Bestätigungen erhalten keine künstliche Denkphase.
+gesprochen. Nach fertiger Modellantwort werden TTS und FFmpeg im selben
+Hintergrundpfad vorbereitet. Die bereits fertige WAV-Datei wartet auf das Ende
+der Einleitung, sodass keine Audios gleichzeitig laufen und danach keine zweite
+TTS-Wartephase nötig ist. Direkte Befehle, Sicherheitsaktionen und Bestätigungen
+erhalten keine künstliche Denkphase.
 
 ## Optionale Reflexionsschicht
 
@@ -91,6 +111,11 @@ Eine reflektierte Antwort soll:
 - gesprochene Sätze möglichst unter 18 Wörtern halten,
 - standardmäßig höchstens zwei Sätze enthalten.
 
+Alle direkten und reflektierten Antworten sollen außerdem aus vollständigen,
+idiomatischen deutschen Sätzen bestehen. Ein Satz enthält ein erkennbares
+Subjekt und ein finites Verb. Telegrammstil und alleinstehende Fragmente wie
+`Funktioniert gut` werden nicht als natürliche Gesprächsantwort akzeptiert.
+
 Fordert der Benutzer ausdrücklich eine ausführliche oder detaillierte Antwort,
 wird ausschließlich die Satzgrenze kontrolliert auf maximal acht Sätze
 erweitert.
@@ -103,6 +128,7 @@ Ein Prompt allein garantiert keine Regelbefolgung. Deshalb prüft
 - Behauptungen eigener Gefühle,
 - Formeln falscher absoluter Gewissheit,
 - deutlich belehrende Formulierungen,
+- typische alleinstehende Prädikatsfragmente,
 - Überschreitung der erlaubten Satzanzahl.
 
 Bei einem Verstoß erhält derselbe Provider genau einen Korrekturversuch mit

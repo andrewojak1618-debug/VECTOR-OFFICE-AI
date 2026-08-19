@@ -91,6 +91,49 @@ dieselbe Satzkontur bei fünf Prozent Beschleunigung; die bestätigten Denkpause
 und der IPA-Summton bleiben dabei unverändert. Diese Kontur wurde am physischen
 Vector hörgeprüft und vom Benutzer abgenommen.
 
+## Optionale ElevenLabs-Ausgabe
+
+`vector/elevenlabs_speech.py` kann die eigentliche Antwort mit einer bewusst
+freigegebenen ElevenLabs-Stimme erzeugen. `vector/speech_factory.py` aktiviert
+diesen Pfad nur, wenn `TTS_PROVIDER=elevenlabs`, `TTS_ALLOW_CLOUD=true`, ein
+lokaler API-Key und eine Voice-ID vorhanden sind. Die zufällige hörbare
+Überlegung bleibt immer bei Microsoft Stefan und benötigt keinen Cloudzugriff.
+
+Die Cloud-Ausgabe wird ohne zusätzliche Sprachkompression normalisiert, damit
+die Dynamik der erzeugten Stimme erhalten bleibt. FFmpeg wandelt sie danach in
+das unveränderte Vector-Format mit 16 kHz, 16 Bit und Mono um. Nicht erreichbare
+API, ungültige Antworten und Konvertierungsfehler führen automatisch zur
+lokalen OneCore-Ausgabe derselben Antwort.
+
+```env
+TTS_PROVIDER=elevenlabs
+TTS_ALLOW_CLOUD=true
+ELEVENLABS_API_KEY=dein_lokaler_api_key
+ELEVENLABS_VOICE_ID=rDmv3mOhK6TnhYWckFaD
+ELEVENLABS_MODEL=eleven_flash_v2_5
+ELEVENLABS_TIMEOUT=15
+ELEVENLABS_STABILITY=0.45
+ELEVENLABS_SIMILARITY=0.75
+ELEVENLABS_STYLE=0.0
+ELEVENLABS_SPEED=1.02
+```
+
+`TTS_ALLOW_CLOUD=false` ist die sichere Voreinstellung. Bei aktiver Freigabe
+wird der vollständige zu sprechende Antworttext an ElevenLabs übertragen. Das
+betrifft möglicherweise auch Informationen, die aus lokalem Memory oder einer
+lokalen Dokumentbibliothek in die Antwort eingeflossen sind. Schlüssel,
+Antworttexte und Audiodaten werden von der Anwendung nicht protokolliert oder
+versioniert. Die Aufbewahrung beim Cloudanbieter richtet sich unabhängig davon
+nach dem dort verwendeten Konto und Tarif.
+
+Der vollständige Pfad aus ElevenLabs Flash v2.5, FFmpeg-Konvertierung,
+Vector-SDK und physischem Lautsprecher wurde mit „Felix Serenitas“ erfolgreich
+abgespielt. Die API-Erzeugung des kurzen Prüfsatzes dauerte rund 1,03 Sekunden;
+Stimme, Tempo und Wirkung wurden vom Benutzer als gewünschtes Sprachbild
+bestätigt. Anschließend wurde die verborgene Windows-Autostart-Aufgabe neu
+gestartet und mit genau je einer Watchdog-, Anwendungs- und WirePod-Instanz
+abgenommen.
+
 ## Diagnose
 
 ```powershell

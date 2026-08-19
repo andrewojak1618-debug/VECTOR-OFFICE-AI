@@ -152,6 +152,21 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(response, agent.context.history[-1].content)
         self.assertNotIn("Ich fühle", response)
 
+    def test_sentence_fragment_is_corrected_once_before_storage(self):
+        model = SequenceLanguageModel(
+            "Ich habe keine eigenen Gefühle. Funktioniert gut – und du?",
+            "Ich habe keine eigenen Gefühle, aber meine Systeme funktionieren gut. "
+            "Wie geht es dir?",
+        )
+        agent = Agent(model)
+
+        response = agent.respond("Wie geht es dir?")
+
+        self.assertEqual(2, len(model.received_batches))
+        self.assertIn("sentence_fragment", model.received_batches[1][0].content)
+        self.assertIn("meine Systeme funktionieren gut", response)
+        self.assertEqual(response, agent.context.history[-1].content)
+
     def test_repeated_personality_violation_is_rejected(self):
         model = SequenceLanguageModel(
             "Du musst einfach zuhören.",
@@ -164,16 +179,14 @@ class AgentTests(unittest.TestCase):
 
         self.assertEqual((), agent.context.history)
 
-    def test_repeated_length_only_violation_is_safely_compacted(self):
-        model = SequenceLanguageModel(
-            "Eins. Zwei. Drei.",
-            "Das klingt belastend. Wir gehen schrittweise vor. Danach prüfen wir neu.",
-        )
+    def test_length_only_violation_is_compacted_without_second_request(self):
+        model = SequenceLanguageModel("Eins. Zwei. Drei.")
         agent = Agent(model)
 
         response = agent.respond("Ich bin überfordert.")
 
-        self.assertEqual("Das klingt belastend. Wir gehen schrittweise vor.", response)
+        self.assertEqual("Eins. Zwei.", response)
+        self.assertEqual(1, len(model.received_batches))
         self.assertEqual(response, agent.context.history[-1].content)
 
     def test_respond_rejects_empty_user_text(self):

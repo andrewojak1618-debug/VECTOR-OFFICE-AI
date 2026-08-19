@@ -24,6 +24,24 @@
     options:
       members: true
 
+## Begrenzte Sprachprofile
+
+::: vector.speech_prosody
+    options:
+      members: true
+
+## Optionale ElevenLabs-Stimme
+
+::: vector.elevenlabs_speech
+    options:
+      members: true
+
+## Auswahl des TTS-Providers
+
+::: vector.speech_factory
+    options:
+      members: true
+
 ## WirePod-Client
 
 ::: vector.client

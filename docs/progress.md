@@ -542,3 +542,42 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Antwortwiedergabe weiterhin strikt nach dem vollständigen Einleitungsende gestartet
 - direkte Tools, Bestätigungen und Sicherheitsaktionen von der Denkphase ausgenommen
 - alle drei zufälligen Überlegungsausgaben am physischen Vector erfolgreich gehört
+
+## Dynamische Gesprächsprosodie
+
+- bestätigtes Gesprächsprofil als unveränderten neutralen Rückfall erhalten
+- unterstützende Aussagen auf ein sanfteres Profil bei gleichem Grundtempo abgebildet
+- Risiko- und Unsicherheitsfragen mit kurzen zusätzlichen Strukturpausen versehen
+- reflektierende Aussagen weiterhin über das separat abgestimmte Profil ausgegeben
+- Prosodieauswahl auch im normalen Voice-Dialog an den lokalen Zustand angebunden
+- Antworttext, Modellwahl und Bewegungsberechtigungen von der Prosodie getrennt
+- feste SSML-Werte in `vector/speech_prosody.py` gekapselt und getestet
+- physische Feinabnahme der neuen unterstützenden und vorsichtigen Profile vorgemerkt
+- Wortgruppenblöcke zugunsten eines durchgehenden Sprachbogens entfernt
+- Antwort-WAV bereits parallel zur hörbaren Überlegungsphase vorbereitet
+- konkurrierende OneCore-Synthesen durch eine lokale Sperre serialisiert
+- lokalen Voice-Output auf 64 Tokens begrenzt und Promptwiederholungen reduziert
+- reine Satzlängenverstöße ohne zweite Modellanfrage sicher gekürzt
+- Zielzeit von fünf bis sechs Sekunden für warmes Qwen festgehalten
+
+## Optionale ElevenLabs-TTS
+
+- ElevenLabs als ausdrücklich freizugebenden TTS-Provider ergänzt
+- Voice-ID für „Felix Serenitas – Calm and Trustworthy“ lokal konfiguriert
+- Microsoft Stefan als automatischen Offline-Fallback beibehalten
+- hörbare Überlegung vollständig lokal und ohne Cloudanfrage belassen
+- Modellformatierung vor beiden Sprachpfaden in flüssigen Sprechtext überführt
+- Cloud-Audio mit dynamikerhaltender Loudness-Normalisierung vorbereitet
+- API-, Audio- und Konvertierungsfehler ohne Antwort- oder Secret-Logs abgesichert
+- API-Zugriff nach Credit-Freigabe mit rund 1,03 Sekunden Erzeugungszeit bestätigt
+- Felix vollständig über FFmpeg, Vector-SDK und physischen Lautsprecher abgespielt
+- gewünschte Stimme, Natürlichkeit und Grundabstimmung vom Benutzer bestätigt
+- verborgene Autostart-Aufgabe mit dem neuen TTS-Provider erfolgreich neu gestartet
+
+## Natürliche Ollama-Formulierungen
+
+- vollständige deutsche Sätze mit erkennbarem Subjekt und finitem Verb gefordert
+- Telegrammstil und typische alleinstehende Prädikatsfragmente lokal abgesichert
+- Korrekturversuch weiterhin inhaltsfrei über einen neutralen Fehlercode ausgelöst
+- persönliche Statusfrage mit `qwen3:4b-instruct` erfolgreich real getestet
+- 405 Tests, Kompilierung, strikten Dokumentationsbau und Diff-Prüfung bestanden

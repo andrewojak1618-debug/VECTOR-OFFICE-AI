@@ -90,8 +90,9 @@ class ProviderTests(unittest.TestCase):
             payload = __import__("json").loads(request.content)
             self.assertEqual("test-model", payload["model"])
             self.assertFalse(payload["stream"])
+            self.assertFalse(payload["think"])
             self.assertEqual("30m", payload["keep_alive"])
-            self.assertEqual(96, payload["options"]["num_predict"])
+            self.assertEqual(64, payload["options"]["num_predict"])
             self.assertEqual(4096, payload["options"]["num_ctx"])
             self.assertEqual("Hallo", payload["messages"][1]["content"])
             return httpx.Response(

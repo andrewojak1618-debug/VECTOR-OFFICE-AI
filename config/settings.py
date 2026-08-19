@@ -133,11 +133,55 @@ class Settings:
         "Microsoft Stefan",
     )
 
+    TTS_PROVIDER = os.getenv("TTS_PROVIDER", "onecore")
+
+    TTS_ALLOW_CLOUD = get_bool_setting(
+        "TTS_ALLOW_CLOUD",
+        default=False,
+    )
+
     TTS_VOLUME = get_int_setting(
         "TTS_VOLUME",
         default=50,
         minimum=0,
         maximum=100,
+    )
+
+    ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+    ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
+    ELEVENLABS_MODEL = os.getenv(
+        "ELEVENLABS_MODEL",
+        "eleven_flash_v2_5",
+    )
+    ELEVENLABS_TIMEOUT = get_float_setting(
+        "ELEVENLABS_TIMEOUT",
+        default=15.0,
+        minimum=1.0,
+        maximum=60.0,
+    )
+    ELEVENLABS_STABILITY = get_float_setting(
+        "ELEVENLABS_STABILITY",
+        default=0.45,
+        minimum=0.0,
+        maximum=1.0,
+    )
+    ELEVENLABS_SIMILARITY = get_float_setting(
+        "ELEVENLABS_SIMILARITY",
+        default=0.75,
+        minimum=0.0,
+        maximum=1.0,
+    )
+    ELEVENLABS_STYLE = get_float_setting(
+        "ELEVENLABS_STYLE",
+        default=0.0,
+        minimum=0.0,
+        maximum=1.0,
+    )
+    ELEVENLABS_SPEED = get_float_setting(
+        "ELEVENLABS_SPEED",
+        default=1.02,
+        minimum=0.7,
+        maximum=1.2,
     )
 
     ROBOT_ACTION_TIMEOUT = get_int_setting(
@@ -205,7 +249,7 @@ class Settings:
 
     OLLAMA_MAX_OUTPUT_TOKENS = get_int_setting(
         "OLLAMA_MAX_OUTPUT_TOKENS",
-        default=96,
+        default=64,
         minimum=16,
         maximum=512,
     )

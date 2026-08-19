@@ -59,6 +59,9 @@ Der aktuelle Prototyp unterstützt bereits:
 - automatische Konvertierung auf 16 kHz, 16 Bit und Mono
 - Loudness-Normalisierung und Sprachkompression ohne digitales Clipping
 - konfigurierbare TTS-Stimme und Lautstärke
+- durchgehende Gesprächsprosodie ohne abgehackte Wortblöcke
+- dynamische, fest begrenzte Prosodie für zugewandte, unterstützende,
+  vorsichtige und reflektierende Antworten
 - providerunabhängigen Agent- und Conversation-Core
 - OpenAI-Adapter über die Responses API
 - lokal getesteten Ollama-Adapter mit automatischem Offline-Fallback
@@ -107,6 +110,34 @@ Vector-Lautsprecher
 ```
 
 Dieser Weg wurde erfolgreich mit einem physischen Vector 2.0 getestet.
+Optional kann `vector/elevenlabs_speech.py` die Hauptantwort mit der
+ElevenLabs-Stimme „Felix Serenitas – Calm and Trustworthy“ erzeugen. Microsoft
+Stefan bleibt dabei der lokale Offline-Fallback und spricht weiterhin jede
+Überlegungseinleitung. Die optionale Cloud-Stimme verwendet eine sanftere
+Loudness-Normalisierung ohne zusätzliche Kompression, damit ihre natürliche
+Dynamik beim Vector-Lautsprecher möglichst erhalten bleibt. Der physische
+Hörtest dieses neuen Pfads wurde mit der gewählten Felix-Stimme erfolgreich
+bestätigt.
+
+Normale Antworten verwenden ein eigenes, physisch abgestimmtes
+`CONVERSATIONAL`-Profil. Die aktuelle Feinabstimmung hält jeden Satz in einem
+durchgehenden SSML-Sprachbogen und überlässt Kommas der natürlichen deutschen
+Stimme. Dadurch entstehen keine künstlichen Übergänge zwischen Wortgruppen.
+Das lokale Gesprächszustandsmodell kann für
+Belastung, Risiko oder philosophische Themen jeweils ein fest begrenztes
+`SUPPORTIVE`-, `CAUTIOUS`- oder `REFLECTIVE`-Profil auswählen. Die Profile
+verändern nur Gesamttempo, eine sehr kleine Tonlage und die Pause zwischen
+vollständigen Sätzen; freie Modellparameter oder behauptete Empfindungen
+entstehen dadurch nicht.
+
+Für den lokalen Voice-Modus laufen Modellantwort und hörbare Überlegung bereits
+parallel. Sobald der Antworttext vorliegt, werden OneCore-TTS und FFmpeg noch
+während der Einleitung vorbereitet. Nach deren Ende kann die fertige WAV-Datei
+direkt an Vector übergeben werden. Das lokale Ausgabelimit von 64 Tokens und ein
+kompakterer, weiterhin vollständig geprüfter Persönlichkeitsprompt zielen bei
+warmem Qwen auf einen Antwortbeginn nach ungefähr fünf bis sechs Sekunden.
+Kurzzeitige CPU-Last oder ein neu geladenes Modell können dieses Ziel auf dem
+aktuellen Rechner weiterhin überschreiten.
 
 ## 🧠 Brain und Sprachmodelle
 
@@ -117,6 +148,10 @@ Aktuell vorgesehen:
 
 - **OpenAI:** Cloud-Modell über die Responses API; live getestet
 - **Ollama:** lokales `llama3.2:3b` über `/api/chat`; live mit Vector getestet
+
+Ollamas optionaler interner Denkmodus bleibt deaktiviert. Die Anwendung nutzt
+stattdessen ihre eigene hörbare und zeitlich begrenzte Überlegungsphase, damit
+die Antwortlatenz für Vector vorhersehbar bleibt.
 
 Der aktive Provider wird über `.env` ausgewählt:
 
@@ -132,6 +167,36 @@ LLM_PROVIDER=ollama
 
 Dadurch kann das Projekt später Qualität, Datenschutz, Offline-Fähigkeit und
 Kosten flexibel gegeneinander abwägen.
+
+### Zukünftige Hardware für größere lokale Modelle
+
+Der aktuelle Snapdragon-X-Elite-Rechner mit 15,6 GB gemeinsam genutztem RAM
+eignet sich für kompakte Modelle wie `qwen3:4b`. Die externe Festplatte stellt
+zusätzlichen Modellspeicher bereit, ersetzt aber weder Arbeitsspeicher noch
+GPU-VRAM und beschleunigt die Inferenz nicht. Für eine flüssige lokale Nutzung
+größerer Q4-Modelle bei 4096 Kontexttokens ist folgende Zielausstattung
+vorgesehen:
+
+| Komponente | Qwen 14B – sinnvolle Untergrenze | Qwen 32B – empfohlener Zielrechner |
+|---|---|---|
+| Prozessor | moderner x86-64-Prozessor mit AVX2, mindestens 8 Kerne/16 Threads | moderner x86-64-Prozessor mit AVX2, 12–16 Kerne/24–32 Threads |
+| Arbeitsspeicher | 32 GB DDR5 | 64 GB DDR5, möglichst als 2 × 32 GB |
+| Grafikkarte | von Ollama unterstützte NVIDIA-GPU mit mindestens 16 GB VRAM | NVIDIA-GPU mit 32 GB VRAM, beispielsweise GeForce RTX 5090 |
+| Datenträger | interne PCIe-4.0-NVMe-SSD, 1 TB und mindestens 150 GB frei | interne PCIe-4.0- oder PCIe-5.0-NVMe-SSD, 2 TB und mindestens 250 GB frei |
+| Betriebssystem | Windows 11 x64 | Windows 11 x64 |
+| Netzwerk | Gigabit-LAN oder stabiles Wi-Fi 6 zum WirePod-Netz | Gigabit-LAN zum WirePod-Netz bevorzugt |
+
+Die 14B-Konfiguration ist für kurze Einzelanfragen ausgelegt. Der Zielrechner
+mit 64 GB RAM und 32 GB VRAM soll auch ein 32B-Q4-Modell vollständig auf der GPU
+halten und gleichzeitig Reserven für Ollama, WirePod, TTS, Python und den
+Kontext-Cache bereitstellen. Qwen 2.5 14B belegt in der üblichen
+Q4-K_M-Variante rund 9 GB, Qwen 2.5 32B rund 20 GB. NVIDIA gibt für die RTX 5090
+32 GB GDDR7 an. Vor einem späteren Hardwarekauf werden Modellstand, Ollama-
+Kompatibilität und verfügbare Komponenten erneut geprüft.
+
+Quellen: [Ollama-Hardwareunterstützung](https://docs.ollama.com/gpu),
+[Qwen-2.5-Modellgrößen](https://ollama.com/library/qwen2.5/tags) und
+[NVIDIA RTX 5090](https://www.nvidia.com/en-in/geforce/graphics-cards/50-series/rtx-5090/).
 
 ## 💬 Gesprächsablauf
 
@@ -336,6 +401,16 @@ HOST_WATCHDOG_APP_RESTART_ATTEMPTS=3
 
 TTS_VOICE=Microsoft Stefan
 TTS_VOLUME=90
+TTS_PROVIDER=onecore
+TTS_ALLOW_CLOUD=false
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID=
+ELEVENLABS_MODEL=eleven_flash_v2_5
+ELEVENLABS_TIMEOUT=15
+ELEVENLABS_STABILITY=0.45
+ELEVENLABS_SIMILARITY=0.75
+ELEVENLABS_STYLE=0.0
+ELEVENLABS_SPEED=1.02
 ROBOT_ACTION_TIMEOUT=8
 
 INPUT_MODE=console
@@ -351,7 +426,7 @@ OPENAI_MODEL=gpt-5.6-luna
 OLLAMA_HOST=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.2:3b
 OLLAMA_TEMPERATURE=0.25
-OLLAMA_MAX_OUTPUT_TOKENS=96
+OLLAMA_MAX_OUTPUT_TOKENS=64
 OLLAMA_CONTEXT_WINDOW=4096
 OLLAMA_EXECUTABLE=
 LLM_REQUEST_TIMEOUT=120
@@ -376,6 +451,13 @@ KNOWLEDGE_LEXICAL_WEIGHT=0.45
 KNOWLEDGE_SEMANTIC_WEIGHT=0.55
 KNOWLEDGE_MIN_SIMILARITY=0.35
 ```
+
+Die ElevenLabs-Ausgabe wird nur mit `TTS_PROVIDER=elevenlabs` und
+`TTS_ALLOW_CLOUD=true` aktiviert. Der API-Key gehört ausschließlich in die
+ignorierte lokale `.env`. Bei aktiver Cloud-TTS wird der vollständige
+Antworttext an ElevenLabs übertragen; bei fehlendem Schlüssel, fehlender
+Voice-ID oder einem Verbindungsfehler verwendet die Anwendung automatisch
+Microsoft Stefan.
 
 OpenAI bleibt damit der bevorzugte Anbieter. Ist OpenAI nicht erreichbar,
 erhält das lokale Ollama-Modell automatisch denselben Gesprächskontext und
@@ -488,6 +570,16 @@ Batch-Aufruf. Er zeigt ausschließlich Modellname, Dimension und Vektoranzahl:
 
 ```powershell
 .venv\Scripts\python.exe -m diagnostics.embeddings_ollama
+```
+
+Mehrere lokale Sprachmodelle lassen sich mit denselben vier deutschen Fragen,
+derselben Persönlichkeit und gemessener Antwortzeit vergleichen. Die
+Modellnamen werden absichtlich als Argumente übergeben und nicht aus `.env`
+gelesen:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.model_comparison_ollama `
+  qwen3:4b-instruct llama3.2:3b
 ```
 
 Der persistente Diagnosepfad importiert ein temporäres Dokument, erzeugt die

@@ -26,6 +26,7 @@ from vector.behavior_control import BehaviorControl
 from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
+from vector.speech_factory import create_speech_output
 from voice.wirepod_input import WirePodTranscriptListener
 
 from application.conversation import run_conversation, run_voice_conversation
@@ -73,7 +74,7 @@ def run_application(settings) -> None:
     vector = _prepare_vector(settings, mode, diagnostics, connections)
     if vector is None:
         return
-    speech = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
+    speech = create_speech_output(settings, vector)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
     audit_store = _create_audit_store(settings)
     registry = _create_tool_registry(actions, audit_store)
@@ -303,7 +304,7 @@ def _create_language_model(settings, mode: RuntimeMode, diagnostics=None):
         max_attempts=getattr(settings, "LLM_MAX_ATTEMPTS", 2),
         retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
         temperature=getattr(settings, "OLLAMA_TEMPERATURE", 0.25),
-        max_output_tokens=getattr(settings, "OLLAMA_MAX_OUTPUT_TOKENS", 96),
+        max_output_tokens=getattr(settings, "OLLAMA_MAX_OUTPUT_TOKENS", 64),
         context_window=getattr(settings, "OLLAMA_CONTEXT_WINDOW", 4_096),
         diagnostics=diagnostics,
     )

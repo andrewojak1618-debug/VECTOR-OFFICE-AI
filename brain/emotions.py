@@ -93,17 +93,15 @@ EXPRESSION_CUES = {
 
 STANCE_GUIDANCE = {
     ConversationStance.NEUTRAL: (
-        "Antworte ruhig, natürlich und sachlich zugewandt."
+        "Antworte ruhig, natürlich und sachlich."
     ),
     ConversationStance.SUPPORTIVE: (
-        "Reagiere behutsam und anerkennend, ohne Betroffenheit oder eigene "
-        "Gefühle zu behaupten."
+        "Reagiere behutsam, ohne eigene Gefühle zu behaupten."
     ),
     ConversationStance.REFLECTIVE: (
-        "Formuliere nachdenklich, differenziert und gut sprechbar: ein klarer "
-        "Gedanke pro Satz, mit aktiven Verben statt abstrakter Aufzählungen. "
-        "Beginne mit einem greifbaren Gedanken statt einer Lexikondefinition und "
-        "halte gesprochene Sätze möglichst unter 18 Wörtern."
+        "Formuliere nachdenklich und sprechbar: ein klarer Gedanke pro Satz, "
+        "mit aktiven Verben und möglichst unter 18 Wörtern. Beginne mit einem "
+        "greifbaren Gedanken."
     ),
     ConversationStance.CAUTIOUS: (
         "Benenne Grenzen, Risiken und Unsicherheit ruhig und konkret."
@@ -157,7 +155,7 @@ class EmotionalStateModel:
             "Simulierte Gesprächshaltung: "
             f"{state.stance.value}, Stufe {state.intensity}. "
             f"{STANCE_GUIDANCE[state.stance]} "
-            "Behaupte niemals, selbst Gefühle oder ein Bewusstsein zu besitzen."
+            "Behaupte niemals echte Gefühle oder eigenes Bewusstsein."
         )
 
     @staticmethod

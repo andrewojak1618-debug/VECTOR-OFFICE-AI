@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from vector.speech import REFLECTIVE_PRELUDES, SpeechStyle, VectorSpeech
+from vector.speech_prosody import normalize_speech_text
 
 
 class FakeVectorClient:
@@ -17,6 +18,14 @@ class FakeVectorClient:
 
 
 class VectorSpeechTests(unittest.TestCase):
+    def test_model_formatting_is_normalized_for_continuous_speech(self):
+        text = "## Antwort\n- Das ist **wichtig** — und verständlich."
+
+        self.assertEqual(
+            "Antwort Das ist wichtig , und verständlich.",
+            normalize_speech_text(text),
+        )
+
     def test_say_rejects_empty_text(self):
         speech = VectorSpeech(FakeVectorClient())
 
@@ -32,7 +41,10 @@ class VectorSpeechTests(unittest.TestCase):
             self.assertTrue(speech.say("Guten Tag"))
 
         synthesize.assert_called_once()
-        self.assertEqual(SpeechStyle.NEUTRAL, synthesize.call_args.args[2])
+        self.assertEqual(
+            SpeechStyle.CONVERSATIONAL,
+            synthesize.call_args.args[2],
+        )
         convert.assert_called_once()
         validate.assert_called_once()
         self.assertEqual(90, client.calls[0][1])
@@ -54,23 +66,13 @@ class VectorSpeechTests(unittest.TestCase):
                 SpeechStyle.REFLECTIVE,
             )
 
-        self.assertIn('<prosody rate="+5%">', content)
-        self.assertIn(
-            '<prosody volume="loud" pitch="+3%">Freiheit &amp;</prosody>',
-            content,
-        )
-        self.assertIn(
-            '<prosody volume="loud" pitch="+3%">Eine mögliche</prosody>',
-            content,
-        )
-        self.assertIn(
-            '<prosody volume="soft" pitch="-5%">Sichtweise?</prosody>',
-            content,
-        )
+        self.assertIn('<prosody rate="+7%"', content)
+        self.assertIn('pitch="-1%"', content)
         self.assertNotIn('<break time="180ms"/>', content)
-        self.assertIn('<break time="190ms"/>', content)
+        self.assertIn('<break time="150ms"/>', content)
         self.assertIn("Freiheit &amp;", content)
         self.assertIn("Verantwortung.", content)
+        self.assertEqual(1, content.count("<prosody"))
         choose.assert_not_called()
 
     def test_each_reflective_prelude_can_be_selected_independently(self):
@@ -120,34 +122,83 @@ class VectorSpeechTests(unittest.TestCase):
         with patch("vector.speech.secrets.choice") as choose:
             content = VectorSpeech._speech_content(text, SpeechStyle.NEUTRAL)
 
-        self.assertIn('<prosody rate="+8%">', content)
-        self.assertIn(
-            '<prosody volume="loud" pitch="+3%">Guten Tag</prosody>',
-            content,
-        )
-        self.assertIn(
-            '<prosody volume="soft" pitch="-5%">&amp; willkommen.</prosody>',
-            content,
-        )
+        self.assertIn('<prosody rate="+8%" pitch="+0%">', content)
+        self.assertIn("Guten Tag &amp; willkommen.", content)
+        self.assertEqual(1, content.count("<prosody"))
         choose.assert_not_called()
 
-    def test_short_sentence_keeps_opening_and_ending_separate(self):
+    def test_conversational_style_adds_warm_bounded_sentence_melody(self):
+        text = "Freiheit entsteht, wenn wir bewusst entscheiden. Das zählt."
+
+        content = VectorSpeech._speech_content(
+            text,
+            SpeechStyle.CONVERSATIONAL,
+        )
+
+        self.assertIn('<prosody rate="+10%" pitch="+0%">', content)
+        self.assertNotIn('<break time="85ms"/>', content)
+        self.assertIn('<break time="90ms"/>', content)
+        self.assertEqual(1, content.count("<prosody"))
+
+    def test_supportive_style_stays_fluid_with_gentler_emphasis(self):
+        content = VectorSpeech._speech_content(
+            "Das klingt schwer, wir schauen gemeinsam hin. Du bist nicht allein.",
+            SpeechStyle.SUPPORTIVE,
+        )
+
+        self.assertIn('<prosody rate="+8%" pitch="-2%">', content)
+        self.assertNotIn('<break time="100ms"/>', content)
+        self.assertIn('<break time="120ms"/>', content)
+        self.assertEqual(1, content.count("<prosody"))
+
+    def test_cautious_style_marks_limits_without_becoming_slow(self):
+        content = VectorSpeech._speech_content(
+            "Das ist unsicher, prüfe zuerst die Verbindung. Warte kurz.",
+            SpeechStyle.CAUTIOUS,
+        )
+
+        self.assertIn('<prosody rate="+9%" pitch="-1%">', content)
+        self.assertNotIn('<break time="120ms"/>', content)
+        self.assertIn('<break time="140ms"/>', content)
+        self.assertEqual(1, content.count("<prosody"))
+
+    def test_short_sentence_stays_in_one_fluid_prosody_block(self):
         content = VectorSpeech._speech_content("Guten Morgen.", SpeechStyle.NEUTRAL)
 
-        self.assertIn(
-            '<prosody volume="loud" pitch="+3%">Guten</prosody>',
-            content,
-        )
-        self.assertIn(
-            '<prosody volume="soft" pitch="-5%">Morgen.</prosody>',
-            content,
-        )
+        self.assertIn(">Guten Morgen.</prosody>", content)
+        self.assertEqual(1, content.count("<prosody"))
 
     def test_invalid_speech_style_is_rejected(self):
         speech = VectorSpeech(FakeVectorClient())
 
         with self.assertRaises(TypeError):
             speech.say("Guten Tag", "reflective")
+
+    def test_prepared_audio_exists_until_playback_and_is_then_removed(self):
+        client = FakeVectorClient()
+        speech = VectorSpeech(client)
+
+        with patch.object(speech, "_synthesize_german_wav"), patch.object(
+            speech,
+            "_convert_for_vector",
+            side_effect=lambda _source, output: self._write_wav(
+                output,
+                VectorSpeech.SAMPLE_RATE,
+            ),
+        ):
+            prepared = speech.prepare("Eine vorbereitete Antwort.")
+
+        self.assertTrue(prepared.path.is_file())
+        self.assertTrue(speech.play_prepared(prepared))
+        self.assertFalse(prepared.path.exists())
+
+    def test_prepare_rejects_invalid_input_before_tts(self):
+        speech = VectorSpeech(FakeVectorClient())
+
+        with self.assertRaises(ValueError):
+            speech.prepare("  ")
+        with self.assertRaises(TypeError):
+            speech.prepare("Antwort", "supportive")
 
     def test_validate_accepts_vector_audio_format(self):
         with tempfile.TemporaryDirectory() as temp_dir:

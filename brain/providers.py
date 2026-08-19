@@ -14,7 +14,7 @@ from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
 
 
 DEFAULT_OLLAMA_TEMPERATURE = 0.25
-DEFAULT_OLLAMA_MAX_OUTPUT_TOKENS = 96
+DEFAULT_OLLAMA_MAX_OUTPUT_TOKENS = 64
 DEFAULT_OLLAMA_CONTEXT_WINDOW = 4_096
 DEFAULT_OLLAMA_KEEP_ALIVE = "30m"
 
@@ -199,6 +199,7 @@ class OllamaProvider:
             "model": self.model,
             "messages": _message_payload(messages),
             "stream": False,
+            "think": False,
             "keep_alive": self.keep_alive,
             "options": {
                 "temperature": self.temperature,

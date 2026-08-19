@@ -125,6 +125,7 @@ class ExpressionResponseCoordinatorTests(unittest.TestCase):
                     "expression_confirmation_required",
                     result.error_code,
                 )
+                self.assertEqual(SpeechStyle.SUPPORTIVE, self.speech.styles[-1])
 
     def test_action_failure_does_not_suppress_the_spoken_answer(self):
         self.actions.succeeds = False
@@ -142,6 +143,7 @@ class ExpressionResponseCoordinatorTests(unittest.TestCase):
         )
         self.assertEqual(ExpressionDeliveryStatus.SPOKEN_ONLY, result.status)
         self.assertEqual("tool_execution_failed", result.error_code)
+        self.assertEqual([SpeechStyle.CAUTIOUS], self.speech.styles)
 
     def test_non_expression_proposal_is_never_executed(self):
         review = ToolProposalReviewer(self.registry).resolve("vector.greeting")

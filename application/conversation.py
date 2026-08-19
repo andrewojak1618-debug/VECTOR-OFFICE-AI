@@ -2,12 +2,16 @@
 
 import re
 import time
+from dataclasses import dataclass
 
 from application.commands import CommandResult, ConsoleCommandHandler
 from application.connection_supervisor import ConnectionSupervisor
 from application.expression_conversation import ControlledExpressionConversation
-from application.expression_delivery import ExpressionResponseCoordinator
-from application.thinking import generate_with_thinking
+from application.expression_delivery import (
+    ExpressionResponseCoordinator,
+    speech_style_for_cue,
+)
+from application.thinking import run_with_thinking
 from application.tool_conversation import ControlledToolConversation
 from application.voice_recovery import VoiceRecovery
 from brain.agent import Agent
@@ -16,7 +20,7 @@ from brain.providers import ProviderNotice
 from tools.proposals import ToolProposalReviewer
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
-from vector.speech import VectorSpeech
+from vector.speech import PreparedSpeech, SpeechStyle, VectorSpeech
 from voice.wirepod_input import WirePodTranscriptListener
 
 
@@ -53,6 +57,13 @@ PROVIDER_OFFLINE_NOTICE = (
 )
 
 
+@dataclass(frozen=True)
+class _PreparedAnswer:
+    text: str
+    style: SpeechStyle | None
+    audio: PreparedSpeech | None
+
+
 def respond_and_speak(
     agent: Agent,
     speech: VectorSpeech,
@@ -61,14 +72,44 @@ def respond_and_speak(
     """Generate one answer and play it through Vector."""
     print("Thinking...")
     try:
-        answer = generate_with_thinking(agent, speech, user_text)
+        prepared = run_with_thinking(
+            lambda: _prepare_answer(agent, speech, user_text),
+            speech,
+        )
     except (RuntimeError, ValueError) as exc:
         _speak_provider_notice(agent, speech)
         print(f"Brain request failed: {exc}")
         return False
-    print(f"Vector: {answer}")
+    print(f"Vector: {prepared.text}")
     _speak_provider_notice(agent, speech)
-    return _speak_answer(speech, answer)
+    return _play_answer(speech, prepared)
+
+
+def _prepare_answer(agent: Agent, speech: VectorSpeech, user_text: str) -> _PreparedAnswer:
+    answer = agent.respond(user_text)
+    style = _response_speech_style(agent)
+    prepare = getattr(speech, "prepare", None)
+    if not callable(prepare):
+        return _PreparedAnswer(answer, style, None)
+    selected = style or SpeechStyle.CONVERSATIONAL
+    try:
+        audio = prepare(answer, selected)
+    except (OSError, RuntimeError, TypeError, ValueError):
+        audio = None
+    return _PreparedAnswer(answer, style, audio)
+
+
+def _play_answer(speech: VectorSpeech, prepared: _PreparedAnswer) -> bool:
+    if prepared.audio is None:
+        return _speak_answer(speech, prepared.text, prepared.style)
+    try:
+        completed = bool(speech.play_prepared(prepared.audio))
+    except (OSError, RuntimeError, TypeError, ValueError):
+        prepared.audio.close()
+        completed = False
+    if not completed:
+        print("Vector could not play the response.")
+    return completed
 
 
 def _speak_provider_notice(agent: Agent, speech: VectorSpeech) -> None:
@@ -85,11 +126,25 @@ def _speak_provider_notice(agent: Agent, speech: VectorSpeech) -> None:
         _speak_answer(speech, PROVIDER_OFFLINE_NOTICE)
 
 
-def _speak_answer(speech: VectorSpeech, answer: str) -> bool:
-    if speech.say(answer):
+def _speak_answer(
+    speech: VectorSpeech,
+    answer: str,
+    style: SpeechStyle | None = None,
+) -> bool:
+    completed = speech.say(answer) if style is None else speech.say(answer, style)
+    if completed:
         return True
     print("Vector could not play the response.")
     return False
+
+
+def _response_speech_style(agent: Agent) -> SpeechStyle | None:
+    emotional_state = getattr(agent, "emotional_state", None)
+    state = getattr(emotional_state, "state", None)
+    cue = getattr(state, "expression_cue", None)
+    if cue is None:
+        return None
+    return speech_style_for_cue(cue)
 
 
 def run_conversation(agent: Agent, speech: VectorSpeech) -> None:

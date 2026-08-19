@@ -289,19 +289,31 @@ class Agent:
         issues = self.response_policy.issues(response, max_sentences)
         if not issues:
             return response
+        compacted = self._compact_length_only(response, issues, max_sentences)
+        if compacted is not None:
+            return compacted
         correction = self._correction_messages(messages, issues, max_sentences)
         corrected = self._request_model(correction)
         remaining = self.response_policy.issues(corrected, max_sentences)
         if not remaining:
             return corrected
-        if remaining == (ResponseIssue.TOO_LONG,):
-            compacted = self.response_policy.limit_sentences(
-                corrected,
-                max_sentences,
-            )
-            if not self.response_policy.issues(compacted, max_sentences):
-                return compacted
+        compacted = self._compact_length_only(corrected, remaining, max_sentences)
+        if compacted is not None:
+            return compacted
         raise RuntimeError("Model response violated the personality policy.")
+
+    def _compact_length_only(
+        self,
+        response: str,
+        issues: tuple[ResponseIssue, ...],
+        max_sentences: int,
+    ) -> str | None:
+        if issues != (ResponseIssue.TOO_LONG,):
+            return None
+        compacted = self.response_policy.limit_sentences(response, max_sentences)
+        if self.response_policy.issues(compacted, max_sentences):
+            return None
+        return compacted
 
     def _request_model(self, messages: tuple[ChatMessage, ...]) -> str:
         response = self.language_model.generate(messages).strip()

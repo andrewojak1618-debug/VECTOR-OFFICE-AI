@@ -25,9 +25,9 @@ EXPRESSION_TARGETS = MappingProxyType(
 )
 EXPRESSION_SPEECH_STYLES = MappingProxyType(
     {
-        ExpressionCue.NEUTRAL: SpeechStyle.NEUTRAL,
-        ExpressionCue.ATTENTIVE: SpeechStyle.NEUTRAL,
-        ExpressionCue.SUPPORTIVE: SpeechStyle.NEUTRAL,
+        ExpressionCue.NEUTRAL: SpeechStyle.CONVERSATIONAL,
+        ExpressionCue.ATTENTIVE: SpeechStyle.CAUTIOUS,
+        ExpressionCue.SUPPORTIVE: SpeechStyle.SUPPORTIVE,
         ExpressionCue.REFLECTIVE: SpeechStyle.REFLECTIVE,
     }
 )
@@ -39,7 +39,7 @@ class SpeechOutput(Protocol):
     def say(
         self,
         text: str,
-        style: SpeechStyle = SpeechStyle.NEUTRAL,
+        style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> bool:
         """Speak one response and report whether playback completed."""
         ...
@@ -152,11 +152,8 @@ class ExpressionResponseCoordinator:
         suggestion: ExpressionActionSuggestion | None,
     ) -> SpeechStyle:
         if suggestion is None:
-            return SpeechStyle.NEUTRAL
-        return EXPRESSION_SPEECH_STYLES.get(
-            suggestion.cue,
-            SpeechStyle.NEUTRAL,
-        )
+            return SpeechStyle.CONVERSATIONAL
+        return speech_style_for_cue(suggestion.cue)
 
     @staticmethod
     def _review_error(
@@ -195,3 +192,10 @@ class ExpressionResponseCoordinator:
         if action_result is not None and action_result.succeeded:
             return ExpressionDeliveryStatus.ANIMATED_AND_SPOKEN
         return ExpressionDeliveryStatus.SPOKEN_ONLY
+
+
+def speech_style_for_cue(cue: ExpressionCue) -> SpeechStyle:
+    """Map one bounded expression cue to a fixed local TTS profile."""
+    if not isinstance(cue, ExpressionCue):
+        raise TypeError("Speech-style mapping requires an ExpressionCue.")
+    return EXPRESSION_SPEECH_STYLES[cue]

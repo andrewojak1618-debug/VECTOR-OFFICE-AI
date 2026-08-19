@@ -46,6 +46,9 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("tools/tool_values.py"): Path("docs/architecture.md"),
     Path("vector/actions.py"): Path("README.md"),
     Path("vector/behavior_control.py"): Path("docs/robot-actions.md"),
+    Path("vector/speech_prosody.py"): Path("docs/personality.md"),
+    Path("vector/elevenlabs_speech.py"): Path("docs/voice.md"),
+    Path("vector/speech_factory.py"): Path("docs/voice.md"),
 }
 
 

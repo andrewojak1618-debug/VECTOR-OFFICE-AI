@@ -18,6 +18,7 @@ class ResponseIssue(Enum):
     CLAIMED_EMOTION = "claimed_emotion"
     FALSE_CERTAINTY = "false_certainty"
     LECTURING = "lecturing"
+    SENTENCE_FRAGMENT = "sentence_fragment"
     TOO_LONG = "too_long"
 
 
@@ -58,19 +59,19 @@ DEFAULT_MAX_SENTENCES = 2
 DETAILED_MAX_SENTENCES = 8
 
 DIRECT_GUIDANCE = (
-    "Beantworte die konkrete Frage direkt. Markiere Unsicherheit, wenn die "
-    "Faktenlage sie verlangt."
+    "Beantworte die konkrete Frage direkt in vollständigen, natürlich "
+    "gesprochenen deutschen Sätzen. Vermeide Telegrammstil und alleinstehende "
+    "Satzfragmente. Markiere Unsicherheit, wenn die Faktenlage sie verlangt."
 )
 REFLECTION_GUIDANCE = (
-    "Die Frage profitiert von kurzer Reflexion. Trenne Tatsachen von Deutung; "
-    "kennzeichne eine persönliche Perspektive als mögliche Sichtweise statt "
-    "als eigene Erfahrung. Benenne relevante Unsicherheit offen. Bleibe "
-    "verständlich, unaufdringlich und standardmäßig bei höchstens zwei Sätzen. "
-    "Formuliere wie ruhiges eigenständiges Nachdenken: ein klarer Gedanke pro "
-    "Satz, aktive Verben und keine abstrakte Aufzählung oder Manuskriptsprache."
-    " Beginne mit einem greifbaren Kerngedanken statt mit einer Lexikondefinition "
-    "oder der allgemeinen Formel, das Thema sei komplex. Halte jeden gesprochenen "
-    "Satz möglichst unter 18 Wörtern und vermeide erklärbuchartige Definitionen."
+    "Reflektiere kurz wie eigenständiges Nachdenken: Trenne Tatsachen von "
+    "Deutung und kennzeichne eine "
+    "Perspektive als mögliche Sichtweise. Benenne Unsicherheit. Nutze aktive "
+    "Verben, bleibe bei höchstens zwei Sätzen, verwende keine abstrakte "
+    "Aufzählung und vermeide Manuskriptton. "
+    "Beginne mit einem "
+    "greifbaren Kerngedanken statt einer Lexikondefinition; bleibe möglichst "
+    "unter 18 Wörtern pro Satz."
 )
 
 EMOTION_CLAIMS = re.compile(
@@ -86,6 +87,12 @@ FALSE_CERTAINTY = re.compile(
 )
 LECTURING = re.compile(
     r"\bdu\s+musst\s+(?:einfach|endlich)\b",
+    re.IGNORECASE,
+)
+SENTENCE_FRAGMENT = re.compile(
+    r"(?:^|[.!?]\s+)(?:funktioniert|geht|klingt|läuft|passt)\s+"
+    r"(?:gut|schlecht|einwandfrei|reibungslos|richtig|falsch)"
+    r"(?=\s*(?:[.!?]|[-–—]|$))",
     re.IGNORECASE,
 )
 
@@ -133,7 +140,7 @@ class ReflectionPolicy:
 
 
 class ResponseQualityPolicy:
-    """Detect explicit emotional claims, false certainty, and lecturing."""
+    """Detect dishonest, lecturing, overly long, or fragmentary responses."""
 
     def issues(
         self,
@@ -147,6 +154,7 @@ class ResponseQualityPolicy:
             (ResponseIssue.CLAIMED_EMOTION, EMOTION_CLAIMS),
             (ResponseIssue.FALSE_CERTAINTY, FALSE_CERTAINTY),
             (ResponseIssue.LECTURING, LECTURING),
+            (ResponseIssue.SENTENCE_FRAGMENT, SENTENCE_FRAGMENT),
         )
         issues = [issue for issue, pattern in checks if pattern.search(response)]
         if self._sentence_count(response) > max_sentences:
@@ -165,8 +173,10 @@ class ResponseQualityPolicy:
         return (
             "Die vorige interne Antwort wurde wegen folgender Stilregel verworfen: "
             f"{codes}. Formuliere die Antwort neu: empathisch, sachlich, kompakt, "
-            "ohne echte Gefühle zu behaupten, ohne falsche Gewissheit und ohne "
-            f"belehrenden Ton, mit höchstens {max_sentences} Sätzen. Verwende "
+            "in vollständigen, natürlich gesprochenen deutschen Sätzen mit "
+            "erkennbarem Subjekt und finitem Verb, ohne Telegrammstil, ohne echte "
+            "Gefühle zu behaupten, ohne falsche Gewissheit und ohne belehrenden "
+            f"Ton, mit höchstens {max_sentences} Sätzen. Verwende "
             "nicht die Formel 'Es tut mir leid'; schreibe bei Bedarf stattdessen "
             "'Das klingt belastend'. Erwähne diese Korrektur nicht."
         )

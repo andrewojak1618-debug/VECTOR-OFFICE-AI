@@ -27,7 +27,9 @@
 - ✅ mehrturnigen physischen Voice-Dialog stabilisieren
 - ✅ Erkennungsfehler und Abbruchsignale behandeln
 - ✅ doppelte WirePod-Reaktionen verhindern
-- optionalen Cloud-Voice-Pfad nur mit Zustimmung testen
+- ✅ optionalen ElevenLabs-TTS-Pfad mit lokaler Freigabe und Fallback implementieren
+- ✅ „Felix Serenitas“ mit Flash v2.5 physisch abnehmen
+- ⏳ Multilingual v2 nur bei späterem Qualitätsbedarf gegen Flash vergleichen
 
 ## Memory und Bibliothek
 
@@ -71,3 +73,5 @@
 - ✅ natürliche Satzmelodie und eigenständiger wirkende Reflexion technisch fein abstimmen
 - ✅ fein abgestimmte Satzmelodie am physischen Vector subjektiv abnehmen
 - ✅ drei lokale zufällige Reflexionseinleitungen physisch auf Natürlichkeit prüfen
+- ✅ Gesprächstypen auf feste unterstützende und vorsichtige TTS-Profile abbilden
+- ⏳ unterstützende und vorsichtige Prosodie am physischen Vector fein abstimmen

@@ -87,6 +87,21 @@ class ResponseQualityPolicyTests(unittest.TestCase):
         self.assertIn(ResponseIssue.CLAIMED_EMOTION, issues)
         self.assertIn(ResponseIssue.TOO_LONG, issues)
 
+    def test_standalone_predicate_fragment_is_detected(self):
+        issues = self.policy.issues(
+            "Ich habe keine eigenen Gefühle. Funktioniert gut – und du?"
+        )
+
+        self.assertIn(ResponseIssue.SENTENCE_FRAGMENT, issues)
+
+    def test_complete_status_answer_is_allowed(self):
+        issues = self.policy.issues(
+            "Ich habe keine eigenen Gefühle, aber meine Systeme funktionieren gut. "
+            "Wie geht es dir?"
+        )
+
+        self.assertEqual((), issues)
+
     def test_correction_uses_only_issue_codes(self):
         guidance = self.policy.correction_guidance(
             (ResponseIssue.CLAIMED_EMOTION,)
@@ -95,6 +110,8 @@ class ResponseQualityPolicyTests(unittest.TestCase):
         self.assertIn("claimed_emotion", guidance)
         self.assertIn("Es tut mir leid", guidance)
         self.assertIn("Das klingt belastend", guidance)
+        self.assertIn("vollständigen", guidance)
+        self.assertIn("Telegrammstil", guidance)
         self.assertIn("Erwähne diese Korrektur nicht", guidance)
 
     def test_sentence_limit_keeps_complete_leading_sentences(self):

@@ -1,7 +1,11 @@
 """Overlap local response generation with one bounded thinking prelude."""
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Protocol
+from collections.abc import Callable
+from typing import Protocol, TypeVar
+
+
+ResultValue = TypeVar("ResultValue")
 
 
 class ResponseAgent(Protocol):
@@ -26,8 +30,16 @@ def generate_with_thinking(
     user_text: str,
 ) -> str:
     """Generate in parallel while a sequential local prelude is spoken."""
+    return run_with_thinking(lambda: agent.respond(user_text), speech)
+
+
+def run_with_thinking(
+    task: Callable[[], ResultValue],
+    speech: object,
+) -> ResultValue:
+    """Run one response task while the optional local prelude is playing."""
     with ThreadPoolExecutor(max_workers=1) as executor:
-        response = executor.submit(agent.respond, user_text)
+        response = executor.submit(task)
         _play_optional_prelude(speech)
         return response.result()
 

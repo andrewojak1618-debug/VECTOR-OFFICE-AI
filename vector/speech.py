@@ -1,18 +1,21 @@
 """German speech synthesis and Vector audio preparation."""
 
 import base64
-import re
 import secrets
 import shutil
 import subprocess
 import tempfile
+import threading
 import wave
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
-from xml.sax.saxutils import escape
 
 from vector.sdk_client import VectorSDKClient
+from vector.speech_prosody import (
+    REFLECTIVE_RATE,
+    SpeechStyle,
+    build_speech_content,
+)
 
 
 ONECORE_TTS_SCRIPT = r"""
@@ -75,20 +78,8 @@ try {
 """
 
 
-class SpeechStyle(Enum):
-    """Select a bounded speech-synthesis profile for one utterance."""
-
-    NEUTRAL = "neutral"
-    REFLECTIVE = "reflective"
-
-
-REFLECTIVE_SENTENCE_BREAK_MS = 190
 REFLECTIVE_LEADING_BREAK_MS = 180
-NEUTRAL_RATE = "+8%"
-REFLECTIVE_RATE = "+5%"
 REFLECTIVE_HUM_RATE = "-32%"
-SENTENCE_OPENING_WORDS = 2
-SENTENCE_ENDING_WORDS = 3
 
 
 @dataclass(frozen=True)
@@ -96,6 +87,21 @@ class _ReflectivePrelude:
     label: str
     markup: str
     break_ms: int
+
+
+class PreparedSpeech:
+    """Own one validated temporary WAV until it has been played or closed."""
+
+    def __init__(self, workspace: tempfile.TemporaryDirectory, path: Path):
+        self.path = path
+        self._workspace = workspace
+
+    def close(self) -> None:
+        """Delete the temporary audio workspace exactly once."""
+        workspace = self._workspace
+        self._workspace = None
+        if workspace is not None:
+            workspace.cleanup()
 
 
 REFLECTIVE_PRELUDES = (
@@ -135,11 +141,12 @@ class VectorSpeech:
         self.vector_client = vector_client
         self.voice = voice
         self.volume = volume
+        self._synthesis_lock = threading.Lock()
 
     def say(
         self,
         text: str,
-        style: SpeechStyle = SpeechStyle.NEUTRAL,
+        style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> bool:
         """Synthesize and play one non-empty German utterance."""
         if not isinstance(text, str) or not text.strip():
@@ -148,11 +155,48 @@ class VectorSpeech:
         if not isinstance(style, SpeechStyle):
             raise TypeError("Speech style must be a SpeechStyle value.")
         try:
-            return self._prepare_and_play(text, style)
+            return self.play_prepared(self.prepare(text, style))
         except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
             print("German speech generation failed.")
             print(f"Reason: {exc}")
             return False
+
+    def prepare(
+        self,
+        text: str,
+        style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
+    ) -> PreparedSpeech:
+        """Synthesize and validate one utterance without starting playback."""
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("Prepared speech text must not be empty.")
+        if not isinstance(style, SpeechStyle):
+            raise TypeError("Speech style must be a SpeechStyle value.")
+        workspace = tempfile.TemporaryDirectory(prefix="vector-speech-")
+        source_path = Path(workspace.name) / self._source_filename()
+        vector_path = Path(workspace.name) / "vector.wav"
+        try:
+            self._synthesize_german_wav(text, source_path, style)
+            self._convert_for_vector(source_path, vector_path)
+            self._validate_vector_wav(vector_path)
+        except (OSError, RuntimeError, subprocess.SubprocessError, wave.Error):
+            workspace.cleanup()
+            raise
+        return PreparedSpeech(workspace, vector_path)
+
+    def _source_filename(self) -> str:
+        return "source.wav"
+
+    def play_prepared(self, prepared: PreparedSpeech) -> bool:
+        """Play one validated prepared utterance and always release its files."""
+        if not isinstance(prepared, PreparedSpeech):
+            raise TypeError("Prepared speech has an invalid type.")
+        try:
+            return self.vector_client.play_wav(
+                prepared.path,
+                volume=self.volume,
+            )
+        finally:
+            prepared.close()
 
     def say_thinking_prelude(self) -> bool:
         """Select and play one local pre-response thinking phrase."""
@@ -163,15 +207,6 @@ class VectorSpeech:
             print("German thinking prelude generation failed.")
             print(f"Reason: {exc}")
             return False
-
-    def _prepare_and_play(self, text: str, style: SpeechStyle) -> bool:
-        with tempfile.TemporaryDirectory(prefix="vector-speech-") as temp_dir:
-            source_path = Path(temp_dir) / "source.wav"
-            vector_path = Path(temp_dir) / "vector.wav"
-            self._synthesize_german_wav(text, source_path, style)
-            self._convert_for_vector(source_path, vector_path)
-            self._validate_vector_wav(vector_path)
-            return self.vector_client.play_wav(vector_path, volume=self.volume)
 
     def _prepare_ssml_and_play(self, content: str) -> bool:
         with tempfile.TemporaryDirectory(prefix="vector-speech-") as temp_dir:
@@ -186,7 +221,7 @@ class VectorSpeech:
         self,
         text: str,
         output_path: Path,
-        style: SpeechStyle = SpeechStyle.NEUTRAL,
+        style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> None:
         content = self._speech_content(text, style)
         self._synthesize_german_ssml_wav(content, output_path)
@@ -196,21 +231,29 @@ class VectorSpeech:
         content: str,
         output_path: Path,
     ) -> None:
+        with self._synthesis_lock:
+            result = self._run_synthesis(content, output_path)
+        self._require_output(result, output_path, "Windows TTS")
+
+    def _run_synthesis(
+        self,
+        content: str,
+        output_path: Path,
+    ) -> subprocess.CompletedProcess[str]:
         powershell = self._require_executable(
             "powershell",
             "Windows PowerShell is required for German TTS.",
         )
         script = self._create_tts_script_for_content(content, output_path)
-        result = self._run_process(
+        return self._run_process(
             [powershell, "-NoProfile", "-NonInteractive", "-Command", script]
         )
-        self._require_output(result, output_path, "Windows TTS")
 
     def _create_tts_script(
         self,
         text: str,
         output_path: Path,
-        style: SpeechStyle = SpeechStyle.NEUTRAL,
+        style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> str:
         content = self._speech_content(text, style)
         return self._create_tts_script_for_content(content, output_path)
@@ -233,22 +276,7 @@ class VectorSpeech:
 
     @staticmethod
     def _speech_content(text: str, style: SpeechStyle) -> str:
-        sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-        pause = f'<break time="{REFLECTIVE_SENTENCE_BREAK_MS}ms"/>'
-        body = pause.join(
-            VectorSpeech._shape_sentence(sentence)
-            for sentence in sentences
-            if sentence
-        )
-        rate = NEUTRAL_RATE
-        if style is SpeechStyle.REFLECTIVE:
-            rate = REFLECTIVE_RATE
-        return (
-            '<speak version="1.0" '
-            'xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="de-DE">'
-            f'<prosody rate="{rate}">{body}'
-            "</prosody></speak>"
-        )
+        return build_speech_content(text, style)
 
     @staticmethod
     def _thinking_content(prelude: _ReflectivePrelude) -> str:
@@ -260,34 +288,6 @@ class VectorSpeech:
             f'{prelude.markup}<break time="{prelude.break_ms}ms"/>'
             "</prosody></speak>"
         )
-
-    @staticmethod
-    def _shape_sentence(sentence: str) -> str:
-        """Give one sentence a present opening and a gently falling ending."""
-        words = sentence.split()
-        if not words:
-            return ""
-        if len(words) == 1:
-            return (
-                '<prosody volume="soft" pitch="-3%">'
-                f'{escape(words[0])}</prosody>'
-            )
-        opening_count = min(SENTENCE_OPENING_WORDS, len(words) - 1)
-        ending_count = min(SENTENCE_ENDING_WORDS, len(words) - opening_count)
-        opening = escape(" ".join(words[:opening_count]))
-        middle = escape(" ".join(words[opening_count:-ending_count]))
-        ending = escape(" ".join(words[-ending_count:]))
-        parts = [
-            '<prosody volume="loud" pitch="+3%">'
-            f'{opening}</prosody>'
-        ]
-        if middle:
-            parts.append(middle)
-        parts.append(
-            '<prosody volume="soft" pitch="-5%">'
-            f'{ending}</prosody>'
-        )
-        return " ".join(parts)
 
     @staticmethod
     def _encode(value: str) -> str:
