@@ -57,6 +57,20 @@ class ToolSelection:
 
 DEFAULT_INTENT_RULES = (
     ToolIntentRule(
+        (
+            "wie ist der projektstatus",
+            "wie ist der projekt status",
+            "nenne den projektstatus",
+            "nenne den projekt status",
+            "zeige den projektstatus",
+            "zeige den projekt status",
+            "wie steht das projekt",
+            "wie ist das projekt",
+        ),
+        "development.project_status",
+        "lokalen Projektstatus nennen",
+    ),
+    ToolIntentRule(
         ("wie spät ist es", "wie viel uhr ist es", "welche uhrzeit ist es"),
         "office.local_datetime",
         "aktuelle Uhrzeit nennen",
@@ -144,7 +158,14 @@ class ToolIntentSelector:
         """Return one registered safe selection for an exact user phrase."""
         normalized = _normalize_phrase(user_text)
         rule = self._rules.get(normalized)
+        if rule is None and _references_project_status(normalized):
+            rule = self._rules.get("wie ist der projektstatus")
         if rule is None:
+            if _looks_like_project_status_request(normalized):
+                return _blocked_selection(
+                    "Ich habe die Projektstatusfrage nicht eindeutig erkannt. "
+                    "Bitte frage: Wie ist der Projektstatus?",
+                )
             if _looks_like_datetime_request(normalized):
                 return _blocked_selection(
                     "Ich habe die Datums- oder Uhrzeitfrage nicht eindeutig "
@@ -200,6 +221,18 @@ def _looks_like_datetime_request(value: str) -> bool:
     )
     clock = bool(words & {"uhr", "uhrzeit", "spät"})
     return question and (date or clock)
+
+
+def _looks_like_project_status_request(value: str) -> bool:
+    words = set(value.split())
+    target = _references_project_status(value)
+    request = bool(words & {"wie", "was", "nenne", "zeige", "welcher"})
+    return target and request
+
+
+def _references_project_status(value: str) -> bool:
+    words = set(value.split())
+    return "projektstatus" in words or {"projekt", "status"} <= words
 
 
 def _blocked_selection(message: str) -> ToolSelection:

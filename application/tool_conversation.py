@@ -143,6 +143,8 @@ def _success_message(
     selection: ToolSelection,
     result: ToolExecutionResult,
 ) -> str:
+    if selection.tool_name == "development.project_status":
+        return str(result.output["spoken_text"])
     if selection.tool_name == "office.local_datetime":
         return str(result.output["spoken_text"])
     if selection.tool_name == "vector.list_actions":

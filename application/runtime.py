@@ -20,6 +20,7 @@ from memory.library import SQLiteKnowledgeLibrary
 from memory.search import HybridKnowledgeSearch, HybridSearchConfig
 from tools.audit_store import SQLiteToolAuditStore
 from tools.office import register_office_tools
+from tools.project_status import register_project_status_tool
 from tools.registry import ToolRegistry
 from tools.vector_actions import register_vector_action_tools
 from vector.actions import VectorActions
@@ -247,6 +248,7 @@ def _create_tool_registry(
     registry = ToolRegistry(audit_sink=audit_sink)
     register_vector_action_tools(registry, actions)
     register_office_tools(registry)
+    register_project_status_tool(registry)
     return registry
 
 

@@ -79,6 +79,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokale Dokumentversionen, sichere Exporte und vollständige Reindexierung
 - zentrale Tool Registry mit expliziten Lese-, Änderungs- und Gefahrenrechten
 - lokales Read-only-Bürotool für deutsches Datum und Uhrzeit
+- lokales Entwicklungswerkzeug für einen datensparsamen Projektstatus
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
@@ -288,6 +289,12 @@ den Modus `time` oder `date`; weder ein Sprachmodell noch ein externer Dienst
 bestimmt Parameter oder Antwort. Als rein lesender Aufruf benötigt er keine
 Bestätigung. Für WirePod ist `Welcher Tag ist heute?` die physisch bestätigte
 bevorzugte Datumsformulierung.
+
+Mit dem physisch bestätigten Kurzbefehl `Projekt Status` kann Vector außerdem einen festen lokalen
+Entwicklungsstatus nennen: Branch, kurzer letzter Commit, Anzahl offener
+Änderungen und Ergebnis der letzten Kernabnahme. Das Tool gibt keine
+Dateinamen oder Inhalte aus, akzeptiert weder Pfade noch Befehle und benötigt
+als rein lesender Aufruf keine Bestätigung.
 
 ## 🛠️ Technik
 
@@ -876,6 +883,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ Berechtigungsstufen und Bestätigungen definieren
 - ⏳ Büro-, Datei-, Recherche- und Entwicklungswerkzeuge schrittweise anbinden
 - ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit anbinden
+- ✅ lokale Read-only-Projektstatus-Abfrage als erstes Entwicklungswerkzeug
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

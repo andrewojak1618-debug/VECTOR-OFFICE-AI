@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from tools.permissions import PermissionLevel
 from tools.office import register_office_tools
+from tools.project_status import register_project_status_tool
 from tools.registry import ToolDefinition, ToolRegistry
 from tools.selection import (
     ToolIntentRule,
@@ -41,6 +42,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
+        register_project_status_tool(self.registry)
         self.selector = ToolIntentSelector(self.registry)
 
     def test_exact_natural_phrase_selects_allowlisted_action(self):
@@ -76,6 +78,39 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual("office.local_datetime", selection.tool_name)
         self.assertEqual("date", selection.arguments["mode"])
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_project_status_selects_argument_free_read_only_tool(self):
+        selection = self.selector.select("Wie ist der Projektstatus?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.project_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_observed_vosk_project_status_variant_is_selected(self):
+        selection = self.selector.select("Wie ist der Projekt Status")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.project_status", selection.tool_name)
+
+    def test_project_status_word_variation_maps_to_fixed_local_tool(self):
+        selection = self.selector.select("Was sagt der Projekt Status aktuell")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.project_status", selection.tool_name)
+
+    def test_observed_project_status_fragments_map_to_fixed_local_tool(self):
+        phrases = (
+            "Wie ist Ihr Projekt Status",
+            "Ist der Projekt Status",
+            "Wie ist das Projekt",
+        )
+
+        for phrase in phrases:
+            with self.subTest(phrase=phrase):
+                selection = self.selector.select(phrase)
+                self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+                self.assertEqual("development.project_status", selection.tool_name)
 
     def test_observed_vosk_date_variant_selects_local_tool(self):
         selection = self.selector.select("Welchen Tag haben wir heute")

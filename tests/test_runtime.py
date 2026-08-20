@@ -31,6 +31,7 @@ class RuntimeModeTests(unittest.TestCase):
 
         self.assertEqual(
             (
+                "development.project_status",
                 "office.local_datetime",
                 "vector.emergency_stop",
                 "vector.list_actions",

@@ -60,6 +60,7 @@
 - ✅ kontextabhängige Ausdrucksvorschläge kontrolliert produktiv freigeben
 - ✅ lokale Audit-Persistenz mit Aufbewahrungsregeln ergänzen
 - ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit ergänzen
+- ✅ lokale Read-only-Projektstatus-Abfrage ohne freie Befehle ergänzen
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Robot Personality

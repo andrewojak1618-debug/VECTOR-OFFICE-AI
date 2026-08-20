@@ -140,6 +140,7 @@ erfolgte erst nach Ende der Animation.
 
 | Absicht | Beispiele | Verhalten |
 |---|---|---|
+| Projektstatus | „Projekt Status“ | automatisch, lokal und rein lesend |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -166,6 +167,31 @@ heute?` als zuverlässige bevorzugte Formulierung.
 Die strukturierte Ausgabe enthält nur ISO-Datum, lokale Uhrzeit, Zeitzonenname
 und einen lokal aufgebauten deutschen Sprechsatz. Nutzereingaben, Modelltexte,
 Dateiinhalte und Secrets werden weder benötigt noch als Toolausgabe erzeugt.
+
+## Lokaler Projektstatus
+
+`tools/project_status.py` registriert `development.project_status` mit
+`READ_ONLY` und ohne Parameter. Das Tool ist auf den eigenen Projektordner
+festgelegt. Es führt ausschließlich drei intern definierte Git-Leseabfragen mit
+kurzem Timeout und ohne Shell aus. Weder Nutzer noch Modell können einen Pfad,
+einen Git-Unterbefehl oder weitere Prozessargumente angeben.
+
+Die Ausgabe ist auf den validierten Branchnamen, einen kurzen hexadezimalen
+Commit-Hash, die Anzahl offener Git-Einträge und den Status des festen lokalen
+Kernabnahmeberichts begrenzt. `git status` wird intern nur gezählt; Dateinamen,
+Diffs, Committexte, Datei- oder Reportinhalte verlassen das Tool nicht. Der
+Sprechtext wird lokal aus diesen geprüften Metadaten aufgebaut und benötigt
+weder OpenAI noch Ollama.
+
+Reale Vosk-Transkriptionen trennen das Kompositum oder verlieren einzelne
+Fragewörter. Enthält eine Eingabe sowohl `projekt` als auch `status`, wird sie
+deshalb unabhängig von Artikel, Pronomen und Fragewort auf genau dieses
+argumentlose Read-only-Tool kanonisiert. Die beobachtete Verkürzung `wie ist das
+projekt` ist zusätzlich als exakte Phrase freigegeben. Dabei entstehen weder
+freie Parameter noch eine Modellklassifikation. Ein Sprachmodell darf deshalb
+weder fehlenden Projektzugriff behaupten noch Projektmetadaten erfinden.
+Der kurze Befehl `Projekt Status` wurde am physischen Vector als zuverlässige
+bevorzugte WirePod-Form bestätigt.
 
 ## Strukturierte Modellvorschläge
 

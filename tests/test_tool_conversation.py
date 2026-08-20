@@ -1,6 +1,7 @@
 """Tests for confirmations and execution in controlled tool conversations."""
 
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 
 from application.tool_conversation import (
@@ -9,6 +10,7 @@ from application.tool_conversation import (
 )
 from brain.agent import Agent
 from tools.office import register_office_tools
+from tools.project_status import ProjectGitMetadata, register_project_status_tool
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
 from tools.vector_actions import register_vector_action_tools
@@ -39,6 +41,12 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
+        register_project_status_tool(
+            self.registry,
+            Path("."),
+            lambda _root: ProjectGitMetadata("main", "f04652f", 0),
+            lambda _root: True,
+        )
         self.model = UnusedLanguageModel()
         self.agent = Agent(self.model, tool_registry=self.registry)
         self.controller = ControlledToolConversation(
@@ -68,6 +76,21 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.BLOCKED, result.status)
         self.assertIn("nicht eindeutig", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_project_status_executes_without_model_or_confirmation(self):
+        result = self.controller.handle("Wie ist der Projektstatus?")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Branch main", result.message)
+        self.assertIn("keine offenen Änderungen", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_project_status_variation_executes_without_language_model(self):
+        result = self.controller.handle("Was sagt der Projekt Status aktuell?")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Branch main", result.message)
         self.assertEqual(0, self.model.calls)
 
     def test_mutating_action_waits_for_explicit_yes(self):

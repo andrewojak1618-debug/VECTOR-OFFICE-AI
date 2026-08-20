@@ -661,3 +661,30 @@ Die deutsche TTS wurde schrittweise verbessert:
 - erfolgreiche Read-only-Ausführungen für Uhrzeit und Datum im Audit bestätigt
 - 437 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Punkt 22 – Kontrollierte lokale Projektstatus-Abfrage
+
+- `development.project_status` als argumentloses Read-only-Tool implementiert
+- Projektwurzel innerhalb der Runtime festgelegt und freie Pfade ausgeschlossen
+- Git-Aufrufe auf Branch, kurzen Commit-Hash und Statuszähler begrenzt
+- Shellausführung, freie Unterbefehle und Modellparameter ausgeschlossen
+- offene Änderungen nur gezählt, ohne Dateinamen oder Diffs auszugeben
+- letzten festen lokalen Kernabnahmebericht als bestanden, fehlgeschlagen oder
+  unbekannt ausgewertet
+- Branchnamen und Commit-Hash vor der strukturierten Ausgabe streng validiert
+- Zeitlimit und bereinigte Registry-Fehlergrenze für lokale Git-Aufrufe verwendet
+- festen Sprachbefehl `Wie ist der Projektstatus?` ohne Modellaufruf ergänzt
+- 51 gezielte Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- realen lokalen Metadatenaufruf auf Branch `main` erfolgreich geprüft
+- ersten Sprachversuch von WirePod als `wie ist der projekt status` erkannt
+- getrenntes Vosk-Kompositum deshalb als feste erlaubte Variante ergänzt
+- weitere erkennbare Projektstatusfragen gegen Modell-Fallback gesperrt
+- zweiten Versuch als `wie ist das projekt`, `wie ist ihr projekt status` und
+  `ist der projekt status` beobachtet
+- Projekt-plus-Status-Transkriptionen auf das feste argumentlose Read-only-Tool
+  kanonisiert und die vollständige Verkürzung separat freigegeben
+- Kurzbefehl `Projekt Status` am physischen Vector erfolgreich erkannt
+- lokale Statusausgabe verständlich wiedergegeben und vom Benutzer bestätigt
+- erfolgreiche argumentlose Read-only-Ausführung im lokalen Audit nachgewiesen
+- 449 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
