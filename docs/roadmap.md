@@ -74,4 +74,4 @@
 - ✅ fein abgestimmte Satzmelodie am physischen Vector subjektiv abnehmen
 - ✅ drei lokale zufällige Reflexionseinleitungen physisch auf Natürlichkeit prüfen
 - ✅ Gesprächstypen auf feste unterstützende und vorsichtige TTS-Profile abbilden
-- ⏳ unterstützende und vorsichtige Prosodie am physischen Vector fein abstimmen
+- ✅ unterstützende und vorsichtige Prosodie am physischen Vector fein abgestimmt

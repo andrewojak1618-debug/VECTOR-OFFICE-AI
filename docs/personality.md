@@ -62,6 +62,13 @@ auch für normale Antworten; Bewegungen bleiben weiterhin ausschließlich nach
 | `attentive` | `CAUTIOUS` | ruhige Grenzmarkierung mit kurzen Zusatzpausen |
 | `reflective` | `REFLECTIVE` | leicht reduziertes Tempo für Reflexion |
 
+Beim freigegebenen ElevenLabs-Pfad bleiben die bestätigten Werte für neutrale
+und gewöhnliche Gesprächsantworten unverändert. `supportive` erhält eine eng
+begrenzte, etwas variablere und minimal ruhigere Wiedergabe; `attentive` wird
+geringfügig stabiler gesprochen, ohne die Antwort merklich zu verlangsamen.
+Die Style-Übertreibung bleibt bei ihrem konfigurierten Wert (standardmäßig
+`0`), um zusätzliche Latenz und instabile Aussprache zu vermeiden.
+
 Die Zuordnung verändert weder Antworttext noch Gesprächstyp und behauptet keine
 echten Gefühle. Unbekannte oder fehlende Zustände fallen auf das bestätigte
 Gesprächsprofil zurück.

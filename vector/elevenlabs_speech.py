@@ -14,6 +14,10 @@ from vector.speech_prosody import SpeechStyle, normalize_speech_text
 ELEVENLABS_TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 ELEVENLABS_OUTPUT_FORMAT = "mp3_22050_32"
 NATURAL_VECTOR_AUDIO_FILTER = "loudnorm=I=-14:TP=-1:LRA=9"
+SUPPORTIVE_STABILITY_OFFSET = -0.08
+SUPPORTIVE_SPEED_OFFSET = -0.03
+CAUTIOUS_STABILITY_OFFSET = 0.07
+CAUTIOUS_SPEED_OFFSET = -0.01
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,36 @@ class ElevenLabsVoiceSettings:
             "use_speaker_boost": True,
             "speed": self.speed,
         }
+
+    def for_speech_style(
+        self,
+        speech_style: SpeechStyle,
+    ) -> "ElevenLabsVoiceSettings":
+        """Return a narrowly adjusted copy for one transparent speech stance."""
+        if speech_style is SpeechStyle.SUPPORTIVE:
+            return self._adjusted(
+                stability=SUPPORTIVE_STABILITY_OFFSET,
+                speed=SUPPORTIVE_SPEED_OFFSET,
+            )
+        if speech_style is SpeechStyle.CAUTIOUS:
+            return self._adjusted(
+                stability=CAUTIOUS_STABILITY_OFFSET,
+                speed=CAUTIOUS_SPEED_OFFSET,
+            )
+        return self
+
+    def _adjusted(
+        self,
+        *,
+        stability: float,
+        speed: float,
+    ) -> "ElevenLabsVoiceSettings":
+        return ElevenLabsVoiceSettings(
+            stability=min(1.0, max(0.0, self.stability + stability)),
+            similarity=self.similarity,
+            style=self.style,
+            speed=min(1.2, max(0.7, self.speed + speed)),
+        )
 
 
 class ElevenLabsSpeech(VectorSpeech):
@@ -101,16 +135,21 @@ class ElevenLabsSpeech(VectorSpeech):
         output_path: Path,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> None:
-        del style
-        output_path.write_bytes(self._request_audio(normalize_speech_text(text)))
+        output_path.write_bytes(
+            self._request_audio(normalize_speech_text(text), style)
+        )
 
-    def _request_audio(self, text: str) -> bytes:
+    def _request_audio(
+        self,
+        text: str,
+        style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
+    ) -> bytes:
         try:
             response = self.client.post(
                 f"{ELEVENLABS_TTS_URL}/{self.voice_id}",
                 params={"output_format": ELEVENLABS_OUTPUT_FORMAT},
                 headers={"xi-api-key": self.api_key},
-                json=self._request_payload(text),
+                json=self._request_payload(text, style),
             )
         except httpx.HTTPError as exc:
             raise RuntimeError("ElevenLabs TTS request could not be completed.") from exc
@@ -122,12 +161,17 @@ class ElevenLabsSpeech(VectorSpeech):
             raise RuntimeError("ElevenLabs returned an invalid audio response.")
         return bytes(response.content)
 
-    def _request_payload(self, text: str) -> dict:
+    def _request_payload(
+        self,
+        text: str,
+        style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
+    ) -> dict:
+        voice_settings = self.voice_settings.for_speech_style(style)
         return {
             "text": text,
             "model_id": self.model,
             "apply_text_normalization": "auto",
-            "voice_settings": self.voice_settings.payload(),
+            "voice_settings": voice_settings.payload(),
         }
 
     @staticmethod

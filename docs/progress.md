@@ -597,3 +597,15 @@ Die deutsche TTS wurde schrittweise verbessert:
 - sämtliche produktiven Python-Module unter 400 und Funktionen unter 36 Zeilen gehalten
 - 407 Tests, Kompilierung, strikten Dokumentationsbau und Diff-Prüfung bestanden
 - `.env`, lokale Audiodaten, Diagnosen und Secrets weiterhin vom Git-Stand ausgeschlossen
+
+## ElevenLabs-Prosodieprofile physisch abgenommen
+
+- bisher verworfenen Sprachstil bis in den ElevenLabs-Request weitergegeben
+- bestätigtes neutrales und gewöhnliches Gesprächsprofil unverändert erhalten
+- unterstützende Ausgabe geringfügig variabler und sanfter abgestimmt
+- vorsichtige Ausgabe stabiler gehalten, ohne sie merklich zu verlangsamen
+- Style-Übertreibung wegen möglicher Latenz und Instabilität nicht erhöht
+- beide Profile nacheinander über ElevenLabs und Vector-SDK wiedergegeben
+- Vector-Verbindung und beide Audiowiedergaben ohne Fehler abgeschlossen
+- beide Varianten vom Benutzer als natürlich genug bestätigt
+- 410 automatisierte Tests und strikten Dokumentationsbau bestanden

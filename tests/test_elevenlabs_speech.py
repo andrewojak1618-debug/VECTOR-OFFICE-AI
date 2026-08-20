@@ -110,6 +110,42 @@ class ElevenLabsSpeechTests(unittest.TestCase):
         )
         self.assertNotIn("acompressor", ElevenLabsSpeech.VECTOR_AUDIO_FILTER)
 
+    def test_conversational_style_preserves_confirmed_voice_settings(self):
+        speech = ElevenLabsSpeech(self.local, "secret-key", "felix-id")
+
+        settings = speech._request_payload(
+            "Antwort",
+            SpeechStyle.CONVERSATIONAL,
+        )["voice_settings"]
+
+        self.assertEqual(0.45, settings["stability"])
+        self.assertEqual(1.02, settings["speed"])
+        self.assertEqual(0.0, settings["style"])
+
+    def test_supportive_style_is_gentler_without_style_exaggeration(self):
+        speech = ElevenLabsSpeech(self.local, "secret-key", "felix-id")
+
+        settings = speech._request_payload(
+            "Ich bin bei dir.",
+            SpeechStyle.SUPPORTIVE,
+        )["voice_settings"]
+
+        self.assertAlmostEqual(0.37, settings["stability"])
+        self.assertAlmostEqual(0.99, settings["speed"])
+        self.assertEqual(0.0, settings["style"])
+
+    def test_cautious_style_is_steadier_without_becoming_slow(self):
+        speech = ElevenLabsSpeech(self.local, "secret-key", "felix-id")
+
+        settings = speech._request_payload(
+            "Dabei bin ich nicht ganz sicher.",
+            SpeechStyle.CAUTIOUS,
+        )["voice_settings"]
+
+        self.assertAlmostEqual(0.52, settings["stability"])
+        self.assertAlmostEqual(1.01, settings["speed"])
+        self.assertEqual(0.0, settings["style"])
+
     def test_invalid_voice_controls_are_rejected(self):
         with self.assertRaises(ValueError):
             ElevenLabsVoiceSettings(stability=1.1)
