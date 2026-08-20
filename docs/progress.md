@@ -688,3 +688,25 @@ Die deutsche TTS wurde schrittweise verbessert:
 - erfolgreiche argumentlose Read-only-Ausführung im lokalen Audit nachgewiesen
 - 449 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Punkt 23 – Kontrollierter lokaler Projekt-Testlauf
+
+- `development.run_core_tests` als argumentloses mutierendes Tool implementiert
+- ausschließlich die feste lokale Python-Test-Suite ohne Shellzugriff zugelassen
+- Interpreter, Projektwurzel, Testziel und Zeitlimit intern festgelegt
+- freie Pfade, Befehle, Prozessargumente und Modellparameter ausgeschlossen
+- separates `Ja` vor jedem Testlauf über die bestehende Registry-Grenze erzwungen
+- Rohdaten aus Standard- und Fehlerausgabe vollständig aus Tool- und Sprachausgabe entfernt
+- Rückgabe auf Ergebnis, Testanzahl, Laufzeit und lokalen Sprechtext begrenzt
+- fehlgeschlagene Tests transparent und ohne interne Fehlermeldungen dargestellt
+- feste Sprachvarianten für `Projekt Test` und `Projekt Tests` ergänzt
+- 55 gezielte Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- realen lokalen Registry-Lauf mit 460 erfolgreichen Tests geprüft
+- ersten Sprachversuch von WirePod als `projekte ist` erkannt
+- ausschließlich diese beobachtete Lautvariante auf das bestätigungspflichtige,
+  argumentlose Test-Tool abgebildet
+- festen Testlauf nach separatem `Ja` am physischen Vector erfolgreich ausgeführt
+- gesprochenen Hunderter und Rest nach akustisch missverständlicher Testanzahl getrennt
+- erfolgreicher mutierender Registry-Aufruf ohne Argumente im lokalen Audit bestätigt
+- 460 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen

@@ -6,6 +6,7 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+- bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlog-Ausgabe ergänzt
 - kontrollierte lokale Projektstatus-Abfrage ohne freie Pfade oder Befehle ergänzt
 - erstes rein lokales Read-only-Bürotool für deutsches Datum und Uhrzeit ergänzt
 - feste, registrygebundene Tool-Auswahl im Gespräch ergänzt

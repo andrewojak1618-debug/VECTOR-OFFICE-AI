@@ -58,6 +58,21 @@ class ToolSelection:
 DEFAULT_INTENT_RULES = (
     ToolIntentRule(
         (
+            "projekt test",
+            "projekt tests",
+            "projekttest",
+            "projekttests",
+            "projekte ist",
+            "starte den projekt test",
+            "starte die projekt tests",
+            "führe die projekt tests aus",
+            "teste das projekt",
+        ),
+        "development.run_core_tests",
+        "vollständige lokale Projekttests",
+    ),
+    ToolIntentRule(
+        (
             "wie ist der projektstatus",
             "wie ist der projekt status",
             "nenne den projektstatus",
@@ -157,22 +172,9 @@ class ToolIntentSelector:
     def select(self, user_text: str) -> ToolSelection:
         """Return one registered safe selection for an exact user phrase."""
         normalized = _normalize_phrase(user_text)
-        rule = self._rules.get(normalized)
-        if rule is None and _references_project_status(normalized):
-            rule = self._rules.get("wie ist der projektstatus")
+        rule = self._resolve_rule(normalized)
         if rule is None:
-            if _looks_like_project_status_request(normalized):
-                return _blocked_selection(
-                    "Ich habe die Projektstatusfrage nicht eindeutig erkannt. "
-                    "Bitte frage: Wie ist der Projektstatus?",
-                )
-            if _looks_like_datetime_request(normalized):
-                return _blocked_selection(
-                    "Ich habe die Datums- oder Uhrzeitfrage nicht eindeutig "
-                    "erkannt. Bitte frage: Welcher Tag ist heute? Oder: Wie "
-                    "spät ist es?",
-                )
-            return ToolSelection(ToolSelectionStatus.NO_MATCH)
+            return _unmatched_selection(normalized)
         definitions = {
             definition.name: definition
             for definition in self.registry.definitions()
@@ -189,6 +191,14 @@ class ToolIntentSelector:
             definition.permission,
             MappingProxyType(dict(rule.arguments)),
         )
+
+    def _resolve_rule(self, normalized: str) -> ToolIntentRule | None:
+        rule = self._rules.get(normalized)
+        if rule is None and _references_project_tests(normalized):
+            rule = self._rules.get("projekt test")
+        if rule is None and _references_project_status(normalized):
+            rule = self._rules.get("wie ist der projektstatus")
+        return rule
 
     @staticmethod
     def _index_rules(
@@ -235,5 +245,25 @@ def _references_project_status(value: str) -> bool:
     return "projektstatus" in words or {"projekt", "status"} <= words
 
 
+def _references_project_tests(value: str) -> bool:
+    words = set(value.split())
+    tests = bool(words & {"test", "tests", "projekttest", "projekttests"})
+    return tests and ("projekt" in words or bool(words & {"projekttest", "projekttests"}))
+
+
 def _blocked_selection(message: str) -> ToolSelection:
     return ToolSelection(ToolSelectionStatus.BLOCKED, message=message)
+
+
+def _unmatched_selection(normalized: str) -> ToolSelection:
+    if _looks_like_project_status_request(normalized):
+        return _blocked_selection(
+            "Ich habe die Projektstatusfrage nicht eindeutig erkannt. "
+            "Bitte frage: Wie ist der Projektstatus?",
+        )
+    if _looks_like_datetime_request(normalized):
+        return _blocked_selection(
+            "Ich habe die Datums- oder Uhrzeitfrage nicht eindeutig erkannt. "
+            "Bitte frage: Welcher Tag ist heute? Oder: Wie spät ist es?",
+        )
+    return ToolSelection(ToolSelectionStatus.NO_MATCH)

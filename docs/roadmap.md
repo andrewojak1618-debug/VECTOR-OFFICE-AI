@@ -61,6 +61,7 @@
 - ✅ lokale Audit-Persistenz mit Aufbewahrungsregeln ergänzen
 - ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit ergänzen
 - ✅ lokale Read-only-Projektstatus-Abfrage ohne freie Befehle ergänzen
+- ✅ bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlogs ergänzen
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Robot Personality

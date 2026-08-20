@@ -10,6 +10,7 @@ from application.tool_conversation import (
 )
 from brain.agent import Agent
 from tools.office import register_office_tools
+from tools.project_checks import CoreTestSummary, register_core_project_test_tool
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
@@ -46,6 +47,15 @@ class ControlledToolConversationTests(unittest.TestCase):
             Path("."),
             lambda _root: ProjectGitMetadata("main", "f04652f", 0),
             lambda _root: True,
+        )
+        self.test_runner = MagicMock(
+            return_value=CoreTestSummary(True, 449, 4.1),
+        )
+        register_core_project_test_tool(
+            self.registry,
+            Path("."),
+            Path("python.exe"),
+            self.test_runner,
         )
         self.model = UnusedLanguageModel()
         self.agent = Agent(self.model, tool_registry=self.registry)
@@ -91,6 +101,19 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("Branch main", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_project_tests_require_yes_and_never_use_language_model(self):
+        proposed = self.controller.handle("Projekt Test")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.test_runner.assert_not_called()
+
+        completed = self.controller.handle("Ja")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, completed.status)
+        self.assertIn("400 Tests und weitere 49 Tests", completed.message)
+        self.test_runner.assert_called_once()
         self.assertEqual(0, self.model.calls)
 
     def test_mutating_action_waits_for_explicit_yes(self):

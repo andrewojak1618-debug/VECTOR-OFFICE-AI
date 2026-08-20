@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from tools.permissions import PermissionLevel
 from tools.office import register_office_tools
+from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
 from tools.registry import ToolDefinition, ToolRegistry
 from tools.selection import (
@@ -43,6 +44,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
         register_project_status_tool(self.registry)
+        register_core_project_test_tool(self.registry)
         self.selector = ToolIntentSelector(self.registry)
 
     def test_exact_natural_phrase_selects_allowlisted_action(self):
@@ -86,6 +88,28 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual("development.project_status", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_project_test_selects_argument_free_mutating_tool(self):
+        selection = self.selector.select("Projekt Test")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.run_core_tests", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.MUTATING, selection.permission)
+
+    def test_project_test_word_variation_maps_to_same_fixed_tool(self):
+        selection = self.selector.select("Bitte Projekt Tests ausführen")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.run_core_tests", selection.tool_name)
+
+    def test_observed_vosk_project_test_variant_maps_to_fixed_tool(self):
+        selection = self.selector.select("Projekte ist")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.run_core_tests", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.MUTATING, selection.permission)
 
     def test_observed_vosk_project_status_variant_is_selected(self):
         selection = self.selector.select("Wie ist der Projekt Status")

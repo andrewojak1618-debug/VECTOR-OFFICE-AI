@@ -296,6 +296,13 @@ Entwicklungsstatus nennen: Branch, kurzer letzter Commit, Anzahl offener
 Dateinamen oder Inhalte aus, akzeptiert weder Pfade noch Befehle und benötigt
 als rein lesender Aufruf keine Bestätigung.
 
+Der Entwicklungsbefehl `Projekt Test` bereitet ausschließlich die fest
+eingebaute lokale Python-Test-Suite vor. Erst ein separates `Ja` startet den
+Prozess. Pfade, Befehle, Argumente und Shell-Zugriff sind nicht über Sprache
+änderbar. Vector nennt anschließend nur Erfolg oder Fehlschlag sowie die
+Testanzahl; Testprotokolle, Dateiinhalte und mögliche sensible Werte bleiben
+intern.
+
 ## 🛠️ Technik
 
 - **Python 3.12:** zentraler Application Core
@@ -884,6 +891,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ⏳ Büro-, Datei-, Recherche- und Entwicklungswerkzeuge schrittweise anbinden
 - ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit anbinden
 - ✅ lokale Read-only-Projektstatus-Abfrage als erstes Entwicklungswerkzeug
+- ✅ bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlogs ergänzen
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

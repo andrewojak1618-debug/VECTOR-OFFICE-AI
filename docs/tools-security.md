@@ -141,6 +141,7 @@ erfolgte erst nach Ende der Animation.
 | Absicht | Beispiele | Verhalten |
 |---|---|---|
 | Projektstatus | „Projekt Status“ | automatisch, lokal und rein lesend |
+| Projekttests | „Projekt Test“ | feste lokale Suite, separates Ja erforderlich |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -192,6 +193,30 @@ freie Parameter noch eine Modellklassifikation. Ein Sprachmodell darf deshalb
 weder fehlenden Projektzugriff behaupten noch Projektmetadaten erfinden.
 Der kurze Befehl `Projekt Status` wurde am physischen Vector als zuverlässige
 bevorzugte WirePod-Form bestätigt.
+
+## Kontrollierter lokaler Projekt-Testlauf
+
+`tools/project_checks.py` registriert `development.run_core_tests` mit
+`MUTATING` und ohne Parameter. Die Einstufung erzwingt ein separates `Ja`, weil
+ein lokaler Prozess gestartet wird. Das Tool führt ausschließlich den fest
+definierten Aufruf `python -m unittest discover -s tests` im eigenen
+Projektordner aus. Weder Nutzer noch Modell können Interpreter, Arbeitsordner,
+Testziel, Prozessargumente oder eine Shell bestimmen.
+
+Der Prozess besitzt ein festes Zeitlimit. Standardausgabe und Fehlerausgabe
+werden nur intern zur Ermittlung von Ergebnis und Testanzahl gelesen und danach
+verworfen. Die Registry-Ausgabe enthält ausschließlich einen Wahrheitswert,
+die begrenzte Testanzahl, die Laufzeit und einen lokal erzeugten Sprechtext.
+Damit gelangen weder Testprotokolle noch Dateiinhalte oder Secrets in den
+Gesprächskontext. Fehlschläge werden transparent gemeldet, führen aber nicht
+zu einer freien Fehlerausgabe.
+
+Der feste Sprachbefehl `Projekt Test` erzeugt zunächst nur den offenen
+Registry-Vorschlag. Erst ein nachfolgendes `Ja` erteilt einmalig die nötige
+Mutationsfreigabe; anschließend wird sie verworfen. Der Testlauf verwendet
+weder OpenAI noch Ollama. Die im physischen Test beobachtete Vosk-Lautvariante
+`projekte ist` ist zusätzlich als exakte Phrase freigegeben. Ihre Zuordnung
+bleibt argumentlos und führt weiterhin nur zur ausdrücklichen Bestätigungsfrage.
 
 ## Strukturierte Modellvorschläge
 
