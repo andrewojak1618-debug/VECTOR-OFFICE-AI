@@ -8,6 +8,7 @@ from application.tool_conversation import (
     ToolTurnStatus,
 )
 from brain.agent import Agent
+from tools.office import register_office_tools
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
 from tools.vector_actions import register_vector_action_tools
@@ -37,6 +38,7 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.actions.emergency_stop.return_value = True
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
+        register_office_tools(self.registry)
         self.model = UnusedLanguageModel()
         self.agent = Agent(self.model, tool_registry=self.registry)
         self.controller = ControlledToolConversation(
@@ -50,6 +52,22 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("head_up", result.message)
         self.actions.perform.assert_not_called()
+        self.assertEqual(0, self.model.calls)
+
+    def test_local_time_executes_without_model_or_confirmation(self):
+        result = self.controller.handle("Wie spät ist es?")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertTrue(result.message.startswith("Es ist "))
+        self.assertTrue(result.execution.succeeded)
+        self.actions.perform.assert_not_called()
+        self.assertEqual(0, self.model.calls)
+
+    def test_ambiguous_date_question_never_reaches_language_model(self):
+        result = self.controller.handle("Was für ein Datum ist heute?")
+
+        self.assertEqual(ToolTurnStatus.BLOCKED, result.status)
+        self.assertIn("nicht eindeutig", result.message)
         self.assertEqual(0, self.model.calls)
 
     def test_mutating_action_waits_for_explicit_yes(self):

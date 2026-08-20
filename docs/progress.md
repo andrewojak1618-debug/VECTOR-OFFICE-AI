@@ -638,3 +638,26 @@ Die deutsche TTS wurde schrittweise verbessert:
   sichtbarer Reflexionsaktion am physischen Vector erfolgreich abgenommen
 - 427 Tests, Kompilierung, strikten Dokumentationsbau und Diff-Prüfung bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Karte 21 – Erstes lokales Bürotool implementiert
+
+- `office.local_datetime` als produktives Read-only-Tool registriert
+- Datum und Uhrzeit ausschließlich aus der lokalen Systemzeit erzeugt
+- deutsche Wochentage und Monatsnamen unabhängig vom System-Locale festgelegt
+- feste Sprachabsichten für Uhrzeit und Datum ohne Modellklassifikation ergänzt
+- Toolparameter auf die lokalen Werte `date` und `time` begrenzt
+- natürliche deutsche Antwort ohne OpenAI, Ollama oder Netzwerk aufgebaut
+- Aufruf ohne Bestätigung, Mutation, Datei- oder Dokumentzugriff gehalten
+- ungültige Modi und Clockfehler an der Registry-Grenze neutral abgefangen
+- gezielte Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- Uhrzeitfrage am physischen Vector korrekt über das lokale Tool beantwortet
+- Datumsfrage von WirePod real als `welchen tag haben wir heute` erkannt und
+  wegen fehlender Variante zunächst fälschlich an Qwen weitergereicht
+- beobachtete Vosk-Variante in die feste Datumsauswahl aufgenommen
+- nicht eindeutig freigegebene Datums- und Uhrzeitfragen gegen Modell-Fallback
+  gesperrt, damit kein Sprachmodell aktuelle Zeitangaben erfinden kann
+- `Welcher Tag ist heute?` als zuverlässige WirePod-Formulierung bestätigt
+- korrekte lokale Antwort für Donnerstag, den 20. August 2026 physisch gehört
+- erfolgreiche Read-only-Ausführungen für Uhrzeit und Datum im Audit bestätigt
+- 437 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen

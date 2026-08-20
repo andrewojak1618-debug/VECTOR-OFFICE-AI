@@ -102,10 +102,10 @@ Dateisystem, Datenbank noch Vector zu. Es wird nicht automatisch in der
 Produktiv-Runtime registriert.
 
 Der Agent besitzt mit `execute_tool(...)` einen expliziten Übergabepunkt. Die
-Runtime registriert ausschließlich die kontrollierte Vector-Aktion, den
-Notfallstopp und die rein lesende Anzeige der sicheren Aktionsnamen. Bewegungen
-bleiben ohne eine explizite Mutationsfreigabe blockiert. Weitere produktive
-Toolaufrufe sind standardmäßig nicht registriert.
+Runtime registriert die kontrollierte Vector-Aktion, den Notfallstopp, die rein
+lesende Anzeige der sicheren Aktionsnamen und das lokale Datums-/Uhrzeittool.
+Bewegungen bleiben ohne eine explizite Mutationsfreigabe blockiert. Weitere
+produktive Toolaufrufe sind standardmäßig nicht registriert.
 
 ## Kontrollierte Auswahl im Gespräch
 
@@ -140,11 +140,32 @@ erfolgte erst nach Ende der Animation.
 
 | Absicht | Beispiele | Verhalten |
 |---|---|---|
+| Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
 | Lift bewegen | „Lift nach oben“, „Lift nach unten“ | Bestätigung erforderlich |
 | Animation | „Begrüße mich“, „Zeige deine Augen“ | Bestätigung erforderlich |
 | Sicherheit | „Notfallstopp“, „Stopp sofort“ | sofortiger Notfallstopp |
+
+## Lokales Bürotool für Datum und Uhrzeit
+
+`tools/office.py` registriert `office.local_datetime` mit `READ_ONLY`. Das Tool
+greift nur auf die lokale Systemzeit zu und besitzt weder Netzwerk- noch
+Dateizugriff. Die feste Absichtsauswahl liefert ausschließlich `mode=date` oder
+`mode=time`; andere Werte werden innerhalb der Registry fehlerneutral
+abgewiesen. Deutsche Wochentage und Monatsnamen sind lokal definiert und nicht
+von einer installierten Betriebssystemsprache abhängig.
+
+Beobachtete Vosk-Varianten wie `Welchen Tag haben wir heute?` sind ebenfalls
+fest freigegeben. Eine erkennbare Datums- oder Uhrzeitfrage außerhalb dieser
+Allowlist wird mit einer neutralen Wiederholungsbitte blockiert. Sie fällt
+bewusst nicht an OpenAI oder Ollama durch, damit ein Modell kein aktuelles Datum
+oder eine Uhrzeit erfinden kann. Im physischen Test erwies sich `Welcher Tag ist
+heute?` als zuverlässige bevorzugte Formulierung.
+
+Die strukturierte Ausgabe enthält nur ISO-Datum, lokale Uhrzeit, Zeitzonenname
+und einen lokal aufgebauten deutschen Sprechsatz. Nutzereingaben, Modelltexte,
+Dateiinhalte und Secrets werden weder benötigt noch als Toolausgabe erzeugt.
 
 ## Strukturierte Modellvorschläge
 

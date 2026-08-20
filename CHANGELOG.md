@@ -6,6 +6,7 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+- erstes rein lokales Read-only-Bürotool für deutsches Datum und Uhrzeit ergänzt
 - feste, registrygebundene Tool-Auswahl im Gespräch ergänzt
 - Ja/Nein-Bestätigung für Bewegungen und sofortigen Notfallstopp ergänzt
 - inaktive strukturierte Modellvorschläge mit lokaler Registry-Prüfung ergänzt

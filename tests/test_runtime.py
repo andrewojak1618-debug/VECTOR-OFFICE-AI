@@ -26,11 +26,12 @@ def make_settings(**overrides):
 
 
 class RuntimeModeTests(unittest.TestCase):
-    def test_runtime_registers_only_controlled_vector_tools(self):
+    def test_runtime_registers_only_controlled_production_tools(self):
         registry = _create_tool_registry(MagicMock())
 
         self.assertEqual(
             (
+                "office.local_datetime",
                 "vector.emergency_stop",
                 "vector.list_actions",
                 "vector.perform_action",

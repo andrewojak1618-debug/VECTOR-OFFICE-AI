@@ -121,10 +121,12 @@ und für Animationen immer eine deaktivierte Körper-/Radspur.
 
 `tools/vector_actions.py` registriert Aktion und Notfallstopp als mutierende
 Tools. Freie SDK-Methoden und Fahrbefehle sind nicht erreichbar. Die Runtime
-stellt diese Werkzeuge bereit. `tools/proposals.py` kann eine abstrakte
-Modellvorschlags-ID lokal auf einen festen Registry-Aufruf abbilden, führt ihn
-aber nicht aus und erzeugt keine Autorisierung. Dieser beratende Pfad ist noch
-nicht in der produktiven Gesprächsschleife aktiviert.
+stellt diese Werkzeuge zusammen mit dem rein lokalen Read-only-Datums- und
+Uhrzeittool aus `tools/office.py` bereit. `tools/proposals.py` kann eine
+abstrakte Modellvorschlags-ID lokal auf einen festen Registry-Aufruf abbilden,
+führt ihn aber nicht aus und erzeugt keine Autorisierung. Nur der ausdrücklich
+aktivierte Kontextdialog darf einen begrenzten Ausdrucksvorschlag nach einem
+separaten `Ja` autorisieren.
 
 `tools/audit_store.py` ist der optionale lokale Sink für bereits redigierte
 Registry-Ereignisse. Er erweitert dieselbe ignorierte SQLite-Datei additiv,

@@ -57,6 +57,23 @@ class ToolSelection:
 
 DEFAULT_INTENT_RULES = (
     ToolIntentRule(
+        ("wie spät ist es", "wie viel uhr ist es", "welche uhrzeit ist es"),
+        "office.local_datetime",
+        "aktuelle Uhrzeit nennen",
+        (("mode", "time"),),
+    ),
+    ToolIntentRule(
+        (
+            "welches datum haben wir",
+            "welcher tag ist heute",
+            "welchen tag haben wir heute",
+            "welches datum ist heute",
+        ),
+        "office.local_datetime",
+        "aktuelles Datum nennen",
+        (("mode", "date"),),
+    ),
+    ToolIntentRule(
         ("welche aktionen kannst du", "welche bewegungen kannst du"),
         "vector.list_actions",
         "sichere Aktionen anzeigen",
@@ -128,6 +145,12 @@ class ToolIntentSelector:
         normalized = _normalize_phrase(user_text)
         rule = self._rules.get(normalized)
         if rule is None:
+            if _looks_like_datetime_request(normalized):
+                return _blocked_selection(
+                    "Ich habe die Datums- oder Uhrzeitfrage nicht eindeutig "
+                    "erkannt. Bitte frage: Welcher Tag ist heute? Oder: Wie "
+                    "spät ist es?",
+                )
             return ToolSelection(ToolSelectionStatus.NO_MATCH)
         definitions = {
             definition.name: definition
@@ -167,6 +190,16 @@ def _normalize_phrase(value: str) -> str:
         return ""
     collapsed = " ".join(value.casefold().strip().split())
     return re.sub(r"[.!?]+$", "", collapsed).strip()
+
+
+def _looks_like_datetime_request(value: str) -> bool:
+    words = set(value.split())
+    question = bool(words & {"was", "wie", "welcher", "welchen", "welches"})
+    date = "heute" in words and bool(
+        words & {"datum", "tag", "wievielte", "wievielten"}
+    )
+    clock = bool(words & {"uhr", "uhrzeit", "spät"})
+    return question and (date or clock)
 
 
 def _blocked_selection(message: str) -> ToolSelection:

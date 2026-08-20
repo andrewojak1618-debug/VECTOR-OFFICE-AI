@@ -78,6 +78,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - Quellen-, Prüfsummen- und Abschnittsverwaltung für importiertes Wissen
 - lokale Dokumentversionen, sichere Exporte und vollständige Reindexierung
 - zentrale Tool Registry mit expliziten Lese-, Änderungs- und Gefahrenrechten
+- lokales Read-only-Bürotool für deutsches Datum und Uhrzeit
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
@@ -280,6 +281,13 @@ Für diesen kontextabhängigen Pfad steht ausschließlich das deutlich
 sichtbare feste Reflexionsprofil zur Auswahl. Die separate Augenanimation
 bleibt als direkte Einzelaktion erhalten, ist am physischen Vector jedoch zu
 dezent für eine verlässliche visuelle Rückmeldung.
+
+Das erste praktische Bürotool beantwortet `Wie spät ist es?` und
+`Welcher Tag ist heute?` vollständig lokal. Die feste Sprachauswahl setzt nur
+den Modus `time` oder `date`; weder ein Sprachmodell noch ein externer Dienst
+bestimmt Parameter oder Antwort. Als rein lesender Aufruf benötigt er keine
+Bestätigung. Für WirePod ist `Welcher Tag ist heute?` die physisch bestätigte
+bevorzugte Datumsformulierung.
 
 ## 🛠️ Technik
 
@@ -866,7 +874,8 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 
 - ✅ Tool Registry implementieren
 - ✅ Berechtigungsstufen und Bestätigungen definieren
-- Büro-, Datei-, Recherche- und Entwicklungswerkzeuge anbinden
+- ⏳ Büro-, Datei-, Recherche- und Entwicklungswerkzeuge schrittweise anbinden
+- ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit anbinden
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

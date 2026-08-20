@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from tools.permissions import PermissionLevel
+from tools.office import register_office_tools
 from tools.registry import ToolDefinition, ToolRegistry
 from tools.selection import (
     ToolIntentRule,
@@ -39,6 +40,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
         )
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
+        register_office_tools(self.registry)
         self.selector = ToolIntentSelector(self.registry)
 
     def test_exact_natural_phrase_selects_allowlisted_action(self):
@@ -66,6 +68,27 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("vector.list_actions", selection.tool_name)
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_local_date_phrase_selects_fixed_read_only_mode(self):
+        selection = self.selector.select("Welcher Tag ist heute?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("office.local_datetime", selection.tool_name)
+        self.assertEqual("date", selection.arguments["mode"])
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_observed_vosk_date_variant_selects_local_tool(self):
+        selection = self.selector.select("Welchen Tag haben wir heute")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("office.local_datetime", selection.tool_name)
+        self.assertEqual("date", selection.arguments["mode"])
+
+    def test_ambiguous_datetime_question_is_blocked_from_model_fallback(self):
+        selection = self.selector.select("Was für ein Datum ist heute")
+
+        self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
+        self.assertIn("nicht eindeutig", selection.message)
 
     def test_missing_registered_target_is_blocked(self):
         rule = ToolIntentRule(("sicherer test",), "missing.tool", "Test")

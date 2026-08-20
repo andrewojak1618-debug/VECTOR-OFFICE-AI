@@ -59,6 +59,8 @@
 - ✅ strukturierte Modellvorschläge ohne Ausführungs- oder Berechtigungsrecht prüfen
 - ✅ kontextabhängige Ausdrucksvorschläge kontrolliert produktiv freigeben
 - ✅ lokale Audit-Persistenz mit Aufbewahrungsregeln ergänzen
+- ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit ergänzen
+- ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Robot Personality
 
