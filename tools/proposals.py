@@ -124,6 +124,15 @@ SAFE_VECTOR_PROPOSAL_OPTIONS = (
     ),
 )
 
+CONTEXTUAL_EXPRESSION_PROPOSAL_IDS = frozenset({
+    "vector.reflective_expression",
+})
+CONTEXTUAL_EXPRESSION_PROPOSAL_OPTIONS = tuple(
+    option
+    for option in SAFE_VECTOR_PROPOSAL_OPTIONS
+    if option.proposal_id in CONTEXTUAL_EXPRESSION_PROPOSAL_IDS
+)
+
 
 class ToolProposalReviewer:
     """Accept only fixed options that still satisfy the local registry."""

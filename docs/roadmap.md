@@ -57,6 +57,7 @@
 - ✅ Kopf, Lift, Kurzanimationen und Notfallstopp physisch prüfen
 - ✅ deterministische Tool-Auswahl im Konsolen- und WirePod-Dialog ergänzen
 - ✅ strukturierte Modellvorschläge ohne Ausführungs- oder Berechtigungsrecht prüfen
+- ✅ kontextabhängige Ausdrucksvorschläge kontrolliert produktiv freigeben
 - ✅ lokale Audit-Persistenz mit Aufbewahrungsregeln ergänzen
 
 ## Robot Personality

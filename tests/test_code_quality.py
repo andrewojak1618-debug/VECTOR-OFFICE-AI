@@ -22,6 +22,9 @@ MAX_MODULE_LINES = 399
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
 ARCHITECTURE_MODULE_DOCS = {
     Path("application/response_delivery.py"): Path("docs/architecture.md"),
+    Path("application/contextual_tool_conversation.py"): Path(
+        "docs/tools-security.md"
+    ),
     Path("application/host_watchdog.py"): Path("docs/windows-startup.md"),
     Path("application/process_control.py"): Path("docs/windows-startup.md"),
     Path("application/voice_recovery.py"): Path("docs/connections.md"),

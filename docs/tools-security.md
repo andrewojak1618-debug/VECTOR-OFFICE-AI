@@ -148,8 +148,8 @@ erfolgte erst nach Ende der Animation.
 
 ## Strukturierte Modellvorschläge
 
-`tools/proposals.py` bildet eine bewusst inaktive Prüfgrenze für spätere
-kontextabhängige Vorschläge. OpenAI oder Ollama dürfen dort ausschließlich ein
+`tools/proposals.py` bildet die lokale Prüfgrenze für kontextabhängige
+Vorschläge. OpenAI oder Ollama dürfen dort ausschließlich ein
 kleines JSON-Objekt mit `schema_version` und einer abstrakten `proposal_id`
 zurückgeben. Sie erhalten keine Toolnamen, Parameterwerte oder
 `ToolAuthorization`-Objekte zur freien Erzeugung.
@@ -170,8 +170,29 @@ geprüft:
 `tools/inspection.py` enthält dafür nur den unveränderlichen Prüfbefund. Die
 eigentliche Namens- und Parameterprüfung bleibt in `tools/registry.py`. Der
 Notfallstopp gehört ausdrücklich nicht zum Modellkatalog. Ein Ergebnis ist nur
-ein `ToolProposal`-Datenobjekt; selbst ein gültiger Vorschlag bewirkt keine
-Bewegung und wird derzeit nicht in der produktiven Gesprächsschleife abgefragt.
+ein `ToolProposal`-Datenobjekt; selbst ein gültiger Vorschlag bewirkt noch keine
+Bewegung.
+
+`application/contextual_tool_conversation.py` aktiviert diese Grenze nur nach
+der eindeutigen Einleitung `Schlage eine passende Aktion vor: ...` oder
+`Welche Aktion passt dazu: ...`. Gewöhnliche Gesprächsrunden erzeugen deshalb
+weder einen zweiten Modellaufruf noch einen versteckten Aktionsvorschlag. Der
+produktive Katalog ist gegenüber dem allgemeinen Prüfkatalog zusätzlich auf
+das sichtbare feste Profil `vector.reflective_expression` eingeschränkt. Die
+dezente Aktion `vector.eyes_only` bleibt explizit aufrufbar, wird aber nicht
+mehr als kontextabhängiger Vorschlag verwendet.
+
+Falls WirePod die Aufnahme nach `Welche Aktion passt dazu?` beendet, wird noch
+kein Modell aufgerufen. Stattdessen kann genau die nächste Spracheingabe
+innerhalb von 30 Sekunden den Kontext liefern. Abbruch, Ablauf und Sitzungsende
+verwerfen dieses Kontextfenster ohne Vorschlag, Autorisierung oder Bewegung.
+
+Ein akzeptierter Vorschlag wird höchstens 30 Sekunden und nur mit abstrakter
+Vorschlags-ID sowie lokaler Bezeichnung gehalten. `Nein` oder `Abbrechen`
+verwirft ihn. Erst ein separates exaktes `Ja` erzeugt eine einmalige
+`ToolAuthorization`; unmittelbar davor wird die Vorschlags-ID erneut gegen die
+aktuelle Registry geprüft. Fehler, unbekannte IDs, Schemaerweiterungen und
+inzwischen nicht mehr verfügbare Ziele bleiben ohne Ausführung.
 
 `brain/expression_actions.py` verwendet dieselbe lokale Prüfgrenze für
 simulierte Ausdruckshinweise, jedoch ohne Modellaufruf. Nicht neutrale Cues
@@ -207,9 +228,9 @@ Allowlist, Timeouts und Hardwaretests sind unter
 
 ## Noch nicht freigegeben
 
-Folgende Funktionen sind bewusst nicht Teil dieser Karte:
+Folgende Funktionen sind weiterhin bewusst nicht freigegeben:
 
-- produktive oder automatische Aktivierung von Modellvorschlägen,
+- automatische Modellvorschläge ohne ausdrückliche Aktivierungsform,
 - automatische Ausführung von Ausdrucksvorschlägen,
 - dauerhafte Berechtigungsfreigaben,
 - Dateiänderungen, Shell-Kommandos oder Internetzugriffe,

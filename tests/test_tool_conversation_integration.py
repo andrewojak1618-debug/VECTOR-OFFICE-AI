@@ -1,6 +1,7 @@
 """Integration tests for controlled tools in console and voice loops."""
 
 import io
+import json
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -32,6 +33,14 @@ class FixedLanguageModel:
     def generate(self, _messages):
         self.calls += 1
         return self.response
+
+
+class FixedProposalModel(FixedLanguageModel):
+    def __init__(self, proposal_id="vector.reflective_expression"):
+        super().__init__(json.dumps({
+            "schema_version": 1,
+            "proposal_id": proposal_id,
+        }))
 
 
 class RecordingSpeech:
@@ -162,6 +171,46 @@ class ToolConversationIntegrationTests(unittest.TestCase):
         self.actions.emergency_stop.assert_called_once_with()
         self.actions.perform.assert_not_called()
         self.assertNotIn(EXPRESSIVE_ANSWER, self.speech.spoken)
+
+    def test_contextual_model_proposal_still_requires_spoken_yes(self):
+        model = FixedProposalModel()
+        agent = Agent(model, tool_registry=self.agent.tool_registry)
+
+        with patch(
+            "builtins.input",
+            side_effect=[
+                "schlage eine passende aktion vor: ich denke nach",
+                "ja",
+                "/exit",
+            ],
+        ), patch("sys.stdout", new_callable=io.StringIO):
+            run_conversation(agent, self.speech)
+
+        self.actions.perform.assert_called_once_with("reflective_expression")
+        self.assertEqual(1, model.calls)
+        self.assertEqual(2, len(self.speech.spoken))
+        self.assertIn("Ja oder Nein", self.speech.spoken[0])
+
+    def test_voice_accepts_context_in_separate_transcript(self):
+        model = FixedProposalModel()
+        agent = Agent(model, tool_registry=self.agent.tool_registry)
+        listener = SequenceListener(
+            ("welche aktion passt dazu", "ich denke nach", "ja"),
+        )
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                agent,
+                self.speech,
+                listener,
+                listen_timeout=1,
+                max_turns=3,
+            )
+
+        self.actions.perform.assert_called_once_with("reflective_expression")
+        self.assertEqual(1, model.calls)
+        self.assertIn("Kontext", self.speech.spoken[0])
+        self.assertIn("Ja oder Nein", self.speech.spoken[1])
 
 
 if __name__ == "__main__":

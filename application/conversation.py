@@ -2,11 +2,16 @@
 
 import re
 import time
+from dataclasses import dataclass
 
 from application.commands import CommandResult, ConsoleCommandHandler
 from application.connection_supervisor import ConnectionSupervisor
+from application.contextual_tool_conversation import (
+    ControlledContextualToolConversation,
+)
 from application.expression_conversation import ControlledExpressionConversation
 from application.expression_delivery import ExpressionResponseCoordinator
+from application.model_tool_proposals import ModelToolProposalService
 from application.response_delivery import (
     CLOUD_OFFLINE_NOTICE,
     PROVIDER_OFFLINE_NOTICE,
@@ -17,7 +22,10 @@ from application.tool_conversation import ControlledToolConversation
 from application.voice_recovery import VoiceRecovery
 from brain.agent import Agent
 from brain.expression_actions import ExpressionActionMapper
-from tools.proposals import ToolProposalReviewer
+from tools.proposals import (
+    CONTEXTUAL_EXPRESSION_PROPOSAL_OPTIONS,
+    ToolProposalReviewer,
+)
 from tools.registry import ToolRegistry
 from tools.selection import ToolIntentSelector
 from vector.speech import VectorSpeech
@@ -33,7 +41,8 @@ TOOL_HELP = (
     "Controlled tools: 'Welche Aktionen kannst du?', 'Begrüße mich', "
     "'Schau nach oben', 'Lift nach oben', or 'Stopp sofort'. "
     "Movements require a separate yes. Expressive response: "
-    "'Mit Ausdruck was bedeutet Freiheit'."
+    "'Mit Ausdruck was bedeutet Freiheit'. Contextual suggestion: "
+    "'Schlage eine passende Aktion vor: Ich denke nach'."
 )
 VOICE_EXIT_PHRASES = frozenset({
     "beende das gespräch",
@@ -47,14 +56,26 @@ VOICE_EXIT_PHRASES = frozenset({
     "vektor bitte beenden",
     "vektor beenden",
 })
+
+
+@dataclass(frozen=True)
+class _ConversationControllers:
+    tools: ControlledToolConversation | None
+    expression: ControlledExpressionConversation | None
+    contextual: ControlledContextualToolConversation | None
+
+    def cancel_pending(self) -> None:
+        """Discard every optional pending action without execution."""
+        _cancel_pending(self.expression, self.contextual)
+
+
 def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
     """Run the interactive console conversation until the user exits."""
     print("\nConversation started.")
     print(COMMAND_HELP)
     print(TOOL_HELP)
     command_handler = ConsoleCommandHandler(agent)
-    tool_conversation = _create_tool_conversation(agent)
-    expression_conversation = _create_expression_conversation(agent, speech)
+    controllers = _create_conversation_controllers(agent, speech)
     while True:
         user_text = _read_console_input()
         if user_text is None:
@@ -65,15 +86,9 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
         if result is CommandResult.EXIT:
             return
         if result is CommandResult.NOT_HANDLED:
-            _handle_user_turn(
-                agent,
-                speech,
-                tool_conversation,
-                expression_conversation,
-                user_text,
-            )
-        elif expression_conversation is not None:
-            expression_conversation.cancel_pending()
+            _handle_user_turn(agent, speech, controllers, user_text)
+        else:
+            controllers.cancel_pending()
 
 
 def _read_console_input() -> str | None:
@@ -95,8 +110,7 @@ def run_voice_conversation(
 ) -> None:
     """Run a private WirePod conversation until exit or the turn limit."""
     _print_voice_intro()
-    tool_conversation = _create_tool_conversation(agent)
-    expression_conversation = _create_expression_conversation(agent, speech)
+    controllers = _create_conversation_controllers(agent, speech)
     recovery = VoiceRecovery(
         connections,
         lambda answer: _speak_answer(speech, answer),
@@ -109,8 +123,7 @@ def run_voice_conversation(
             agent,
             speech,
             listener,
-            tool_conversation,
-            expression_conversation,
+            controllers,
             listen_timeout,
             max_turns,
             recovery,
@@ -118,16 +131,14 @@ def run_voice_conversation(
     except KeyboardInterrupt:
         print("\nConversation ended.")
     finally:
-        if expression_conversation is not None:
-            expression_conversation.cancel_pending()
+        controllers.cancel_pending()
 
 
 def _run_voice_turns(
     agent: Agent,
     speech: VectorSpeech,
     listener: WirePodTranscriptListener,
-    tool_conversation: ControlledToolConversation | None,
-    expression_conversation: ControlledExpressionConversation | None,
+    controllers: _ConversationControllers,
     listen_timeout: float,
     max_turns: int | None,
     recovery: VoiceRecovery,
@@ -149,13 +160,7 @@ def _run_voice_turns(
         if _is_voice_exit_signal(user_text):
             print("Conversation ended.")
             return
-        _handle_user_turn(
-            agent,
-            speech,
-            tool_conversation,
-            expression_conversation,
-            user_text,
-        )
+        _handle_user_turn(agent, speech, controllers, user_text)
         completed_turns += 1
 
 
@@ -185,6 +190,7 @@ def _print_voice_intro() -> None:
     print("Say 'Hey Vector' followed by your question.")
     print("Controlled movements require a separate spoken yes.")
     print("Say 'Mit Ausdruck' for confirmed head and eye expression.")
+    print("Say 'Schlage eine passende Aktion vor' for a reviewed suggestion.")
     print("Say 'Vector beenden' to end the session.")
 
 
@@ -211,6 +217,17 @@ def _create_tool_conversation(
     return ControlledToolConversation(agent, ToolIntentSelector(registry))
 
 
+def _create_conversation_controllers(
+    agent: Agent,
+    speech: VectorSpeech,
+) -> _ConversationControllers:
+    return _ConversationControllers(
+        _create_tool_conversation(agent),
+        _create_expression_conversation(agent, speech),
+        _create_contextual_tool_conversation(agent),
+    )
+
+
 def _create_expression_conversation(
     agent: Agent,
     speech: VectorSpeech,
@@ -224,18 +241,35 @@ def _create_expression_conversation(
     return ControlledExpressionConversation(agent, mapper, coordinator)
 
 
+def _create_contextual_tool_conversation(
+    agent: Agent,
+) -> ControlledContextualToolConversation | None:
+    registry = getattr(agent, "tool_registry", None)
+    language_model = getattr(agent, "language_model", None)
+    if not isinstance(registry, ToolRegistry) or language_model is None:
+        return None
+    reviewer = ToolProposalReviewer(
+        registry,
+        CONTEXTUAL_EXPRESSION_PROPOSAL_OPTIONS,
+    )
+    service = ModelToolProposalService(language_model, reviewer)
+    return ControlledContextualToolConversation(agent, service)
+
+
 def _handle_user_turn(
     agent: Agent,
     speech: VectorSpeech,
-    tool_controller: ControlledToolConversation | None,
-    expression_controller: ControlledExpressionConversation | None,
+    controllers: _ConversationControllers,
     user_text: str,
 ) -> None:
-    if _handle_tool_turn(tool_controller, speech, user_text):
-        if expression_controller is not None:
-            expression_controller.cancel_pending()
+    if _handle_tool_turn(controllers.tools, speech, user_text):
+        controllers.cancel_pending()
         return
-    if _handle_expression_turn(expression_controller, speech, user_text):
+    if _handle_expression_turn(controllers.expression, speech, user_text):
+        _cancel_pending(controllers.contextual)
+        return
+    if _handle_contextual_tool_turn(controllers.contextual, speech, user_text):
+        _cancel_pending(controllers.expression)
         return
     respond_and_speak(agent, speech, user_text)
 
@@ -274,3 +308,26 @@ def _handle_expression_turn(
     if result.delivery is not None and not result.delivery.speech_completed:
         print("Vector could not play the prepared response.")
     return True
+
+
+def _handle_contextual_tool_turn(
+    controller: ControlledContextualToolConversation | None,
+    speech: VectorSpeech,
+    user_text: str,
+) -> bool:
+    if controller is None:
+        return False
+    result = controller.handle(user_text)
+    if not result.handled:
+        return False
+    if result.message:
+        print(f"Vector: {result.message}")
+    if result.speak and result.message:
+        _speak_answer(speech, result.message)
+    return True
+
+
+def _cancel_pending(*controllers) -> None:
+    for controller in controllers:
+        if controller is not None:
+            controller.cancel_pending()

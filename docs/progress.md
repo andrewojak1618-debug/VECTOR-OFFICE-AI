@@ -609,3 +609,32 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Vector-Verbindung und beide Audiowiedergaben ohne Fehler abgeschlossen
 - beide Varianten vom Benutzer als natürlich genug bestätigt
 - 410 automatisierte Tests und strikten Dokumentationsbau bestanden
+
+## Karte 20 – Kontextabhängige Vorschläge kontrolliert freigegeben
+
+- produktive Aktivierung auf zwei eindeutige deutsche Einleitungen begrenzt
+- normale Gespräche ohne zusätzlichen Klassifikationsaufruf erhalten
+- Modellkatalog auf das deutlich sichtbare feste Reflexionsprofil reduziert
+- Toolnamen, Parameter und Autorisierung weiterhin ausschließlich lokal bestimmt
+- nur abstrakte Vorschlags-ID und lokale Bezeichnung vorübergehend gehalten
+- offene Vorschläge nach 30 Sekunden automatisch verworfen
+- `Nein`, `Abbrechen` und Sitzungsende ohne Ausführung behandelt
+- unmittelbar vor einem bestätigten Aufruf erneut gegen die Registry geprüft
+- separate einmalige Mutationsfreigabe erst nach einem exakten `Ja` erzeugt
+- unbekannte IDs, Schemaerweiterungen und Modellfehler inhaltsfrei blockiert
+- lokales Qwen bei eindeutigen Anfragen stabil auf eine abstrakte, lokal
+  geprüfte Vorschlags-ID begrenzt
+- reale Vorschlagsfrage über ElevenLabs am physischen Vector verständlich ausgegeben
+- Vorschlagsausgabe vom Benutzer als erfolgreich bestätigt
+- wartenden Diagnoselauf ohne exaktes separates `Ja` ohne Bewegung beendet
+- reales `Ja` erkannt und `eyes_only` laut Audit erfolgreich ausgeführt; die
+  Animation erwies sich am physischen Vector jedoch als nicht sichtbar genug
+- kontextabhängigen Katalog deshalb auf die erprobte 18-Grad-Kopf-, Augen- und
+  Rückkehrsequenz `reflective_expression` umgestellt
+- durch WirePods Satzende nach `Welche Aktion passt dazu?` ausgelösten Abbruch
+  mit einem kontrollierten 30-Sekunden-Kontextfenster für die nächste Eingabe
+  abgefangen
+- getrennten Drei-Schritt-Sprachpfad mit Kontext, Bestätigung und deutlich
+  sichtbarer Reflexionsaktion am physischen Vector erfolgreich abgenommen
+- 427 Tests, Kompilierung, strikten Dokumentationsbau und Diff-Prüfung bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen

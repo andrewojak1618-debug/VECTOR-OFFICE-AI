@@ -249,6 +249,38 @@ Die Einleitungen sind lokal festgelegt und werden pro reflektierter Ausgabe
 unabhängig mit gleicher Chance gewählt; sie gelangen nicht in Modellkontext,
 Memory oder Antwortverlauf.
 
+Ein freier Gesprächskontext kann außerdem ausdrücklich auf eine passende,
+registrierte Ausdrucksaktion geprüft werden:
+
+```text
+Benutzer: Schlage eine passende Aktion vor: Ich denke über diese Frage nach.
+Vector:   Ich könnte passend dazu eine reflektierte Kopf- und Augenbewegung
+          ausführen. Soll ich das tun? Antworte mit Ja oder Nein.
+Benutzer: Ja
+Vector:   [fest begrenzte Ausdrucksaktion]
+```
+
+Beendet WirePod die Aufnahme bereits nach der Frageintonation, funktioniert
+derselbe Ablauf bewusst auch in drei getrennten Sprachschritten:
+
+```text
+Benutzer: Welche Aktion passt dazu?
+Vector:   Was soll ich dabei berücksichtigen? Nenne mir jetzt den Kontext.
+Benutzer: Ich denke nach.
+Vector:   [Bestätigungsfrage]
+Benutzer: Ja
+```
+
+Ohne diese eindeutige Einleitung wird kein zusätzlicher Klassifikationsaufruf
+gestartet. Das Modell sieht nur abstrakte Vorschlags-IDs und kann weder
+Toolnamen noch Parameter oder Berechtigungen bestimmen. Der Vorschlag verfällt
+nach 30 Sekunden und wird direkt vor einem bestätigten Aufruf erneut gegen die
+lokale Tool Registry geprüft.
+Für diesen kontextabhängigen Pfad steht ausschließlich das deutlich
+sichtbare feste Reflexionsprofil zur Auswahl. Die separate Augenanimation
+bleibt als direkte Einzelaktion erhalten, ist am physischen Vector jedoch zu
+dezent für eine verlässliche visuelle Rückmeldung.
+
 ## 🛠️ Technik
 
 - **Python 3.12:** zentraler Application Core
@@ -355,9 +387,10 @@ Natürliche Tool-Absichten werden ausschließlich über feste Formulierungen in
 `tools/selection.py` erkannt. Lesende Abfragen dürfen automatisch laufen;
 Bewegungen benötigen ein separates „Ja“. OpenAI und Ollama erhalten weder freie
 Toolausführung noch die Möglichkeit, Berechtigungen selbst zu erzeugen.
-Ein vorbereiteter, noch inaktiver Vorschlagspfad akzeptiert von beiden Modellen
-nur feste JSON-IDs. Toolname und Parameter werden ausschließlich lokal ergänzt;
-ein akzeptierter Vorschlag führt niemals selbst eine Aktion aus.
+Der ausdrücklich aktivierte Vorschlagspfad akzeptiert von beiden Modellen nur
+feste JSON-IDs. Toolname und Parameter werden ausschließlich lokal ergänzt;
+ein akzeptierter Vorschlag führt erst nach einem separaten `Ja`, erneuter
+Registry-Prüfung und einmaliger lokaler Autorisierung eine Aktion aus.
 
 ## ⚙️ Installation
 
@@ -797,7 +830,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ Ausdruckshinweise lokal auf eine geprüfte, nicht ausführbare Animation abgebildet
 - ✅ bestätigte Ausdrucksanimation vor TTS sequenziell und ausfallsicher koordiniert
 - ✅ expliziter Ausdrucksdialog in Konsole und WirePod mit separatem Ja
-- ⏳ kontrollierte produktive Freigabe kontextabhängiger Vorschläge
+- ✅ kontrollierte produktive Freigabe kontextabhängiger Ausdrucksvorschläge
 
 ## 🗺️ Roadmap
 

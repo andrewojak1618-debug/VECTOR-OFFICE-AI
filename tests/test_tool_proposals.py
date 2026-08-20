@@ -217,7 +217,24 @@ class ModelToolProposalServiceTests(unittest.TestCase):
 
         payload = json.loads(model.messages[1].content)
         self.assertEqual(request, payload["untrusted_user_request"])
+        self.assertFalse(payload["explicit_action_request"])
         self.assertIn("keine Berechtigung", model.messages[0].content)
+        self.assertIn("explicit_action_request", model.messages[0].content)
+
+    def test_explicit_activation_is_a_separate_local_boolean(self):
+        model = RecordingModel(_proposal("vector.greeting"))
+
+        ModelToolProposalService(model, self.reviewer).propose(
+            "Ich möchte freundlich reagieren.",
+            explicit_action_request=True,
+        )
+
+        payload = json.loads(model.messages[1].content)
+        self.assertTrue(payload["explicit_action_request"])
+        self.assertEqual(
+            "Ich möchte freundlich reagieren.",
+            payload["untrusted_user_request"],
+        )
 
     def test_provider_failure_returns_a_sanitized_rejection(self):
         model = RecordingModel(fail=True)

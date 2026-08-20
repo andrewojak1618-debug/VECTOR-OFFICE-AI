@@ -9,6 +9,9 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - feste, registrygebundene Tool-Auswahl im Gespräch ergänzt
 - Ja/Nein-Bestätigung für Bewegungen und sofortigen Notfallstopp ergänzt
 - inaktive strukturierte Modellvorschläge mit lokaler Registry-Prüfung ergänzt
+- kontextabhängige Ausdrucksvorschläge mit expliziter Aktivierung,
+  Ablaufzeit, erneuter Registry-Prüfung und separatem Ja produktiv freigegeben
+- getrennte Kontextaufnahme nach einem von WirePod erkannten Frageende ergänzt
 - lokale redigierte Tool-Audits mit begrenzter Aufbewahrung ergänzt
 - grenznahe Registry- und Embedding-Module verhaltensneutral aufgeteilt
 - Ausdruckshinweise auf eine geprüfte, noch nicht ausführbare Animation abgebildet
