@@ -196,7 +196,7 @@ class AuditRuntimeIntegrationTests(unittest.TestCase):
         failure = sqlite3.OperationalError("private database path")
 
         with patch(
-            "application.runtime.SQLiteToolAuditStore",
+            "application.runtime_resources.SQLiteToolAuditStore",
             side_effect=failure,
         ), patch("builtins.print") as output:
             store = _create_audit_store(settings)

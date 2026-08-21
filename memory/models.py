@@ -15,6 +15,14 @@ class MemoryEntry:
 
 
 @dataclass(frozen=True)
+class MemoryStatistics:
+    """Count confirmed factual memories and communication feedback."""
+
+    memories: int
+    feedback: int
+
+
+@dataclass(frozen=True)
 class KnowledgeDocument:
     """Metadata for one deliberately imported local document."""
 

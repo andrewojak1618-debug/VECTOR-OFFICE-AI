@@ -58,6 +58,18 @@ class ToolSelection:
 DEFAULT_INTENT_RULES = (
     ToolIntentRule(
         (
+            "gedächtnis status",
+            "gedächtnisstatus",
+            "wie ist dein gedächtnis",
+            "wie ist dein gedächtnis status",
+            "wie viele erinnerungen hast du",
+            "memory status",
+        ),
+        "memory.local_status",
+        "lokalen Gedächtnisstatus nennen",
+    ),
+    ToolIntentRule(
+        (
             "bibliothek status",
             "bibliotheksstatus",
             "wie ist der bibliothek status",
@@ -218,6 +230,8 @@ class ToolIntentSelector:
 
     def _resolve_rule(self, normalized: str) -> ToolIntentRule | None:
         rule = self._rules.get(normalized)
+        if rule is None and _references_memory_status(normalized):
+            rule = self._rules.get("gedächtnis status")
         if rule is None and _references_library_status(normalized):
             rule = self._rules.get("bibliothek status")
         if rule is None and _references_system_status(normalized):
@@ -281,6 +295,11 @@ def _references_system_status(value: str) -> bool:
 def _references_library_status(value: str) -> bool:
     words = set(value.split())
     return "bibliotheksstatus" in words or {"bibliothek", "status"} <= words
+
+
+def _references_memory_status(value: str) -> bool:
+    words = set(value.split())
+    return "gedächtnisstatus" in words or {"gedächtnis", "status"} <= words
 
 
 def _references_project_tests(value: str) -> bool:

@@ -63,6 +63,20 @@ class SQLiteMemoryStoreTests(unittest.TestCase):
 
         self.assertEqual((), results)
 
+    def test_status_counts_memories_and_feedback_without_content(self):
+        self.store.remember("Private bestätigte Erinnerung.")
+        self.store.remember(
+            "Private Stilvorgabe.",
+            category="feedback",
+            source="user-confirmed-feedback",
+        )
+
+        status = self.store.status()
+
+        self.assertEqual(1, status.memories)
+        self.assertEqual(1, status.feedback)
+        self.assertFalse(hasattr(status, "content"))
+
     def test_forget_deletes_memory(self):
         saved = self.store.remember("Diese Erinnerung wird gelöscht.")
 

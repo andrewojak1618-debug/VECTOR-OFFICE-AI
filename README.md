@@ -82,6 +82,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokales Entwicklungswerkzeug für einen datensparsamen Projektstatus
 - lokaler Read-only-Systemstatus für WirePod und Ollama
 - lokaler Read-only-Bibliotheksstatus ausschließlich mit Bestandszählern
+- lokaler Read-only-Gedächtnisstatus ausschließlich mit bestätigten Zählern
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
@@ -315,6 +316,12 @@ Abschnitte sowie aktueller und veralteter Vektoren. Titel, Dateipfade,
 Prüfsummen, Modellnamen und Inhalte bleiben vollständig innerhalb der lokalen
 Bibliothek. Der argumentlose Read-only-Aufruf benötigt keine Bestätigung und
 kein Sprachmodell.
+
+`Gedächtnis Status` nennt ausschließlich, wie viele bestätigte Erinnerungen und
+bestätigte Stil-Feedbacks lokal gespeichert sind. Inhalte, Kategorien, Quellen,
+Zeitpunkte und IDs werden weder gesprochen noch als Toolergebnis ausgegeben.
+Der argumentlose Read-only-Aufruf verwendet kein Sprachmodell und benötigt
+keine Bestätigung.
 
 ## 🛠️ Technik
 
@@ -907,6 +914,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlogs ergänzen
 - ✅ lokalen Read-only-Systemstatus für WirePod und Ollama ergänzen
 - ✅ lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzen
+- ✅ lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzen
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

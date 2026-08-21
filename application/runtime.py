@@ -1,6 +1,5 @@
 """Application startup and dependency composition."""
 
-import sqlite3
 from dataclasses import dataclass
 
 from brain.agent import Agent
@@ -9,23 +8,7 @@ from brain.providers import OllamaProvider, create_language_model
 from brain.reflection import ReflectionPolicy
 from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
 from memory.database import SQLiteMemoryStore
-from memory.embedding_store import SQLiteEmbeddingStore
-from memory.embeddings import create_embedding_provider
-from memory.indexing import (
-    DocumentEmbeddingIndexer,
-    IndexedKnowledgeLibrary,
-    IndexProgress,
-)
-from memory.library import SQLiteKnowledgeLibrary
-from memory.search import HybridKnowledgeSearch, HybridSearchConfig
-from tools.audit_store import SQLiteToolAuditStore
-from tools.library_status import register_local_library_status_tool
-from tools.office import register_office_tools
-from tools.project_checks import register_core_project_test_tool
-from tools.project_status import register_project_status_tool
 from tools.registry import ToolRegistry
-from tools.service_status import register_local_service_status_tool
-from tools.vector_actions import register_vector_action_tools
 from vector.actions import VectorActions
 from vector.behavior_control import BehaviorControl
 from vector.client import VectorClient
@@ -36,6 +19,11 @@ from voice.wirepod_input import WirePodTranscriptListener
 
 from application.conversation import run_conversation, run_voice_conversation
 from application.connection_supervisor import ConnectionSupervisor
+from application.runtime_resources import (
+    _create_audit_store,
+    _create_knowledge_library,
+    _create_tool_registry,
+)
 
 
 @dataclass(frozen=True)
@@ -81,7 +69,20 @@ def run_application(settings) -> None:
         return
     speech = create_speech_output(settings, vector)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
+    agent = _create_runtime_agent(settings, mode, actions, diagnostics)
+    _run_input_mode(settings, mode, agent, speech, diagnostics, connections)
+    diagnostics.emit(
+        DiagnosticLevel.INFO,
+        "application",
+        "runtime.stopped",
+        status="completed",
+    )
+
+
+def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
+    """Compose one agent with shared local storage and status readers."""
     audit_store = _create_audit_store(settings)
+    memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
     library = _create_knowledge_library(settings)
     wirepod_status = VectorClient(settings.WIREPOD_HOST)
     ollama_status = OllamaRuntime(settings.OLLAMA_HOST)
@@ -91,14 +92,15 @@ def run_application(settings) -> None:
         wirepod_status.is_available,
         ollama_status.is_available,
         library.list_document_statuses,
+        memory_store.status,
     )
-    agent = _create_agent(settings, mode, registry, diagnostics, library)
-    _run_input_mode(settings, mode, agent, speech, diagnostics, connections)
-    diagnostics.emit(
-        DiagnosticLevel.INFO,
-        "application",
-        "runtime.stopped",
-        status="completed",
+    return _create_agent(
+        settings,
+        mode,
+        registry,
+        diagnostics,
+        library,
+        memory_store,
     )
 
 
@@ -235,16 +237,19 @@ def _create_agent(
     tool_registry: ToolRegistry | None = None,
     diagnostics: StructuredDiagnosticReporter | None = None,
     knowledge_library=None,
+    memory_store=None,
 ) -> Agent:
     print(f"\nLLM provider: {settings.LLM_PROVIDER}")
     language_model = _create_language_model(settings, mode, diagnostics)
-    memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
+    store = memory_store
+    if store is None:
+        store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
     library = knowledge_library
     if library is None:
         library = _create_knowledge_library(settings)
     return Agent(
         language_model,
-        memory_store=memory_store,
+        memory_store=store,
         memory_context_limit=settings.MEMORY_CONTEXT_LIMIT,
         knowledge_library=library,
         knowledge_context_limit=settings.MEMORY_CONTEXT_LIMIT,
@@ -252,77 +257,6 @@ def _create_agent(
         tool_registry=tool_registry or ToolRegistry(),
         reflection_policy=ReflectionPolicy(settings.REFLECTION_ENABLED),
     )
-
-
-def _create_tool_registry(
-    actions: VectorActions,
-    audit_store: SQLiteToolAuditStore | None = None,
-    wirepod_checker=None,
-    ollama_checker=None,
-    library_status_reader=None,
-) -> ToolRegistry:
-    """Register only explicitly reviewed production robot tools."""
-    audit_sink = audit_store.record if audit_store is not None else None
-    registry = ToolRegistry(audit_sink=audit_sink)
-    register_vector_action_tools(registry, actions)
-    register_office_tools(registry)
-    register_project_status_tool(registry)
-    register_core_project_test_tool(registry)
-    if (wirepod_checker is None) != (ollama_checker is None):
-        raise ValueError("Local service checks must be configured together.")
-    if wirepod_checker is not None:
-        register_local_service_status_tool(
-            registry,
-            wirepod_checker,
-            ollama_checker,
-        )
-    if library_status_reader is not None:
-        register_local_library_status_tool(registry, library_status_reader)
-    return registry
-
-
-def _create_audit_store(settings) -> SQLiteToolAuditStore | None:
-    """Create optional local persistence without blocking application startup."""
-    if not settings.TOOL_AUDIT_ENABLED:
-        return None
-    try:
-        return SQLiteToolAuditStore(
-            settings.MEMORY_DB_PATH,
-            settings.TOOL_AUDIT_RETENTION_DAYS,
-            settings.TOOL_AUDIT_MAX_ENTRIES,
-        )
-    except (OSError, sqlite3.Error):
-        print("Local tool audit is unavailable. Continuing without persistence.")
-        return None
-
-
-def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:
-    """Compose controlled imports with automatic local semantic indexing."""
-    library = SQLiteKnowledgeLibrary(settings.MEMORY_DB_PATH)
-    store = SQLiteEmbeddingStore(settings.MEMORY_DB_PATH)
-    provider = create_embedding_provider(settings)
-    indexer = DocumentEmbeddingIndexer(library, store, provider)
-    search = HybridKnowledgeSearch(
-        library,
-        store,
-        provider,
-        HybridSearchConfig(
-            lexical_weight=settings.KNOWLEDGE_LEXICAL_WEIGHT,
-            semantic_weight=settings.KNOWLEDGE_SEMANTIC_WEIGHT,
-            minimum_similarity=settings.KNOWLEDGE_MIN_SIMILARITY,
-        ),
-    )
-    return IndexedKnowledgeLibrary(
-        library,
-        indexer,
-        _print_index_progress,
-        search,
-    )
-
-
-def _print_index_progress(progress: IndexProgress) -> None:
-    """Report counts only, never document contents or generated vectors."""
-    print(f"Semantic indexing: {progress.completed}/{progress.total} sections")
 
 
 def _create_language_model(settings, mode: RuntimeMode, diagnostics=None):

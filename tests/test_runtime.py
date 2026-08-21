@@ -32,6 +32,7 @@ class RuntimeModeTests(unittest.TestCase):
             wirepod_checker=lambda: True,
             ollama_checker=lambda: True,
             library_status_reader=lambda: (),
+            memory_status_reader=lambda: None,
         )
 
         self.assertEqual(
@@ -39,6 +40,7 @@ class RuntimeModeTests(unittest.TestCase):
                 "development.project_status",
                 "development.run_core_tests",
                 "knowledge.library_status",
+                "memory.local_status",
                 "office.local_datetime",
                 "system.local_service_status",
                 "vector.emergency_stop",

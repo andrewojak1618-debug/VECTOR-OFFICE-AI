@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterator
 
 from memory.exporting import LocalDataExporter
-from memory.models import MemoryEntry
+from memory.models import MemoryEntry, MemoryStatistics
 
 
 MIN_SEARCH_TERM_LENGTH = 4
@@ -104,6 +104,20 @@ class SQLiteMemoryStore:
                 (limit,),
             ).fetchall()
         return tuple(self._to_entry(row) for row in rows)
+
+    def status(self) -> MemoryStatistics:
+        """Return count-only confirmed memory statistics."""
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT COUNT(*) AS total,
+                       SUM(CASE WHEN category = 'feedback' THEN 1 ELSE 0 END)
+                           AS feedback
+                FROM memories
+                """
+            ).fetchone()
+        feedback = int(row["feedback"] or 0)
+        return MemoryStatistics(int(row["total"]) - feedback, feedback)
 
     def search(self, query: str, limit: int = 5) -> tuple[MemoryEntry, ...]:
         """Return memories ranked by matching significant query terms."""

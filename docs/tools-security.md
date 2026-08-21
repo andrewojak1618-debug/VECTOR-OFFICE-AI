@@ -144,6 +144,7 @@ erfolgte erst nach Ende der Animation.
 | Projekttests | „Projekt Test“ | feste lokale Suite, separates Ja erforderlich |
 | Systemstatus | „System Status“ | feste lokale Dienste, rein lesend |
 | Bibliotheksstatus | „Bibliothek Status“ | ausschließlich lokale Bestandszähler |
+| Gedächtnisstatus | „Gedächtnis Status“ | ausschließlich bestätigte lokale Zähler |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -258,6 +259,24 @@ Antwortgenerator und benötigt keine Bestätigung. Die bestehende lokale
 Embedding-Grenze darf für die interne Statusklassifikation das konfigurierte
 Ollama-Modell prüfen; ist es nicht verfügbar, verwendet die Bibliothek ihre
 bereits gespeicherten Metadaten. Es gibt keinen Cloud-Fallback.
+
+## Lokaler Gedächtnisstatus
+
+`tools/memory_status.py` registriert `memory.local_status` mit `READ_ONLY` und
+ohne Parameter. Agent und Tool verwenden dieselbe `SQLiteMemoryStore`-Instanz.
+Die Datenbankschicht zählt in einer einzelnen lokalen Abfrage getrennt normale
+bestätigte Erinnerungen und bestätigte Einträge der Kategorie `feedback`, ohne
+deren Text zu laden.
+
+Die Registry-Ausgabe enthält ausschließlich Erinnerungs-, Feedback- und
+Gesamtzahl sowie einen lokal aufgebauten deutschen Sprechtext. Inhalte,
+Kategorien, Quellen, Zeitpunkte und IDs bleiben außerhalb von Registry,
+Gesprächskontext, TTS und Audit. Leere Memory-Daten werden transparent genannt;
+es werden keine persönlichen Erinnerungen abgeleitet oder erfunden.
+
+Der feste Sprachbefehl `Gedächtnis Status` läuft ohne OpenAI, Ollama oder andere
+Netzwerkzugriffe und benötigt keine Bestätigung. Nutzer und Modell können weder
+Suchtext noch Memory-ID, Datenbankpfad oder Kategorie ergänzen.
 
 ## Strukturierte Modellvorschläge
 

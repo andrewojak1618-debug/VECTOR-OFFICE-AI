@@ -745,3 +745,22 @@ Die deutsche TTS wurde schrittweise verbessert:
 - erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
 - 479 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Punkt 26 – Lokaler Read-only-Gedächtnisstatus
+
+- `MemoryStatistics` als inhaltsfreien Zähler-Datentyp ergänzt
+- Erinnerungen und Stil-Feedback in einer lokalen SQLite-Abfrage getrennt gezählt
+- `memory.local_status` als argumentloses Read-only-Tool implementiert
+- Agent und Tool mit derselben `SQLiteMemoryStore`-Instanz verdrahtet
+- Inhalte, Kategorien, Quellen, Zeitpunkte und IDs aus der Ausgabe ausgeschlossen
+- leeren Gedächtniszustand transparent und ohne erfundene Angaben behandelt
+- freie Suchtexte, Memory-IDs, Kategorien und Datenbankpfade ausgeschlossen
+- festen Sprachbefehl `Gedächtnis Status` ohne Modellaufruf oder Bestätigung ergänzt
+- Storage- und Tool-Komposition aus der wachsenden Runtime fachlich ausgelagert
+- bisherige Runtime-Importpfade für bestehende Aufrufer beibehalten
+- 91 gezielte Datenbank-, Registry-, Dialog-, Runtime- und Qualitätstests bestanden
+- realen lokalen Aufruf mit leerem bestätigtem Gedächtnis erfolgreich geprüft
+- Sprachbefehl `Gedächtnis Status` am physischen Vector korrekt wiedergegeben
+- erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
+- 487 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen

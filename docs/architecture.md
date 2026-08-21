@@ -35,6 +35,8 @@ der Abhängigkeiten liegt in `application/runtime.py`; Konsolen- und
 WirePod-Dialoge liegen in `application/conversation.py` und die expliziten
 Verwaltungsbefehle in `application/commands.py`. Die Vorbereitung und Ausgabe
 von Modellantworten liegt getrennt in `application/response_delivery.py`.
+`application/runtime_resources.py` kapselt die lokale Storage-, Bibliotheks-
+und Tool-Komposition, damit der Einstiegspunkt klein und überprüfbar bleibt.
 
 `config/environment.py` validiert ausschließlich skalare Umgebungswerte;
 `config/settings.py` setzt daraus die Anwendungskonfiguration zusammen und
@@ -130,7 +132,9 @@ nur eine begrenzte Zusammenfassung zurück. `tools/service_status.py` prüft
 argumentlos und rein lesend ausschließlich die fest konfigurierten lokalen
 WirePod- und Ollama-Endpunkte. `tools/library_status.py` fasst die bereits
 vorhandenen lokalen Dokument- und Vektorstatus ausschließlich zu Zählern
-zusammen. `tools/proposals.py` kann eine abstrakte Modellvorschlags-ID
+zusammen. `tools/memory_status.py` erhält von der gemeinsam verwendeten
+Memory-Instanz ausschließlich bestätigte Erinnerungs- und Feedbackzähler.
+`tools/proposals.py` kann eine abstrakte Modellvorschlags-ID
 lokal auf einen festen Registry-Aufruf abbilden, führt ihn aber nicht aus und
 erzeugt keine Autorisierung. Nur der ausdrücklich aktivierte Kontextdialog darf
 einen begrenzten Ausdrucksvorschlag nach einem separaten `Ja` autorisieren.

@@ -64,6 +64,7 @@
 - ✅ bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlogs ergänzen
 - ✅ lokalen Read-only-Systemstatus für WirePod und Ollama ergänzen
 - ✅ lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzen
+- ✅ lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzen
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Robot Personality
