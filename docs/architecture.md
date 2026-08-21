@@ -137,6 +137,10 @@ Memory-Instanz ausschließlich bestätigte Erinnerungs- und Feedbackzähler.
 `tools/roadmap_status.py` liest argumentlos nur den ersten offenen Eintrag aus
 dem festen Abschnitt `Tools und Sicherheit` der lokalen Projekt-Roadmap und
 verwirft unzulässige oder übergroße Ausgaben.
+`tools/documentation_status.py` prüft sechs fest vorgegebene öffentliche
+Kerndokumente und gibt ausschließlich bereinigte Vollständigkeitszähler zurück.
+`tools/research_source.py` darf nach separater Einmalbestätigung nur die feste
+offizielle Python.org-Quelle ohne Weiterleitung und ohne Inhaltsabruf prüfen.
 `tools/proposals.py` kann eine abstrakte Modellvorschlags-ID
 lokal auf einen festen Registry-Aufruf abbilden, führt ihn aber nicht aus und
 erzeugt keine Autorisierung. Nur der ausdrücklich aktivierte Kontextdialog darf

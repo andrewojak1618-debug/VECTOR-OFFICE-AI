@@ -6,6 +6,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+- explizite Netzwerkberechtigung und feste Python.org-Recherchequelle ergänzt
+- lokalen count-only Dokumentationsstatus für sechs feste Kerndokumente ergänzt
 - festen lokalen Read-only-Roadmapstatus für den nächsten sicheren Projektpunkt ergänzt
 - lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzt
 - lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzt

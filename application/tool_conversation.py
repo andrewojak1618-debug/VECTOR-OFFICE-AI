@@ -91,7 +91,7 @@ class ControlledToolConversation:
         if normalized not in CONFIRMATION_PHRASES:
             return self._confirmation_result(pending)
         self._pending = None
-        authority = ToolAuthorization(allow_mutation=True, confirmed=True)
+        authority = _confirmed_authorization(pending.permission)
         return self._execute(pending, authority, speak=True)
 
     def _execute(
@@ -128,6 +128,13 @@ class ControlledToolConversation:
 
     @staticmethod
     def _confirmation_result(selection: ToolSelection) -> ToolTurnResult:
+        if selection.permission is PermissionLevel.NETWORK:
+            return ToolTurnResult(
+                ToolTurnStatus.AWAITING_CONFIRMATION,
+                "Dafür ist ein einmaliger Internetzugriff erforderlich. "
+                f"Soll ich '{selection.label}' ausführen? Antworte mit Ja oder Nein.",
+                True,
+            )
         return ToolTurnResult(
             ToolTurnStatus.AWAITING_CONFIRMATION,
             f"Soll ich '{selection.label}' ausführen? Antworte mit Ja oder Nein.",
@@ -139,10 +146,25 @@ def _normalize_confirmation(value: str) -> str:
     return " ".join(value.casefold().strip().rstrip(".!?").split())
 
 
+def _confirmed_authorization(permission: PermissionLevel) -> ToolAuthorization:
+    return ToolAuthorization(
+        allow_mutation=permission in {
+            PermissionLevel.MUTATING,
+            PermissionLevel.DANGEROUS,
+        },
+        confirmed=True,
+        allow_network=permission is PermissionLevel.NETWORK,
+    )
+
+
 def _success_message(
     selection: ToolSelection,
     result: ToolExecutionResult,
 ) -> str:
+    if selection.tool_name == "research.python_source_status":
+        return str(result.output["spoken_text"])
+    if selection.tool_name == "development.documentation_status":
+        return str(result.output["spoken_text"])
     if selection.tool_name == "memory.local_status":
         return str(result.output["spoken_text"])
     if selection.tool_name == "knowledge.library_status":

@@ -66,8 +66,9 @@
 - ✅ lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzen
 - ✅ lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzen
 - ✅ lokalen Read-only-Roadmapstatus für den nächsten sicheren Punkt ergänzen
-- ⏳ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
-- ⏳ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
+- ✅ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
+- ✅ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
+- ⏳ erste inhaltlich begrenzte Python-Versionsabfrage absichern
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Robot Personality

@@ -67,6 +67,21 @@ class SQLiteToolAuditStoreTests(unittest.TestCase):
         self.assertEqual(REDACTED_ARGUMENT, record.arguments["secret"])
         self.assertNotIn(secret.encode(), self.database_path.read_bytes())
 
+    def test_network_permission_is_persisted_without_remote_content(self):
+        store = SQLiteToolAuditStore(self.database_path)
+        store.record(ToolAuditEvent(
+            "research.python_source_status",
+            PermissionLevel.NETWORK,
+            {},
+            ToolResultStatus.SUCCESS,
+            None,
+        ))
+
+        record = store.list_events()[0]
+
+        self.assertEqual(PermissionLevel.NETWORK, record.permission)
+        self.assertEqual({}, dict(record.arguments))
+
     def test_unknown_tool_persists_no_supplied_arguments(self):
         store = SQLiteToolAuditStore(self.database_path)
         registry = ToolRegistry(audit_sink=store.record)

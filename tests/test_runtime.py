@@ -37,12 +37,14 @@ class RuntimeModeTests(unittest.TestCase):
 
         self.assertEqual(
             (
+                "development.documentation_status",
                 "development.next_roadmap_item",
                 "development.project_status",
                 "development.run_core_tests",
                 "knowledge.library_status",
                 "memory.local_status",
                 "office.local_datetime",
+                "research.python_source_status",
                 "system.local_service_status",
                 "vector.emergency_stop",
                 "vector.list_actions",

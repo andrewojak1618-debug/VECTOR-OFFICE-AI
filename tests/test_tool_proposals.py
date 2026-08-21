@@ -160,9 +160,14 @@ class ToolProposalReviewerTests(unittest.TestCase):
                 (("secret", "private"),),
             ),
         )
+        network = self._custom_reviewer(
+            ToolDefinition("test.network", "Network.", PermissionLevel.NETWORK),
+            ToolProposalOption("test.option", "test.network", "Netzwerk"),
+        )
 
         self.assertEqual((), dangerous.catalog())
         self.assertEqual((), sensitive.catalog())
+        self.assertEqual((), network.catalog())
         self.assertEqual(
             "proposal_target_unavailable",
             dangerous.review(_proposal("test.option")).error_code,

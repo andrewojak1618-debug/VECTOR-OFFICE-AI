@@ -189,7 +189,10 @@ class ToolProposalReviewer:
         definition = inspection.definition
         if not inspection.valid or definition is None:
             return None
-        if definition.permission is PermissionLevel.DANGEROUS:
+        if definition.permission in {
+            PermissionLevel.DANGEROUS,
+            PermissionLevel.NETWORK,
+        }:
             return None
         if any(parameter.sensitive for parameter in definition.parameters):
             return None

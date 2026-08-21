@@ -10,12 +10,18 @@ from application.tool_conversation import (
 )
 from brain.agent import Agent
 from memory.models import DocumentIndexStatus, KnowledgeDocument, MemoryStatistics
+from tools.documentation_status import (
+    DOCUMENT_COUNT,
+    DocumentationStatus,
+    register_documentation_status_tool,
+)
 from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import CoreTestSummary, register_core_project_test_tool
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
 from tools.registry import ToolRegistry
+from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
 from tools.selection import ToolIntentSelector
@@ -47,6 +53,14 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
+        register_documentation_status_tool(
+            self.registry,
+            status_reader=lambda _root: DocumentationStatus(
+                DOCUMENT_COUNT,
+                0,
+                0,
+            ),
+        )
         register_project_status_tool(
             self.registry,
             Path("."),
@@ -57,6 +71,11 @@ class ControlledToolConversationTests(unittest.TestCase):
             self.registry,
             Path("."),
             lambda _root: "kontrollierten Dokumentationsstatus ergänzen",
+        )
+        self.research_checker = MagicMock(return_value=True)
+        register_fixed_research_source_tool(
+            self.registry,
+            self.research_checker,
         )
         self.test_runner = MagicMock(
             return_value=CoreTestSummary(True, 449, 4.1),
@@ -109,6 +128,43 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.assertTrue(result.message.startswith("Es ist "))
         self.assertTrue(result.execution.succeeded)
         self.actions.perform.assert_not_called()
+        self.assertEqual(0, self.model.calls)
+
+    def test_documentation_status_executes_without_model_or_confirmation(self):
+        result = self.controller.handle("Dokumentation Status")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Projektdokumentation ist vollständig", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_research_source_requires_separate_yes_before_network_use(self):
+        proposed = self.controller.handle("Recherchequelle prüfen")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.assertIn("einmaliger Internetzugriff", proposed.message)
+        self.research_checker.assert_not_called()
+
+        completed = self.controller.handle("Ja")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, completed.status)
+        self.assertIn("Python-Quelle ist erreichbar", completed.message)
+        self.research_checker.assert_called_once_with()
+        self.assertEqual(0, self.model.calls)
+
+    def test_observed_research_variant_still_waits_before_network_use(self):
+        proposed = self.controller.handle("Recherche Quelle überprüfen")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.research_checker.assert_not_called()
+
+    def test_unclear_research_request_never_reaches_language_model(self):
+        result = self.controller.handle(
+            "Recherche Quelle Überprüfung von ergeht z",
+        )
+
+        self.assertEqual(ToolTurnStatus.BLOCKED, result.status)
+        self.assertIn("Python Status", result.message)
+        self.research_checker.assert_not_called()
         self.assertEqual(0, self.model.calls)
 
     def test_ambiguous_date_question_never_reaches_language_model(self):

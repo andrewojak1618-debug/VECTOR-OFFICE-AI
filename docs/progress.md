@@ -725,6 +725,7 @@ Die deutsche TTS wurde schrittweise verbessert:
 - realen lokalen Aufruf mit verfügbarem WirePod und Ollama erfolgreich geprüft
 - Sprachbefehl `System Status` am physischen Vector erfolgreich beantwortet
 - erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
+
 - 471 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
 
@@ -782,3 +783,46 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Voice-Runtime nach einem vorübergehenden WirePod-Abbruch kontrolliert neu gestartet
 - Sprachbefehl am physischen Vector korrekt erkannt und beantwortet
 - erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
+
+## Punkt 28 – Kontrollierter lokaler Dokumentationsstatus
+
+- `development.documentation_status` als argumentloses Read-only-Tool implementiert
+- sechs öffentlich versionierte Kerndokumente als feste Allowlist definiert
+- Projektzugehörigkeit, Dateityp, Größe, UTF-8 und Hauptüberschrift lokal geprüft
+- freie Pfade, Verzeichnisse, Dateinamen, Kriterien und Modellparameter ausgeschlossen
+- Ausgabe auf Vollständigkeitszustand und vier begrenzte Zähler reduziert
+- Dateinamen, Pfade, Inhalte und interne Lesefehler aus Sprache und Audit entfernt
+- fehlende und ungültige Dokumente mit korrektem Singular und Plural behandelt
+- festen Sprachbefehl `Dokumentation Status` ohne Modellaufruf ergänzt
+- 69 gezielte Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- realen lokalen Aufruf mit sechs von sechs gültigen Dokumenten geprüft
+- 507 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+- Sprachbefehl am physischen Vector aktiv erkannt und korrekt beantwortet
+- erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
+
+## Punkt 29 – Kontrollierte Recherchequelle mit Netzwerkrecht
+
+- `NETWORK` als eigene Berechtigungsstufe neben lokalem Lesen und Mutationen ergänzt
+- `ToolAuthorization` um eine separate, boolesch validierte Netzwerkfreigabe erweitert
+- Netzwerkzugriffe ohne `allow_network=True` vollständig vor Ausführung blockiert
+- zusätzliche Einmalbestätigung für jeden externen Aufruf erzwungen
+- Mutationsrechte ausdrücklich von Netzwerkrechten getrennt
+- Netzwerk-Tools aus strukturierten Modellvorschlägen ausgeschlossen
+- `research.python_source_status` als argumentloses Netzwerk-Tool implementiert
+- ausschließlich `https://www.python.org/downloads/` als feste Quelle erlaubt
+- freie URLs, Suchbegriffe, Header, Weiterleitungen und Zeitlimits ausgeschlossen
+- Abruf auf eine begrenzte `HEAD`-Anfrage ohne Seiteninhalt reduziert
+- Transportfehler ohne technische oder private Details als nicht erreichbar behandelt
+- festen Sprachbefehl `Recherchequelle prüfen` mit separatem `Ja` ergänzt
+- WirePod-Variante `recherche quelle überprüfen` gezielt freigegeben
+- mehrdeutige Fehltranskription `schärfe quellen überprüfen` bewusst blockiert
+- weitere reale Transkriptionen als zu verstümmelt für Netzwerkfreigabe bewertet
+- bevorzugten kurzen Befehl `Python Status` mit eindeutiger Quellenbindung ergänzt
+- unklare Recherchefragen vor dem Modell-Fallback mit Wiederholungsbitte blockiert
+- 106 gezielte Berechtigungs-, Registry-, Dialog-, Runtime- und Qualitätstests bestanden
+- Netzwerkberechtigung ohne Remote-Inhalte im lokalen Auditformat abgesichert
+- 526 automatisierte Tests, Kompilierung und strikter Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+- physischen Bestätigungsdialog mit `Python Status` erfolgreich abgeschlossen
+- kontrollierten Netzwerkaufruf als Audit-Ereignis 18 mit Status `success` bestätigt

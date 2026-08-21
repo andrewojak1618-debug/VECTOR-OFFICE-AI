@@ -12,12 +12,14 @@ from memory.indexing import (
 from memory.library import SQLiteKnowledgeLibrary
 from memory.search import HybridKnowledgeSearch, HybridSearchConfig
 from tools.audit_store import SQLiteToolAuditStore
+from tools.documentation_status import register_documentation_status_tool
 from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
 from tools.registry import ToolRegistry
+from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
 from tools.vector_actions import register_vector_action_tools
@@ -37,8 +39,10 @@ def _create_tool_registry(
     registry = ToolRegistry(audit_sink=audit_sink)
     register_vector_action_tools(registry, actions)
     register_office_tools(registry)
+    register_documentation_status_tool(registry)
     register_project_status_tool(registry)
     register_next_roadmap_item_tool(registry)
+    register_fixed_research_source_tool(registry)
     register_core_project_test_tool(registry)
     _register_optional_status_tools(
         registry,

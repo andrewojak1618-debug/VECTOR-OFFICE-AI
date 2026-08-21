@@ -8,6 +8,7 @@ class PermissionLevel(Enum):
     """Classify a tool by the strongest effect it may produce."""
 
     READ_ONLY = "read_only"
+    NETWORK = "network"
     MUTATING = "mutating"
     DANGEROUS = "dangerous"
 
@@ -18,9 +19,11 @@ class ToolAuthorization:
 
     allow_mutation: bool = False
     confirmed: bool = False
+    allow_network: bool = False
 
     def __post_init__(self) -> None:
-        if type(self.allow_mutation) is not bool or type(self.confirmed) is not bool:
+        flags = (self.allow_mutation, self.confirmed, self.allow_network)
+        if not all(type(value) is bool for value in flags):
             raise TypeError("Tool authorization flags must be boolean.")
 
 
@@ -48,6 +51,8 @@ class ToolPermissionPolicy:
         authority = authorization or ToolAuthorization()
         if level is PermissionLevel.READ_ONLY:
             return PermissionDecision(True, "allowed", "Read-only tool allowed.")
+        if level is PermissionLevel.NETWORK:
+            return self._network_decision(authority)
         if not authority.allow_mutation:
             return PermissionDecision(
                 False,
@@ -61,6 +66,22 @@ class ToolPermissionPolicy:
                 "Dangerous tools require explicit per-call confirmation.",
             )
         return PermissionDecision(True, "allowed", "Authorized tool allowed.")
+
+    @staticmethod
+    def _network_decision(authority: ToolAuthorization) -> PermissionDecision:
+        if not authority.allow_network:
+            return PermissionDecision(
+                False,
+                "network_not_allowed",
+                "Network tools require explicit user authorization.",
+            )
+        if not authority.confirmed:
+            return PermissionDecision(
+                False,
+                "network_confirmation_required",
+                "Network tools require explicit per-call confirmation.",
+            )
+        return PermissionDecision(True, "allowed", "Network access authorized.")
 
     @staticmethod
     def _invalid_request(

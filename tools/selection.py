@@ -28,8 +28,7 @@ class ToolIntentRule:
 
     def __post_init__(self) -> None:
         if not self.phrases or not all(
-            isinstance(phrase, str) and phrase.strip()
-            for phrase in self.phrases
+            isinstance(phrase, str) and phrase.strip() for phrase in self.phrases
         ):
             raise ValueError("Tool intent phrases must not be empty.")
         if not isinstance(self.tool_name, str) or not isinstance(self.label, str):
@@ -49,13 +48,38 @@ class ToolSelection:
     tool_name: str = ""
     label: str = ""
     permission: PermissionLevel | None = None
-    arguments: ToolArguments = field(
-        default_factory=lambda: MappingProxyType({}),
-    )
+    arguments: ToolArguments = field(default_factory=lambda: MappingProxyType({}))
     message: str = ""
 
 
 DEFAULT_INTENT_RULES = (
+    ToolIntentRule(
+        (
+            "recherchequelle prüfen",
+            "recherchequelle überprüfen",
+            "recherche quelle prüfen",
+            "recherche quelle überprüfen",
+            "recherche status",
+            "python quelle prüfen",
+            "python quelle status",
+            "python status",
+            "ist die recherchequelle erreichbar",
+        ),
+        "research.python_source_status",
+        "fest freigegebene Python-Quelle prüfen",
+    ),
+    ToolIntentRule(
+        (
+            "dokumentation status",
+            "dokumentations status",
+            "dokumentationsstatus",
+            "wie ist der dokumentationsstatus",
+            "wie ist die dokumentation",
+            "ist die dokumentation vollständig",
+        ),
+        "development.documentation_status",
+        "lokalen Dokumentationsstatus nennen",
+    ),
     ToolIntentRule(
         (
             "gedächtnis status",
@@ -224,10 +248,7 @@ class ToolIntentSelector:
         rule = self._resolve_rule(normalized)
         if rule is None:
             return _unmatched_selection(normalized)
-        definitions = {
-            definition.name: definition
-            for definition in self.registry.definitions()
-        }
+        definitions = {item.name: item for item in self.registry.definitions()}
         definition = definitions.get(rule.tool_name)
         if definition is None:
             return _blocked_selection("Selected tool is not registered.")
@@ -245,6 +266,10 @@ class ToolIntentSelector:
         rule = self._rules.get(normalized)
         if rule is None and _references_memory_status(normalized):
             rule = self._rules.get("gedächtnis status")
+        if rule is None and _references_documentation_status(normalized):
+            rule = self._rules.get("dokumentation status")
+        if rule is None and _references_research_source_check(normalized):
+            rule = self._rules.get("recherchequelle prüfen")
         if rule is None and _references_library_status(normalized):
             rule = self._rules.get("bibliothek status")
         if rule is None and _references_system_status(normalized):
@@ -283,9 +308,7 @@ def _normalize_phrase(value: str) -> str:
 def _looks_like_datetime_request(value: str) -> bool:
     words = set(value.split())
     question = bool(words & {"was", "wie", "welcher", "welchen", "welches"})
-    date = "heute" in words and bool(
-        words & {"datum", "tag", "wievielte", "wievielten"}
-    )
+    date = "heute" in words and bool(words & {"datum", "tag", "wievielte", "wievielten"})
     clock = bool(words & {"uhr", "uhrzeit", "spät"})
     return question and (date or clock)
 
@@ -317,6 +340,29 @@ def _references_memory_status(value: str) -> bool:
     return "gedächtnisstatus" in words or {"gedächtnis", "status"} <= words
 
 
+def _references_documentation_status(value: str) -> bool:
+    words = set(value.split())
+    combined = "dokumentationsstatus" in words
+    separated = "status" in words and bool(words & {"dokumentation", "dokumentations"})
+    return combined or separated
+
+
+def _references_research_source_check(value: str) -> bool:
+    words = set(value.split())
+    source = "recherchequelle" in words or {"recherche", "quelle"} <= words
+    research_check = source and bool(words & {"prüfen", "überprüfen"})
+    python_status = "python" in words and "status" in words
+    return research_check or python_status
+
+
+def _looks_like_research_source_request(value: str) -> bool:
+    words = set(value.split())
+    research = bool(words & {"recherche", "recherchequelle"})
+    source_terms = {"quelle", "quellen", "prüfen", "überprüfen", "überprüfung", "status"}
+    source = bool(words & source_terms)
+    return research and source
+
+
 def _references_project_tests(value: str) -> bool:
     words = set(value.split())
     tests = bool(words & {"test", "tests", "projekttest", "projekttests"})
@@ -335,6 +381,11 @@ def _blocked_selection(message: str) -> ToolSelection:
 
 
 def _unmatched_selection(normalized: str) -> ToolSelection:
+    if _looks_like_research_source_request(normalized):
+        return _blocked_selection(
+            "Ich habe die Recherchequellenfrage nicht eindeutig erkannt. "
+            "Bitte sage: Python Status.",
+        )
     if _looks_like_project_status_request(normalized):
         return _blocked_selection(
             "Ich habe die Projektstatusfrage nicht eindeutig erkannt. "

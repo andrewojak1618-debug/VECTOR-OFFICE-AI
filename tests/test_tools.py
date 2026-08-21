@@ -161,6 +161,32 @@ class ToolRegistryTests(unittest.TestCase):
         self.assertTrue(allowed.succeeded)
         self.assertEqual(1, tool.calls)
 
+    def test_network_tool_requires_separate_confirmed_network_authority(self):
+        tool = RecordingTool("test.network", PermissionLevel.NETWORK)
+        registry = ToolRegistry()
+        registry.register(tool)
+
+        mutation = registry.execute(
+            "test.network",
+            {},
+            ToolAuthorization(allow_mutation=True, confirmed=True),
+        )
+        unconfirmed = registry.execute(
+            "test.network",
+            {},
+            ToolAuthorization(allow_network=True),
+        )
+        allowed = registry.execute(
+            "test.network",
+            {},
+            ToolAuthorization(allow_network=True, confirmed=True),
+        )
+
+        self.assertEqual("network_not_allowed", mutation.error_code)
+        self.assertEqual("network_confirmation_required", unconfirmed.error_code)
+        self.assertTrue(allowed.succeeded)
+        self.assertEqual(1, tool.calls)
+
     def test_registered_permission_cannot_be_lowered_by_mutable_tool_metadata(self):
         tool = RecordingTool("test.fixed", PermissionLevel.DANGEROUS)
         registry = ToolRegistry()
@@ -224,6 +250,8 @@ class ToolRegistryTests(unittest.TestCase):
     def test_authorization_rejects_non_boolean_flags(self):
         with self.assertRaisesRegex(TypeError, "boolean"):
             ToolAuthorization(allow_mutation="yes")
+        with self.assertRaisesRegex(TypeError, "boolean"):
+            ToolAuthorization(allow_network="yes")
 
     def test_non_finite_number_is_rejected_before_execution(self):
         definition = ToolDefinition(

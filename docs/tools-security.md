@@ -43,6 +43,7 @@ den Agenten.
 | Stufe | Bedeutung | notwendige Autorisierung |
 |---|---|---|
 | `READ_ONLY` | liest oder berechnet ohne externen Zustand zu verändern | standardmäßig erlaubt |
+| `NETWORK` | liest eine fest registrierte externe Quelle | `allow_network=True` und separate Bestätigung dieses Aufrufs |
 | `MUTATING` | verändert kontrollierten Zustand | `allow_mutation=True` aus einer expliziten Benutzeraktion |
 | `DANGEROUS` | kann schwer rückgängig zu machende Auswirkungen haben | Mutationsfreigabe und zusätzliche Bestätigung dieses Aufrufs |
 
@@ -146,6 +147,8 @@ erfolgte erst nach Ende der Animation.
 | Bibliotheksstatus | „Bibliothek Status“ | ausschließlich lokale Bestandszähler |
 | Gedächtnisstatus | „Gedächtnis Status“ | ausschließlich bestätigte lokale Zähler |
 | Nächster Projektpunkt | „Was ist der nächste Projektpunkt?“ | erster offener Eintrag aus dem festen Roadmap-Abschnitt |
+| Dokumentationsstatus | „Dokumentation Status“ | ausschließlich Zähler für sechs feste Kerndokumente |
+| Recherchequelle | „Recherchequelle prüfen“ | feste Python.org-Quelle, separates Ja erforderlich |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -300,6 +303,55 @@ läuft ohne Bestätigung. Die eigentliche TTS-Ausgabe darf wie jede andere
 Antwort dem konfigurierten Sprachprovider folgen; die freigegebene Zeile stammt
 deshalb ausschließlich aus der versionierten, nicht privaten Projekt-Roadmap.
 
+## Lokaler Dokumentationsstatus
+
+`tools/documentation_status.py` registriert
+`development.documentation_status` mit `READ_ONLY` und ohne Parameter. Die
+Allowlist enthält ausschließlich `README.md`, `CHANGELOG.md`, Architektur,
+Roadmap, Tool-Sicherheitskonzept und Qualitätsregeln. Nutzer und Modell können
+weder Dateien, Verzeichnisse, Erweiterungen noch Prüfkriterien ergänzen.
+
+Jedes feste Dokument wird lokal auf Projektzugehörigkeit, regulären Dateityp,
+begrenzte Größe, UTF-8-Lesbarkeit und seine erwartete Hauptüberschrift geprüft.
+Die Registry-Ausgabe enthält nur Gesamtzahl, gültige, fehlende und ungültige
+Anzahlen, den Zustand `complete` oder `incomplete` und einen lokal aufgebauten
+Sprechtext. Dateinamen, Pfade, Inhalte und interne Fehler werden nicht
+ausgegeben oder auditiert.
+
+Der feste Sprachbefehl `Dokumentation Status` benötigt keine Bestätigung und
+keine Interpretation durch OpenAI oder Ollama. Eine konfigurierte Cloud-TTS
+erhält höchstens die nicht sensible Zählerzusammenfassung, niemals gelesene
+Dokumentinhalte.
+
+## Kontrollierte Recherchequelle
+
+`PermissionLevel.NETWORK` trennt externe Lesezugriffe von lokalen
+`READ_ONLY`-Tools und verändernden Aktionen. Ein Netzwerk-Tool bleibt blockiert,
+bis ein einzelner Aufruf sowohl `allow_network=True` als auch eine konkrete
+Bestätigung besitzt. Mutationsfreigaben berechtigen kein Netzwerk; die
+Netzwerkfreigabe wird nach dem Aufruf verworfen und gilt nicht für andere Tools.
+
+`tools/research_source.py` registriert `research.python_source_status` ohne
+Parameter. Das Tool verwendet ausschließlich die intern festgelegte offizielle
+Adresse `https://www.python.org/downloads/`, einen festen User-Agent, fünf
+Sekunden Timeout und deaktivierte Weiterleitungen. Es sendet eine `HEAD`-Anfrage
+und liest keinen Seiteninhalt. Nutzer und Modell können weder URL, Host,
+Suchbegriff, Header noch Zeitlimit bestimmen.
+
+Die strukturierte Ausgabe enthält nur die öffentliche Quellenbezeichnung,
+einen Verfügbarkeitswert, einen festen Status und lokalen Sprechtext.
+Transportfehler werden als `nicht erreichbar` behandelt; Zieladresse,
+Antwortheader, Seiteninhalt und interne Fehlerdetails gelangen nicht in Sprache
+oder Audit. Modellvorschläge dürfen Tools der Stufe `NETWORK` grundsätzlich
+nicht auswählen.
+
+Der bevorzugte kurze Sprachbefehl `Python Status` erzeugt zunächst nur die transparente
+Bestätigungsfrage zum einmaligen Internetzugriff. Erst ein separates `Ja`
+erzeugt die einmalige Netzwerkautorisierung. `Nein`, Abbruch oder ein anderer
+Aufruf führen zu keiner externen Anfrage. Erkennbare, aber uneindeutige
+Rechercheformulierungen werden mit einer Bitte um `Python Status` blockiert und
+nicht an ein Sprachmodell weitergereicht.
+
 ## Strukturierte Modellvorschläge
 
 `tools/proposals.py` bildet die lokale Prüfgrenze für kontextabhängige
@@ -387,7 +439,7 @@ Folgende Funktionen sind weiterhin bewusst nicht freigegeben:
 - automatische Modellvorschläge ohne ausdrückliche Aktivierungsform,
 - automatische Ausführung von Ausdrucksvorschlägen,
 - dauerhafte Berechtigungsfreigaben,
-- Dateiänderungen, Shell-Kommandos oder Internetzugriffe,
+- Dateiänderungen, Shell-Kommandos oder freie beziehungsweise unbestätigte Internetzugriffe,
 - Auswahl von Toolnamen, Parametern oder Autorisierungen durch ein Modell,
 - Ausführung von Toolanweisungen aus importierten Dokumenten.
 

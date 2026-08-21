@@ -3,6 +3,11 @@
 import unittest
 from unittest.mock import MagicMock
 
+from tools.documentation_status import (
+    DOCUMENT_COUNT,
+    DocumentationStatus,
+    register_documentation_status_tool,
+)
 from tools.permissions import PermissionLevel
 from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
@@ -10,6 +15,7 @@ from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
 from tools.registry import ToolDefinition, ToolRegistry
+from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
 from tools.selection import (
@@ -47,8 +53,17 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
+        register_documentation_status_tool(
+            self.registry,
+            status_reader=lambda _root: DocumentationStatus(
+                DOCUMENT_COUNT,
+                0,
+                0,
+            ),
+        )
         register_project_status_tool(self.registry)
         register_next_roadmap_item_tool(self.registry)
+        register_fixed_research_source_tool(self.registry, lambda: True)
         register_core_project_test_tool(self.registry)
         register_local_service_status_tool(
             self.registry,
@@ -124,6 +139,55 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual("development.project_status", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_documentation_status_selects_fixed_read_only_tool(self):
+        selection = self.selector.select("Wie ist der Dokumentationsstatus?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.documentation_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_documentation_status_word_variation_maps_to_fixed_tool(self):
+        selection = self.selector.select("Dokumentation Projekt Status")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.documentation_status", selection.tool_name)
+
+    def test_research_source_selects_argument_free_network_tool(self):
+        selection = self.selector.select("Recherchequelle prüfen")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("research.python_source_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.NETWORK, selection.permission)
+
+    def test_short_python_status_selects_fixed_network_source(self):
+        selection = self.selector.select("Python Status")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("research.python_source_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+
+    def test_observed_research_source_variant_selects_same_network_tool(self):
+        selection = self.selector.select("Recherche Quelle überprüfen")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("research.python_source_status", selection.tool_name)
+        self.assertEqual(PermissionLevel.NETWORK, selection.permission)
+
+    def test_ambiguous_research_misrecognition_remains_unmatched(self):
+        selection = self.selector.select("Schärfe Quellen überprüfen")
+
+        self.assertEqual(ToolSelectionStatus.NO_MATCH, selection.status)
+
+    def test_unclear_research_request_is_blocked_before_model_fallback(self):
+        selection = self.selector.select(
+            "Recherche Quelle Überprüfung von ergeht z",
+        )
+
+        self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
+        self.assertIn("Python Status", selection.message)
 
     def test_next_project_item_selects_fixed_read_only_tool(self):
         selection = self.selector.select("Was ist der nächste Projektpunkt?")
