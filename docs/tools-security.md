@@ -143,6 +143,7 @@ erfolgte erst nach Ende der Animation.
 | Projektstatus | „Projekt Status“ | automatisch, lokal und rein lesend |
 | Projekttests | „Projekt Test“ | feste lokale Suite, separates Ja erforderlich |
 | Systemstatus | „System Status“ | feste lokale Dienste, rein lesend |
+| Bibliotheksstatus | „Bibliothek Status“ | ausschließlich lokale Bestandszähler |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -237,6 +238,26 @@ Internet, OpenAI, ElevenLabs, Akku oder die allgemeine Roboterhardware.
 Die feste Formulierung `System Status` wird ohne Modellaufruf und ohne
 Bestätigung ausgeführt. Weitere beobachtete Vosk-Varianten werden nur nach
 einem realen Test einzeln ergänzt.
+
+## Lokaler Bibliotheksstatus
+
+`tools/library_status.py` registriert `knowledge.library_status` mit
+`READ_ONLY` und ohne Parameter. Es verwendet dieselbe bereits zusammengesetzte
+`IndexedKnowledgeLibrary` wie der Agent. Dadurch entsteht weder eine zweite
+Datenquelle noch ein frei wählbarer Datenbank- oder Dateipfad.
+
+Das Tool reduziert die internen Dokumentstatus vor der Registry-Ausgabe auf
+vier begrenzte Ganzzahlen: Dokumente, Abschnitte, aktuelle Vektoren und
+veraltete Vektoren. Titel, Quellenpfade, Prüfsummen, Importzeiten, Modellnamen,
+Vektordimensionen und Dokumenttexte werden verworfen und erscheinen weder im
+Sprechtext noch im Audit. Ist die lokale Bibliothek leer, wird ausschließlich
+dieser Zustand genannt.
+
+Der feste Sprachbefehl `Bibliothek Status` läuft ohne OpenAI oder Ollama als
+Antwortgenerator und benötigt keine Bestätigung. Die bestehende lokale
+Embedding-Grenze darf für die interne Statusklassifikation das konfigurierte
+Ollama-Modell prüfen; ist es nicht verfügbar, verwendet die Bibliothek ihre
+bereits gespeicherten Metadaten. Es gibt keinen Cloud-Fallback.
 
 ## Strukturierte Modellvorschläge
 

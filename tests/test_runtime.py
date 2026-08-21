@@ -31,12 +31,14 @@ class RuntimeModeTests(unittest.TestCase):
             MagicMock(),
             wirepod_checker=lambda: True,
             ollama_checker=lambda: True,
+            library_status_reader=lambda: (),
         )
 
         self.assertEqual(
             (
                 "development.project_status",
                 "development.run_core_tests",
+                "knowledge.library_status",
                 "office.local_datetime",
                 "system.local_service_status",
                 "vector.emergency_stop",

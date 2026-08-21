@@ -9,6 +9,8 @@ from application.tool_conversation import (
     ToolTurnStatus,
 )
 from brain.agent import Agent
+from memory.models import DocumentIndexStatus, KnowledgeDocument
+from tools.library_status import register_local_library_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import CoreTestSummary, register_core_project_test_tool
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
@@ -65,6 +67,17 @@ class ControlledToolConversationTests(unittest.TestCase):
             self.wirepod_status,
             self.ollama_status,
         )
+        self.library_status = MagicMock(return_value=(DocumentIndexStatus(
+            KnowledgeDocument(1, "private.md", "Private", "a" * 64, "now"),
+            1,
+            3,
+            "embeddinggemma",
+            "version-one",
+            768,
+            3,
+            0,
+        ),))
+        register_local_library_status_tool(self.registry, self.library_status)
         self.model = UnusedLanguageModel()
         self.agent = Agent(self.model, tool_registry=self.registry)
         self.controller = ControlledToolConversation(
@@ -119,6 +132,16 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.assertIn("Ollama ist lokal verfügbar", result.message)
         self.wirepod_status.assert_called_once()
         self.ollama_status.assert_called_once()
+        self.assertEqual(0, self.model.calls)
+
+    def test_library_status_exposes_counts_without_model_or_confirmation(self):
+        result = self.controller.handle("Bibliothek Status")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("1 Dokument", result.message)
+        self.assertIn("3 Abschnitten", result.message)
+        self.assertNotIn("Private", result.message)
+        self.library_status.assert_called_once()
         self.assertEqual(0, self.model.calls)
 
     def test_project_tests_require_yes_and_never_use_language_model(self):

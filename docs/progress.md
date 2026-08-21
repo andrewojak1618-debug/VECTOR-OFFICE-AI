@@ -727,3 +727,21 @@ Die deutsche TTS wurde schrittweise verbessert:
 - erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
 - 471 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Punkt 25 – Lokaler Read-only-Bibliotheksstatus
+
+- `knowledge.library_status` als argumentloses Read-only-Tool implementiert
+- dieselbe `IndexedKnowledgeLibrary` gemeinsam für Agent und Tool verdrahtet
+- Dokumentstatus vor jeder Toolausgabe auf vier begrenzte Zähler reduziert
+- Titel, Pfade, Prüfsummen, Importzeiten, Modelle und Inhalte ausgeschlossen
+- Dokumente, Abschnitte sowie aktuelle und veraltete Vektoren zusammengefasst
+- leere Bibliothek mit einem eigenen transparenten deutschen Sprechtext behandelt
+- Singular, Plural und Dativ der festen deutschen Ausgabe automatisiert geprüft
+- freie Datenbank-, Datei-, Dokument- und Modellparameter ausgeschlossen
+- festen Sprachbefehl `Bibliothek Status` ohne Modellaufruf oder Bestätigung ergänzt
+- 72 gezielte Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- realen lokalen Aufruf mit einer leeren Bibliothek erfolgreich geprüft
+- Sprachbefehl `Bibliothek Status` am physischen Vector korrekt beantwortet
+- erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
+- 479 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen

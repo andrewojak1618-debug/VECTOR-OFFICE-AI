@@ -6,6 +6,7 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+- lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzt
 - lokalen Read-only-Systemstatus für WirePod und Ollama ergänzt
 - bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlog-Ausgabe ergänzt
 - kontrollierte lokale Projektstatus-Abfrage ohne freie Pfade oder Befehle ergänzt

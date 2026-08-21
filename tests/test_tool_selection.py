@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from tools.permissions import PermissionLevel
+from tools.library_status import register_local_library_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
@@ -51,6 +52,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
             lambda: True,
             lambda: True,
         )
+        register_local_library_status_tool(self.registry, lambda: ())
         self.selector = ToolIntentSelector(self.registry)
 
     def test_exact_natural_phrase_selects_allowlisted_action(self):
@@ -92,6 +94,14 @@ class ToolIntentSelectorTests(unittest.TestCase):
 
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("system.local_service_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_library_status_selects_argument_free_read_only_tool(self):
+        selection = self.selector.select("Wie ist der Bibliothek Status?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("knowledge.library_status", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
 

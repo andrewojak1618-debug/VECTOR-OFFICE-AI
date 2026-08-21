@@ -58,6 +58,18 @@ class ToolSelection:
 DEFAULT_INTENT_RULES = (
     ToolIntentRule(
         (
+            "bibliothek status",
+            "bibliotheksstatus",
+            "wie ist der bibliothek status",
+            "wie ist der bibliotheksstatus",
+            "wie viele dokumente kennst du",
+            "wie viele dokumente sind in der bibliothek",
+        ),
+        "knowledge.library_status",
+        "lokalen Bibliotheksstatus nennen",
+    ),
+    ToolIntentRule(
+        (
             "system status",
             "systemstatus",
             "wie ist der system status",
@@ -206,6 +218,8 @@ class ToolIntentSelector:
 
     def _resolve_rule(self, normalized: str) -> ToolIntentRule | None:
         rule = self._rules.get(normalized)
+        if rule is None and _references_library_status(normalized):
+            rule = self._rules.get("bibliothek status")
         if rule is None and _references_system_status(normalized):
             rule = self._rules.get("system status")
         if rule is None and _references_project_tests(normalized):
@@ -262,6 +276,11 @@ def _references_project_status(value: str) -> bool:
 def _references_system_status(value: str) -> bool:
     words = set(value.split())
     return "systemstatus" in words or {"system", "status"} <= words
+
+
+def _references_library_status(value: str) -> bool:
+    words = set(value.split())
+    return "bibliotheksstatus" in words or {"bibliothek", "status"} <= words
 
 
 def _references_project_tests(value: str) -> bool:

@@ -81,6 +81,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokales Read-only-Bürotool für deutsches Datum und Uhrzeit
 - lokales Entwicklungswerkzeug für einen datensparsamen Projektstatus
 - lokaler Read-only-Systemstatus für WirePod und Ollama
+- lokaler Read-only-Bibliotheksstatus ausschließlich mit Bestandszählern
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
@@ -308,6 +309,12 @@ Mit `System Status` prüft Vector ohne Sprachmodell die fest konfigurierten
 lokalen WirePod- und Ollama-Dienste. Der rein lesende Aufruf benötigt keine
 Bestätigung und nennt weder URLs noch technische Fehlermeldungen. Er bewertet
 bewusst nicht die Internet-, OpenAI-, Akku- oder allgemeine Hardwareverbindung.
+
+`Bibliothek Status` nennt ausschließlich die Anzahl lokaler Dokumente,
+Abschnitte sowie aktueller und veralteter Vektoren. Titel, Dateipfade,
+Prüfsummen, Modellnamen und Inhalte bleiben vollständig innerhalb der lokalen
+Bibliothek. Der argumentlose Read-only-Aufruf benötigt keine Bestätigung und
+kein Sprachmodell.
 
 ## 🛠️ Technik
 
@@ -899,6 +906,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ lokale Read-only-Projektstatus-Abfrage als erstes Entwicklungswerkzeug
 - ✅ bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlogs ergänzen
 - ✅ lokalen Read-only-Systemstatus für WirePod und Ollama ergänzen
+- ✅ lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzen
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

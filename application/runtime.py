@@ -19,6 +19,7 @@ from memory.indexing import (
 from memory.library import SQLiteKnowledgeLibrary
 from memory.search import HybridKnowledgeSearch, HybridSearchConfig
 from tools.audit_store import SQLiteToolAuditStore
+from tools.library_status import register_local_library_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
@@ -81,6 +82,7 @@ def run_application(settings) -> None:
     speech = create_speech_output(settings, vector)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
     audit_store = _create_audit_store(settings)
+    library = _create_knowledge_library(settings)
     wirepod_status = VectorClient(settings.WIREPOD_HOST)
     ollama_status = OllamaRuntime(settings.OLLAMA_HOST)
     registry = _create_tool_registry(
@@ -88,8 +90,9 @@ def run_application(settings) -> None:
         audit_store,
         wirepod_status.is_available,
         ollama_status.is_available,
+        library.list_document_statuses,
     )
-    agent = _create_agent(settings, mode, registry, diagnostics)
+    agent = _create_agent(settings, mode, registry, diagnostics, library)
     _run_input_mode(settings, mode, agent, speech, diagnostics, connections)
     diagnostics.emit(
         DiagnosticLevel.INFO,
@@ -231,11 +234,14 @@ def _create_agent(
     mode: RuntimeMode,
     tool_registry: ToolRegistry | None = None,
     diagnostics: StructuredDiagnosticReporter | None = None,
+    knowledge_library=None,
 ) -> Agent:
     print(f"\nLLM provider: {settings.LLM_PROVIDER}")
     language_model = _create_language_model(settings, mode, diagnostics)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
-    library = _create_knowledge_library(settings)
+    library = knowledge_library
+    if library is None:
+        library = _create_knowledge_library(settings)
     return Agent(
         language_model,
         memory_store=memory_store,
@@ -253,6 +259,7 @@ def _create_tool_registry(
     audit_store: SQLiteToolAuditStore | None = None,
     wirepod_checker=None,
     ollama_checker=None,
+    library_status_reader=None,
 ) -> ToolRegistry:
     """Register only explicitly reviewed production robot tools."""
     audit_sink = audit_store.record if audit_store is not None else None
@@ -269,6 +276,8 @@ def _create_tool_registry(
             wirepod_checker,
             ollama_checker,
         )
+    if library_status_reader is not None:
+        register_local_library_status_tool(registry, library_status_reader)
     return registry
 
 
