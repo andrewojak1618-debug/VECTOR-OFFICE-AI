@@ -145,6 +145,7 @@ erfolgte erst nach Ende der Animation.
 | Systemstatus | „System Status“ | feste lokale Dienste, rein lesend |
 | Bibliotheksstatus | „Bibliothek Status“ | ausschließlich lokale Bestandszähler |
 | Gedächtnisstatus | „Gedächtnis Status“ | ausschließlich bestätigte lokale Zähler |
+| Nächster Projektpunkt | „Was ist der nächste Projektpunkt?“ | erster offener Eintrag aus dem festen Roadmap-Abschnitt |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -277,6 +278,27 @@ es werden keine persönlichen Erinnerungen abgeleitet oder erfunden.
 Der feste Sprachbefehl `Gedächtnis Status` läuft ohne OpenAI, Ollama oder andere
 Netzwerkzugriffe und benötigt keine Bestätigung. Nutzer und Modell können weder
 Suchtext noch Memory-ID, Datenbankpfad oder Kategorie ergänzen.
+
+## Lokaler Roadmapstatus
+
+`tools/roadmap_status.py` registriert `development.next_roadmap_item` mit
+`READ_ONLY` und ohne Parameter. Der Projektordner, die Datei
+`docs/roadmap.md` und der Abschnitt `Tools und Sicherheit` sind fest im Code
+vorgegeben. Nutzer und Modell können weder Dateipfad noch Abschnitt, Suchtext
+oder Ausgabeformat bestimmen.
+
+Das Tool liest höchstens eine begrenzte lokale Markdown-Datei und gibt nur den
+ersten mit `⏳` markierten Eintrag des festen Abschnitts zurück. Die einzelne
+Planzeile besitzt eine feste Längengrenze; URLs, Pfadtrenner, Steuerzeichen und
+andere nicht freigegebene Zeichen werden abgewiesen. Dateiinhalt, weitere
+Roadmapeinträge und interne Lesefehler gelangen nicht in Registry, Audit oder
+Sprachausgabe.
+
+Der Sprechtext entsteht rein lokal und verwendet weder OpenAI noch Ollama zur
+Interpretation. Der feste Sprachbefehl `Was ist der nächste Projektpunkt?`
+läuft ohne Bestätigung. Die eigentliche TTS-Ausgabe darf wie jede andere
+Antwort dem konfigurierten Sprachprovider folgen; die freigegebene Zeile stammt
+deshalb ausschließlich aus der versionierten, nicht privaten Projekt-Roadmap.
 
 ## Strukturierte Modellvorschläge
 

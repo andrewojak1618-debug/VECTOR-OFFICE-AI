@@ -83,6 +83,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokaler Read-only-Systemstatus für WirePod und Ollama
 - lokaler Read-only-Bibliotheksstatus ausschließlich mit Bestandszählern
 - lokaler Read-only-Gedächtnisstatus ausschließlich mit bestätigten Zählern
+- lokaler Read-only-Roadmapstatus für den nächsten kontrollierten Projektpunkt
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
@@ -915,6 +916,8 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ lokalen Read-only-Systemstatus für WirePod und Ollama ergänzen
 - ✅ lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzen
 - ✅ lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzen
+- ✅ lokalen Read-only-Roadmapstatus ohne freie Pfade ergänzen
+- ⏳ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

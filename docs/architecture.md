@@ -134,6 +134,9 @@ WirePod- und Ollama-Endpunkte. `tools/library_status.py` fasst die bereits
 vorhandenen lokalen Dokument- und Vektorstatus ausschließlich zu Zählern
 zusammen. `tools/memory_status.py` erhält von der gemeinsam verwendeten
 Memory-Instanz ausschließlich bestätigte Erinnerungs- und Feedbackzähler.
+`tools/roadmap_status.py` liest argumentlos nur den ersten offenen Eintrag aus
+dem festen Abschnitt `Tools und Sicherheit` der lokalen Projekt-Roadmap und
+verwirft unzulässige oder übergroße Ausgaben.
 `tools/proposals.py` kann eine abstrakte Modellvorschlags-ID
 lokal auf einen festen Registry-Aufruf abbilden, führt ihn aber nicht aus und
 erzeugt keine Autorisierung. Nur der ausdrücklich aktivierte Kontextdialog darf

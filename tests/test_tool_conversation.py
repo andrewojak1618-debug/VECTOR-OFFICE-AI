@@ -16,6 +16,7 @@ from tools.office import register_office_tools
 from tools.project_checks import CoreTestSummary, register_core_project_test_tool
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
 from tools.registry import ToolRegistry
+from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
 from tools.selection import ToolIntentSelector
 from tools.vector_actions import register_vector_action_tools
@@ -51,6 +52,11 @@ class ControlledToolConversationTests(unittest.TestCase):
             Path("."),
             lambda _root: ProjectGitMetadata("main", "f04652f", 0),
             lambda _root: True,
+        )
+        register_next_roadmap_item_tool(
+            self.registry,
+            Path("."),
+            lambda _root: "kontrollierten Dokumentationsstatus ergänzen",
         )
         self.test_runner = MagicMock(
             return_value=CoreTestSummary(True, 449, 4.1),
@@ -125,6 +131,13 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("Branch main", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_next_project_item_executes_without_model_or_confirmation(self):
+        result = self.controller.handle("Was ist der nächste Projektpunkt?")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("kontrollierten Dokumentationsstatus", result.message)
         self.assertEqual(0, self.model.calls)
 
     def test_system_status_executes_locally_without_confirmation_or_model(self):

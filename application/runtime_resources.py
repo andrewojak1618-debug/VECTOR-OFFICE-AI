@@ -18,6 +18,7 @@ from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
 from tools.registry import ToolRegistry
+from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
 from tools.vector_actions import register_vector_action_tools
 from vector.actions import VectorActions
@@ -37,6 +38,7 @@ def _create_tool_registry(
     register_vector_action_tools(registry, actions)
     register_office_tools(registry)
     register_project_status_tool(registry)
+    register_next_roadmap_item_tool(registry)
     register_core_project_test_tool(registry)
     _register_optional_status_tools(
         registry,

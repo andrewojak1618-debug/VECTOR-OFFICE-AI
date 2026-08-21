@@ -6,6 +6,7 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+- festen lokalen Read-only-Roadmapstatus für den nächsten sicheren Projektpunkt ergänzt
 - lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzt
 - lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzt
 - lokalen Read-only-Systemstatus für WirePod und Ollama ergänzt

@@ -94,6 +94,19 @@ DEFAULT_INTENT_RULES = (
     ),
     ToolIntentRule(
         (
+            "nächster projektpunkt",
+            "nächster punkt",
+            "was ist der nächste projektpunkt",
+            "was ist der nächste punkt",
+            "welcher projektpunkt kommt als nächstes",
+            "welcher punkt kommt als nächstes",
+            "wie geht es mit dem projekt weiter",
+        ),
+        "development.next_roadmap_item",
+        "nächsten lokalen Projektpunkt nennen",
+    ),
+    ToolIntentRule(
+        (
             "projekt test",
             "projekt tests",
             "projekttest",
@@ -240,6 +253,8 @@ class ToolIntentSelector:
             rule = self._rules.get("projekt test")
         if rule is None and _references_project_status(normalized):
             rule = self._rules.get("wie ist der projektstatus")
+        if rule is None and _references_next_project_item(normalized):
+            rule = self._rules.get("nächster projektpunkt")
         return rule
 
     @staticmethod
@@ -306,6 +321,13 @@ def _references_project_tests(value: str) -> bool:
     words = set(value.split())
     tests = bool(words & {"test", "tests", "projekttest", "projekttests"})
     return tests and ("projekt" in words or bool(words & {"projekttest", "projekttests"}))
+
+
+def _references_next_project_item(value: str) -> bool:
+    words = set(value.split())
+    target = "projektpunkt" in words or "punkt" in words
+    sequence = bool(words & {"nächste", "nächster", "nächsten", "nächstes"})
+    return target and sequence
 
 
 def _blocked_selection(message: str) -> ToolSelection:

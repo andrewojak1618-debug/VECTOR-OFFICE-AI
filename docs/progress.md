@@ -764,3 +764,21 @@ Die deutsche TTS wurde schrittweise verbessert:
 - erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
 - 487 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Punkt 27 – Kontrollierter lokaler Roadmapstatus
+
+- `development.next_roadmap_item` als argumentloses Read-only-Tool implementiert
+- Projektwurzel, `docs/roadmap.md` und Abschnitt `Tools und Sicherheit` festgelegt
+- freie Pfade, Abschnitte, Suchtexte und Modellparameter ausgeschlossen
+- Ausgabe auf den ersten offenen Eintrag und lokalen Sprechtext begrenzt
+- Dateigröße, Ausgabelänge und erlaubte Zeichen streng validiert
+- URLs, Pfadtrenner, Steuerzeichen und ungeprüfte Lesefehler abgefangen
+- festen Sprachbefehl `Was ist der nächste Projektpunkt?` ohne Modellaufruf ergänzt
+- nächsten konkreten Sicherheitsausbau in der Roadmap sichtbar hinterlegt
+- 66 gezielte Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- realen lokalen Roadmapaufruf mit dem erwarteten nächsten Eintrag geprüft
+- 497 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+- Voice-Runtime nach einem vorübergehenden WirePod-Abbruch kontrolliert neu gestartet
+- Sprachbefehl am physischen Vector korrekt erkannt und beantwortet
+- erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt

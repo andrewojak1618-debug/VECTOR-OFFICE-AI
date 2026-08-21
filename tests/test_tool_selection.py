@@ -10,6 +10,7 @@ from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
 from tools.registry import ToolDefinition, ToolRegistry
+from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
 from tools.selection import (
     ToolIntentRule,
@@ -47,6 +48,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
         register_project_status_tool(self.registry)
+        register_next_roadmap_item_tool(self.registry)
         register_core_project_test_tool(self.registry)
         register_local_service_status_tool(
             self.registry,
@@ -122,6 +124,20 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual("development.project_status", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_next_project_item_selects_fixed_read_only_tool(self):
+        selection = self.selector.select("Was ist der nächste Projektpunkt?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.next_roadmap_item", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_next_project_item_word_variation_maps_to_fixed_tool(self):
+        selection = self.selector.select("Welcher Punkt wäre als nächster dran")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.next_roadmap_item", selection.tool_name)
 
     def test_project_test_selects_argument_free_mutating_tool(self):
         selection = self.selector.select("Projekt Test")
