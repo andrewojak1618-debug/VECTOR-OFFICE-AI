@@ -13,6 +13,7 @@ from tools.office import register_office_tools
 from tools.project_checks import CoreTestSummary, register_core_project_test_tool
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
 from tools.registry import ToolRegistry
+from tools.service_status import register_local_service_status_tool
 from tools.selection import ToolIntentSelector
 from tools.vector_actions import register_vector_action_tools
 
@@ -56,6 +57,13 @@ class ControlledToolConversationTests(unittest.TestCase):
             Path("."),
             Path("python.exe"),
             self.test_runner,
+        )
+        self.wirepod_status = MagicMock(return_value=True)
+        self.ollama_status = MagicMock(return_value=True)
+        register_local_service_status_tool(
+            self.registry,
+            self.wirepod_status,
+            self.ollama_status,
         )
         self.model = UnusedLanguageModel()
         self.agent = Agent(self.model, tool_registry=self.registry)
@@ -101,6 +109,16 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("Branch main", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_system_status_executes_locally_without_confirmation_or_model(self):
+        result = self.controller.handle("System Status")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("WirePod ist lokal verfügbar", result.message)
+        self.assertIn("Ollama ist lokal verfügbar", result.message)
+        self.wirepod_status.assert_called_once()
+        self.ollama_status.assert_called_once()
         self.assertEqual(0, self.model.calls)
 
     def test_project_tests_require_yes_and_never_use_language_model(self):

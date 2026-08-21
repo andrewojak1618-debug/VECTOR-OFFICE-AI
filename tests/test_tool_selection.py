@@ -8,6 +8,7 @@ from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
 from tools.registry import ToolDefinition, ToolRegistry
+from tools.service_status import register_local_service_status_tool
 from tools.selection import (
     ToolIntentRule,
     ToolIntentSelector,
@@ -45,6 +46,11 @@ class ToolIntentSelectorTests(unittest.TestCase):
         register_office_tools(self.registry)
         register_project_status_tool(self.registry)
         register_core_project_test_tool(self.registry)
+        register_local_service_status_tool(
+            self.registry,
+            lambda: True,
+            lambda: True,
+        )
         self.selector = ToolIntentSelector(self.registry)
 
     def test_exact_natural_phrase_selects_allowlisted_action(self):
@@ -79,6 +85,14 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("office.local_datetime", selection.tool_name)
         self.assertEqual("date", selection.arguments["mode"])
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_system_status_selects_argument_free_read_only_tool(self):
+        selection = self.selector.select("Wie ist der System Status?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("system.local_service_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
 
     def test_project_status_selects_argument_free_read_only_tool(self):

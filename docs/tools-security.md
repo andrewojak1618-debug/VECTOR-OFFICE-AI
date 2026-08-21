@@ -142,6 +142,7 @@ erfolgte erst nach Ende der Animation.
 |---|---|---|
 | Projektstatus | „Projekt Status“ | automatisch, lokal und rein lesend |
 | Projekttests | „Projekt Test“ | feste lokale Suite, separates Ja erforderlich |
+| Systemstatus | „System Status“ | feste lokale Dienste, rein lesend |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -217,6 +218,25 @@ Mutationsfreigabe; anschließend wird sie verworfen. Der Testlauf verwendet
 weder OpenAI noch Ollama. Die im physischen Test beobachtete Vosk-Lautvariante
 `projekte ist` ist zusätzlich als exakte Phrase freigegeben. Ihre Zuordnung
 bleibt argumentlos und führt weiterhin nur zur ausdrücklichen Bestätigungsfrage.
+
+## Lokaler Systemstatus
+
+`tools/service_status.py` registriert `system.local_service_status` mit
+`READ_ONLY` und ohne Parameter. Die Runtime verbindet das Tool ausschließlich
+mit den bereits fest konfigurierten lokalen WirePod- und Ollama-Healthchecks.
+Nutzer und Modell können weder Hosts noch URLs, Ports, Pfade oder zusätzliche
+Prüfziele angeben.
+
+Die strukturierte Ausgabe enthält nur boolesche Verfügbarkeitswerte und einen
+lokal erzeugten Sprechtext. Transportfehler werden an dieser Grenze als
+`nicht erreichbar` behandelt; URLs und Exception-Texte verlassen das Tool
+nicht. Da bereits der laufende Gesprächspfad antwortet, darf das Tool Vector
+Office AI selbst als aktiv kennzeichnen. Es behauptet bewusst keinen Status für
+Internet, OpenAI, ElevenLabs, Akku oder die allgemeine Roboterhardware.
+
+Die feste Formulierung `System Status` wird ohne Modellaufruf und ohne
+Bestätigung ausgeführt. Weitere beobachtete Vosk-Varianten werden nur nach
+einem realen Test einzeln ergänzt.
 
 ## Strukturierte Modellvorschläge
 

@@ -14,6 +14,13 @@ class VectorClient:
 
     def check_wirepod(self) -> bool:
         """Return whether WirePod responds without a server error."""
+        return self._check_wirepod(report_error=True)
+
+    def is_available(self) -> bool:
+        """Check WirePod quietly for bounded status reporting."""
+        return self._check_wirepod(report_error=False)
+
+    def _check_wirepod(self, report_error: bool) -> bool:
         try:
             response = httpx.get(
                 self.wirepod_host,
@@ -24,5 +31,6 @@ class VectorClient:
             return response.status_code < 500
 
         except httpx.HTTPError as exc:
-            print(f"WirePod connection error: {exc}")
+            if report_error:
+                print(f"WirePod connection error: {exc}")
             return False

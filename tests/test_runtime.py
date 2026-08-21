@@ -27,19 +27,28 @@ def make_settings(**overrides):
 
 class RuntimeModeTests(unittest.TestCase):
     def test_runtime_registers_only_controlled_production_tools(self):
-        registry = _create_tool_registry(MagicMock())
+        registry = _create_tool_registry(
+            MagicMock(),
+            wirepod_checker=lambda: True,
+            ollama_checker=lambda: True,
+        )
 
         self.assertEqual(
             (
                 "development.project_status",
                 "development.run_core_tests",
                 "office.local_datetime",
+                "system.local_service_status",
                 "vector.emergency_stop",
                 "vector.list_actions",
                 "vector.perform_action",
             ),
             tuple(item.name for item in registry.definitions()),
         )
+
+    def test_runtime_requires_both_local_service_checks(self):
+        with self.assertRaises(ValueError):
+            _create_tool_registry(MagicMock(), wirepod_checker=lambda: True)
 
     def test_openai_console_uses_configured_ollama_fallback(self):
         mode = get_runtime_mode(make_settings())

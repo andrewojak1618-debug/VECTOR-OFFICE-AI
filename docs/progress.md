@@ -710,3 +710,20 @@ Die deutsche TTS wurde schrittweise verbessert:
 - erfolgreicher mutierender Registry-Aufruf ohne Argumente im lokalen Audit bestätigt
 - 460 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Punkt 24 – Lokaler Read-only-Systemstatus
+
+- `system.local_service_status` als argumentloses Read-only-Tool implementiert
+- WirePod und Ollama ausschließlich über fest konfigurierte lokale Healthchecks geprüft
+- freie Hosts, URLs, Ports, Pfade und Modellparameter ausgeschlossen
+- Transportfehler ohne technische Details als nicht erreichbar dargestellt
+- Ausgabe auf boolesche Zustände und einen lokalen deutschen Sprechtext begrenzt
+- Internet-, OpenAI-, ElevenLabs-, Akku- und Hardwarestatus bewusst ausgeschlossen
+- stille WirePod-Statusprüfung vom sichtbaren Startup-Fehlerpfad getrennt
+- festen Sprachbefehl `System Status` ohne Modellaufruf oder Bestätigung ergänzt
+- 60 gezielte Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- realen lokalen Aufruf mit verfügbarem WirePod und Ollama erfolgreich geprüft
+- Sprachbefehl `System Status` am physischen Vector erfolgreich beantwortet
+- erfolgreichen argumentlosen Read-only-Aufruf im lokalen Audit bestätigt
+- 471 automatisierte Tests, Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen

@@ -126,7 +126,9 @@ Uhrzeittool aus `tools/office.py` bereit. `tools/project_status.py` liest nur
 begrenzte Metadaten des festen Projektordners und den letzten lokalen
 Kernabnahmestatus. `tools/project_checks.py` darf nach expliziter Bestätigung
 ausschließlich die fest eingebaute lokale Python-Test-Suite starten und gibt
-nur eine begrenzte Zusammenfassung zurück. `tools/proposals.py` kann eine abstrakte Modellvorschlags-ID
+nur eine begrenzte Zusammenfassung zurück. `tools/service_status.py` prüft
+argumentlos und rein lesend ausschließlich die fest konfigurierten lokalen
+WirePod- und Ollama-Endpunkte. `tools/proposals.py` kann eine abstrakte Modellvorschlags-ID
 lokal auf einen festen Registry-Aufruf abbilden, führt ihn aber nicht aus und
 erzeugt keine Autorisierung. Nur der ausdrücklich aktivierte Kontextdialog darf
 einen begrenzten Ausdrucksvorschlag nach einem separaten `Ja` autorisieren.

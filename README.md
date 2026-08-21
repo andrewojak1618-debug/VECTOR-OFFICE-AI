@@ -80,6 +80,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - zentrale Tool Registry mit expliziten Lese-, Änderungs- und Gefahrenrechten
 - lokales Read-only-Bürotool für deutsches Datum und Uhrzeit
 - lokales Entwicklungswerkzeug für einen datensparsamen Projektstatus
+- lokaler Read-only-Systemstatus für WirePod und Ollama
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
@@ -302,6 +303,11 @@ Prozess. Pfade, Befehle, Argumente und Shell-Zugriff sind nicht über Sprache
 änderbar. Vector nennt anschließend nur Erfolg oder Fehlschlag sowie die
 Testanzahl; Testprotokolle, Dateiinhalte und mögliche sensible Werte bleiben
 intern.
+
+Mit `System Status` prüft Vector ohne Sprachmodell die fest konfigurierten
+lokalen WirePod- und Ollama-Dienste. Der rein lesende Aufruf benötigt keine
+Bestätigung und nennt weder URLs noch technische Fehlermeldungen. Er bewertet
+bewusst nicht die Internet-, OpenAI-, Akku- oder allgemeine Hardwareverbindung.
 
 ## 🛠️ Technik
 
@@ -892,6 +898,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit anbinden
 - ✅ lokale Read-only-Projektstatus-Abfrage als erstes Entwicklungswerkzeug
 - ✅ bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlogs ergänzen
+- ✅ lokalen Read-only-Systemstatus für WirePod und Ollama ergänzen
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

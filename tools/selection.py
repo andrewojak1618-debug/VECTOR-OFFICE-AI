@@ -58,6 +58,18 @@ class ToolSelection:
 DEFAULT_INTENT_RULES = (
     ToolIntentRule(
         (
+            "system status",
+            "systemstatus",
+            "wie ist der system status",
+            "wie ist der systemstatus",
+            "lokaler system status",
+            "sind alle dienste online",
+        ),
+        "system.local_service_status",
+        "lokalen Systemstatus prüfen",
+    ),
+    ToolIntentRule(
+        (
             "projekt test",
             "projekt tests",
             "projekttest",
@@ -194,6 +206,8 @@ class ToolIntentSelector:
 
     def _resolve_rule(self, normalized: str) -> ToolIntentRule | None:
         rule = self._rules.get(normalized)
+        if rule is None and _references_system_status(normalized):
+            rule = self._rules.get("system status")
         if rule is None and _references_project_tests(normalized):
             rule = self._rules.get("projekt test")
         if rule is None and _references_project_status(normalized):
@@ -243,6 +257,11 @@ def _looks_like_project_status_request(value: str) -> bool:
 def _references_project_status(value: str) -> bool:
     words = set(value.split())
     return "projektstatus" in words or {"projekt", "status"} <= words
+
+
+def _references_system_status(value: str) -> bool:
+    words = set(value.split())
+    return "systemstatus" in words or {"system", "status"} <= words
 
 
 def _references_project_tests(value: str) -> bool:
