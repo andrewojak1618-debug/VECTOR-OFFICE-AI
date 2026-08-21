@@ -6,6 +6,7 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+- kontrollierten lokalen Changelog-Abruf ohne freie Dateipfade ergänzt
 - streng begrenzte Abfrage der aktuellen stabilen Python-Version ergänzt
 - explizite Netzwerkberechtigung und feste Python.org-Recherchequelle ergänzt
 - lokalen count-only Dokumentationsstatus für sechs feste Kerndokumente ergänzt

@@ -12,6 +12,7 @@ from memory.indexing import (
 from memory.library import SQLiteKnowledgeLibrary
 from memory.search import HybridKnowledgeSearch, HybridSearchConfig
 from tools.audit_store import SQLiteToolAuditStore
+from tools.changelog_status import register_latest_project_change_tool
 from tools.documentation_status import register_documentation_status_tool
 from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
@@ -41,6 +42,7 @@ def _create_tool_registry(
     register_vector_action_tools(registry, actions)
     register_office_tools(registry)
     register_documentation_status_tool(registry)
+    register_latest_project_change_tool(registry)
     register_project_status_tool(registry)
     register_next_roadmap_item_tool(registry)
     register_fixed_research_source_tool(registry)

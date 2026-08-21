@@ -8,6 +8,7 @@ from tools.documentation_status import (
     DocumentationStatus,
     register_documentation_status_tool,
 )
+from tools.changelog_status import register_latest_project_change_tool
 from tools.permissions import PermissionLevel
 from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
@@ -61,6 +62,10 @@ class ToolIntentSelectorTests(unittest.TestCase):
                 0,
                 0,
             ),
+        )
+        register_latest_project_change_tool(
+            self.registry,
+            reader=lambda _root: "kontrolliertes Werkzeug ergänzt",
         )
         register_project_status_tool(self.registry)
         register_next_roadmap_item_tool(self.registry)
@@ -155,6 +160,14 @@ class ToolIntentSelectorTests(unittest.TestCase):
 
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("development.documentation_status", selection.tool_name)
+
+    def test_latest_project_change_selects_fixed_read_only_tool(self):
+        selection = self.selector.select("Was wurde zuletzt am Projekt geändert?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.latest_change", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
 
     def test_research_source_selects_argument_free_network_tool(self):
         selection = self.selector.select("Recherchequelle prüfen")

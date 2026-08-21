@@ -150,6 +150,7 @@ erfolgte erst nach Ende der Animation.
 | Gedächtnisstatus | „Gedächtnis Status“ | ausschließlich bestätigte lokale Zähler |
 | Nächster Projektpunkt | „Was ist der nächste Projektpunkt?“ | erster offener Eintrag aus dem festen Roadmap-Abschnitt |
 | Dokumentationsstatus | „Dokumentation Status“ | ausschließlich Zähler für sechs feste Kerndokumente |
+| Letzte Projektänderung | „Projekt Änderung“ | erster sicherer Eintrag aus dem festen lokalen Changelog |
 | Recherchequelle | „Recherchequelle prüfen“ | feste Python.org-Quelle, separates Ja erforderlich |
 | Python-Version | „Python Version“ | nur neueste stabile Versionsnummer von Python.org, separates Ja erforderlich |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
@@ -325,6 +326,26 @@ Der feste Sprachbefehl `Dokumentation Status` benötigt keine Bestätigung und
 keine Interpretation durch OpenAI oder Ollama. Eine konfigurierte Cloud-TTS
 erhält höchstens die nicht sensible Zählerzusammenfassung, niemals gelesene
 Dokumentinhalte.
+
+## Letzte dokumentierte Projektänderung
+
+`tools/changelog_status.py` registriert `development.latest_change` mit
+`READ_ONLY` und ohne Parameter. Projektwurzel, `CHANGELOG.md` und der Abschnitt
+`[Unreleased]` sind fest im Code vorgegeben. Das Tool liest ausschließlich den
+ersten Aufzählungspunkt dieses Abschnitts. Nutzer und Modell können weder Pfad,
+Dateiname, Abschnitt noch Suchtext beeinflussen.
+
+Die Changelog-Datei besitzt eine feste Größenobergrenze. Die einzelne Ausgabe
+wird zusätzlich in Länge und Zeichenvorrat begrenzt; URLs, Pfadtrenner,
+Steuerzeichen und nicht unterstütztes Markup führen zu einer sicheren
+Ablehnung. Markdown-Codezeichen werden lokal entfernt. Weitere Einträge,
+Releasehistorie und interne Lesefehler gelangen nicht in Registry, Sprache oder
+Audit.
+
+Der Sprechtext entsteht lokal und wird nicht von OpenAI oder Ollama formuliert.
+Der feste Befehl `Projekt Änderung` benötigt als rein lesender Aufruf keine
+Bestätigung. Die Ausgabe stammt aus der öffentlichen versionierten
+Projektdokumentation und enthält keine Diffs, Dateinamen oder Commitinhalte.
 
 ## Kontrollierte Recherchequelle
 

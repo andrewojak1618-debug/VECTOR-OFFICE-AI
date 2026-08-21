@@ -70,6 +70,13 @@ def _references_project_status(value: str) -> bool:
     return "projektstatus" in words or {"projekt", "status"} <= words
 
 
+def _references_latest_project_change(value: str) -> bool:
+    words = set(value.split())
+    named = "projektänderung" in words or {"projekt", "änderung"} <= words
+    described = {"projekt", "zuletzt", "geändert"} <= words
+    return named or described
+
+
 def _references_status(value: str, combined: str, separated: str) -> bool:
     words = set(value.split())
     return combined in words or {separated, "status"} <= words
@@ -112,6 +119,7 @@ _CANONICAL_MATCHERS: tuple[tuple[IntentMatcher, str], ...] = (
     (_references_documentation_status, "dokumentation status"),
     (_references_python_version, "python version"),
     (_references_research_source, "recherchequelle prüfen"),
+    (_references_latest_project_change, "projekt änderung"),
     (lambda value: _references_status(value, "bibliotheksstatus", "bibliothek"), "bibliothek status"),
     (lambda value: _references_status(value, "systemstatus", "system"), "system status"),
     (_references_project_tests, "projekt test"),

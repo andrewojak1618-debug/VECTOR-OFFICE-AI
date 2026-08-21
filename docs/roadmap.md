@@ -69,6 +69,7 @@
 - ✅ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
 - ✅ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
 - ✅ erste inhaltlich begrenzte Python-Versionsabfrage absichern
+- ✅ kontrollierte letzte Projektänderung aus festem Changelog nennen
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Robot Personality

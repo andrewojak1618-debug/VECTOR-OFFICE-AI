@@ -59,6 +59,17 @@ class ToolSelection:
 DEFAULT_INTENT_RULES = (
     ToolIntentRule(
         (
+            "projekt änderung",
+            "projektänderung",
+            "letzte projektänderung",
+            "was wurde zuletzt am projekt geändert",
+            "was ist die letzte projektänderung",
+        ),
+        "development.latest_change",
+        "letzte dokumentierte Projektänderung nennen",
+    ),
+    ToolIntentRule(
+        (
             "python version",
             "aktuelle python version",
             "welche python version ist aktuell",

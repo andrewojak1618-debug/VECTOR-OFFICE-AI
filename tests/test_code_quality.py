@@ -46,6 +46,7 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("memory/knowledge_schema.py"): Path("docs/architecture.md"),
     Path("diagnostics/tool_audit.py"): Path("docs/tools-security.md"),
     Path("tools/audit_store.py"): Path("docs/tools-security.md"),
+    Path("tools/changelog_status.py"): Path("docs/tools-security.md"),
     Path("tools/registry.py"): Path("docs/progress.md"),
     Path("tools/inspection.py"): Path("docs/tools-security.md"),
     Path("tools/proposals.py"): Path("docs/tools-security.md"),

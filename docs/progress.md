@@ -846,3 +846,21 @@ Die deutsche TTS wurde schrittweise verbessert:
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
 - physischen Bestätigungsdialog und Versionsabruf erfolgreich abgeschlossen
 - kontrollierten Aufruf als Audit-Ereignis 19 mit Netzwerkrecht und Status `success` bestätigt
+
+## Punkt 31 – Letzte Projektänderung aus festem Changelog
+
+- `development.latest_change` als argumentloses Read-only-Tool implementiert
+- Projektwurzel, `CHANGELOG.md` und Abschnitt `[Unreleased]` fest vorgegeben
+- ausschließlich den ersten dokumentierten Änderungseintrag ausgelesen
+- freie Pfade, Dateinamen, Abschnitte, Suchtexte und Modellparameter ausgeschlossen
+- Dateigröße und Ausgabelänge mit festen Obergrenzen abgesichert
+- URLs, Pfadtrenner, Steuerzeichen und nicht unterstütztes Markup blockiert
+- Markdown-Codezeichen vor der begrenzten Ausgabe lokal entfernt
+- Ergebnis auf Fundstatus, eine sichere Zusammenfassung und Sprechtext reduziert
+- Diffs, weitere Changelog-Einträge und interne Fehler vollständig verworfen
+- festen Sprachbefehl `Projekt Änderung` ohne Modellaufruf ergänzt
+- 81 gezielte Datei-, Registry-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- 547 automatisierte Tests bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+- physischen Sprachtest erfolgreich abgeschlossen
+- argumentlosen Read-only-Aufruf als Audit-Ereignis 20 mit Status `success` bestätigt

@@ -38,6 +38,7 @@ class RuntimeModeTests(unittest.TestCase):
         self.assertEqual(
             (
                 "development.documentation_status",
+                "development.latest_change",
                 "development.next_roadmap_item",
                 "development.project_status",
                 "development.run_core_tests",
