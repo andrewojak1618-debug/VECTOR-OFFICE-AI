@@ -141,6 +141,10 @@ verwirft unzulässige oder übergroße Ausgaben.
 Kerndokumente und gibt ausschließlich bereinigte Vollständigkeitszähler zurück.
 `tools/research_source.py` darf nach separater Einmalbestätigung nur die feste
 offizielle Python.org-Quelle ohne Weiterleitung und ohne Inhaltsabruf prüfen.
+`tools/python_release.py` liest von derselben festen Quelle höchstens eine
+begrenzte HTML-Menge und gibt nur eine streng validierte stabile Versionsnummer
+weiter. `tools/selection_matching.py` hält die parameterlose kanonische
+Spracherkennung getrennt von der Registry-Auswahl in `tools/selection.py`.
 `tools/proposals.py` kann eine abstrakte Modellvorschlags-ID
 lokal auf einen festen Registry-Aufruf abbilden, führt ihn aber nicht aus und
 erzeugt keine Autorisierung. Nur der ausdrücklich aktivierte Kontextdialog darf

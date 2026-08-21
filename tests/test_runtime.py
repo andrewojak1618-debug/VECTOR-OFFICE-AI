@@ -44,6 +44,7 @@ class RuntimeModeTests(unittest.TestCase):
                 "knowledge.library_status",
                 "memory.local_status",
                 "office.local_datetime",
+                "research.python_latest_version",
                 "research.python_source_status",
                 "system.local_service_status",
                 "vector.emergency_stop",

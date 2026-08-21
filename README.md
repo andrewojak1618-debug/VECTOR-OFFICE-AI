@@ -86,6 +86,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokaler Read-only-Roadmapstatus für den nächsten kontrollierten Projektpunkt
 - lokaler Read-only-Dokumentationsstatus für sechs feste Kerndokumente
 - feste Python.org-Recherchequelle mit separater Netzwerkbestätigung
+- aktuelle stabile Python-Version als streng gefilterte Python.org-Abfrage
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
@@ -921,7 +922,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ lokalen Read-only-Roadmapstatus ohne freie Pfade ergänzen
 - ✅ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
 - ✅ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
-- ⏳ erste inhaltlich begrenzte Python-Versionsabfrage absichern
+- ✅ erste inhaltlich begrenzte Python-Versionsabfrage absichern
 - ✅ alle Toolaufrufe lokal und datensparsam protokollieren
 
 ### Version 0.6 – Robot Personality

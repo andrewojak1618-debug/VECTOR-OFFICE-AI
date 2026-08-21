@@ -161,6 +161,8 @@ def _success_message(
     selection: ToolSelection,
     result: ToolExecutionResult,
 ) -> str:
+    if selection.tool_name == "research.python_latest_version":
+        return str(result.output["spoken_text"])
     if selection.tool_name == "research.python_source_status":
         return str(result.output["spoken_text"])
     if selection.tool_name == "development.documentation_status":

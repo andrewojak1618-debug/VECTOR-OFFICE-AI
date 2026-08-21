@@ -68,7 +68,7 @@
 - ✅ lokalen Read-only-Roadmapstatus für den nächsten sicheren Punkt ergänzen
 - ✅ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
 - ✅ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
-- ⏳ erste inhaltlich begrenzte Python-Versionsabfrage absichern
+- ✅ erste inhaltlich begrenzte Python-Versionsabfrage absichern
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Robot Personality

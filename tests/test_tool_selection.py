@@ -14,6 +14,7 @@ from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
+from tools.python_release import register_python_latest_version_tool
 from tools.registry import ToolDefinition, ToolRegistry
 from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
@@ -64,6 +65,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
         register_project_status_tool(self.registry)
         register_next_roadmap_item_tool(self.registry)
         register_fixed_research_source_tool(self.registry, lambda: True)
+        register_python_latest_version_tool(self.registry, lambda: "3.14.7")
         register_core_project_test_tool(self.registry)
         register_local_service_status_tool(
             self.registry,
@@ -167,6 +169,14 @@ class ToolIntentSelectorTests(unittest.TestCase):
 
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("research.python_source_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+
+    def test_python_version_selects_fixed_network_version_query(self):
+        selection = self.selector.select("Welche Python Version ist aktuell?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("research.python_latest_version", selection.tool_name)
+        self.assertEqual(PermissionLevel.NETWORK, selection.permission)
         self.assertEqual({}, dict(selection.arguments))
 
     def test_observed_research_source_variant_selects_same_network_tool(self):

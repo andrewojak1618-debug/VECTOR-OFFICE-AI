@@ -111,7 +111,9 @@ produktive Toolaufrufe sind standardmäßig nicht registriert.
 ## Kontrollierte Auswahl im Gespräch
 
 `tools/selection.py` ordnet eine kleine feste Liste eindeutiger deutscher
-Formulierungen registrierten Tools zu. Es verwendet weder OpenAI noch Ollama und
+Formulierungen registrierten Tools zu. `tools/selection_matching.py` kapselt
+dabei ausschließlich die parameterlose kanonische Erkennung. Beide verwenden
+weder OpenAI noch Ollama und
 ergänzt keine Parameter aus Vermutungen. Nur eine vollständige normalisierte
 Übereinstimmung gilt als Auswahl; zusätzliche Anweisungen bleiben normale
 Gesprächseingaben und lösen kein Tool aus.
@@ -149,6 +151,7 @@ erfolgte erst nach Ende der Animation.
 | Nächster Projektpunkt | „Was ist der nächste Projektpunkt?“ | erster offener Eintrag aus dem festen Roadmap-Abschnitt |
 | Dokumentationsstatus | „Dokumentation Status“ | ausschließlich Zähler für sechs feste Kerndokumente |
 | Recherchequelle | „Recherchequelle prüfen“ | feste Python.org-Quelle, separates Ja erforderlich |
+| Python-Version | „Python Version“ | nur neueste stabile Versionsnummer von Python.org, separates Ja erforderlich |
 | Datum/Uhrzeit | „Welcher Tag ist heute?“, „Wie spät ist es?“ | automatisch, lokal und rein lesend |
 | Aktionen anzeigen | „Welche Aktionen kannst du?“ | automatisch, rein lesend |
 | Kopf bewegen | „Schau nach oben“, „Kopf gerade“ | Bestätigung erforderlich |
@@ -351,6 +354,27 @@ erzeugt die einmalige Netzwerkautorisierung. `Nein`, Abbruch oder ein anderer
 Aufruf führen zu keiner externen Anfrage. Erkennbare, aber uneindeutige
 Rechercheformulierungen werden mit einer Bitte um `Python Status` blockiert und
 nicht an ein Sprachmodell weitergereicht.
+
+`tools/python_release.py` registriert ergänzend
+`research.python_latest_version`. Auch dieses Netzwerk-Tool ist argumentlos,
+verwendet dieselbe feste Python.org-Adresse und benötigt für jeden Aufruf ein
+separates `Ja`. Die Antwort wird gestreamt und nach höchstens 750.000 Bytes
+abgebrochen. Weiterleitungen, andere Medientypen, ungültiges UTF-8 und andere
+HTTP-Statuswerte werden nicht akzeptiert.
+
+Der HTML-Text wird ausschließlich lokal nach finalen Versionsnummern im festen
+Format `3.x.y` ausgewertet. Vorabkennzeichnungen wie Alpha, Beta oder Release
+Candidate sind ausgeschlossen. Nur die numerisch höchste validierte Version,
+die öffentliche Quellenbezeichnung und ein lokal erzeugter deutscher Sprechtext
+erreichen die Registry-Ausgabe. Rohes HTML, Links, Seitentexte und mögliche
+Anweisungen aus dem Dokument gelangen weder zu OpenAI noch zu Ollama, TTS oder
+Audit. Kann keine eindeutige stabile Version bestimmt werden, erfindet das Tool
+keinen Wert und meldet die Prüfung als nicht verfügbar.
+
+Der bevorzugte Sprachbefehl lautet `Python Version`. Er löst zunächst nur die
+transparente Netzwerkfrage aus; erst ein nachfolgendes `Ja` startet den festen
+Abruf. `Python Status` bleibt davon getrennt und prüft weiterhin ausschließlich
+die Erreichbarkeit ohne Seiteninhalt.
 
 ## Strukturierte Modellvorschläge
 

@@ -18,6 +18,7 @@ from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_status import register_project_status_tool
+from tools.python_release import register_python_latest_version_tool
 from tools.registry import ToolRegistry
 from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
@@ -43,6 +44,7 @@ def _create_tool_registry(
     register_project_status_tool(registry)
     register_next_roadmap_item_tool(registry)
     register_fixed_research_source_tool(registry)
+    register_python_latest_version_tool(registry)
     register_core_project_test_tool(registry)
     _register_optional_status_tools(
         registry,

@@ -20,6 +20,7 @@ from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import CoreTestSummary, register_core_project_test_tool
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
+from tools.python_release import register_python_latest_version_tool
 from tools.registry import ToolRegistry
 from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
@@ -77,6 +78,8 @@ class ControlledToolConversationTests(unittest.TestCase):
             self.registry,
             self.research_checker,
         )
+        self.version_reader = MagicMock(return_value="3.14.7")
+        register_python_latest_version_tool(self.registry, self.version_reader)
         self.test_runner = MagicMock(
             return_value=CoreTestSummary(True, 449, 4.1),
         )
@@ -156,6 +159,20 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
         self.research_checker.assert_not_called()
+
+    def test_python_version_requires_yes_and_bypasses_language_model(self):
+        proposed = self.controller.handle("Python Version")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.assertIn("einmaliger Internetzugriff", proposed.message)
+        self.version_reader.assert_not_called()
+
+        completed = self.controller.handle("Ja")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, completed.status)
+        self.assertIn("3 Punkt 14 Punkt 7", completed.message)
+        self.version_reader.assert_called_once_with()
+        self.assertEqual(0, self.model.calls)
 
     def test_unclear_research_request_never_reaches_language_model(self):
         result = self.controller.handle(

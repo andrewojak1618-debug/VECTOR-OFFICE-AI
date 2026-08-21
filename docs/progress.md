@@ -826,3 +826,23 @@ Die deutsche TTS wurde schrittweise verbessert:
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
 - physischen Bestätigungsdialog mit `Python Status` erfolgreich abgeschlossen
 - kontrollierten Netzwerkaufruf als Audit-Ereignis 18 mit Status `success` bestätigt
+
+## Punkt 30 – Inhaltlich begrenzte Python-Versionsabfrage
+
+- `research.python_latest_version` als separates argumentloses Netzwerk-Tool implementiert
+- dieselbe feste offizielle Python.org-Downloadseite ohne freie Ziele verwendet
+- Streaming-Abruf auf höchstens 750.000 Bytes begrenzt
+- Weiterleitungen, andere Medientypen, Fehlerstatus und ungültiges UTF-8 abgewiesen
+- ausschließlich stabile Versionsnummern im festen Format `3.x.y` akzeptiert
+- Alpha-, Beta- und Release-Candidate-Versionen aus der Auswahl ausgeschlossen
+- Ergebnis auf Quelle, Prüfstatus, Versionsnummer und lokalen Sprechtext reduziert
+- Webseiteninhalt und mögliche eingebettete Anweisungen vor Modell und TTS verworfen
+- bei uneindeutiger Antwort bewusst keine Version geraten
+- festen Sprachbefehl `Python Version` mit separater Netzwerkbestätigung ergänzt
+- `Python Status` unverändert als reine Erreichbarkeitsprüfung beibehalten
+- Auswahlhilfen in `tools/selection_matching.py` strukturell ausgelagert
+- 82 gezielte Tool-, Auswahl-, Dialog-, Runtime- und Qualitätstests bestanden
+- 538 automatisierte Tests bestanden
+- vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
+- physischen Bestätigungsdialog und Versionsabruf erfolgreich abgeschlossen
+- kontrollierten Aufruf als Audit-Ereignis 19 mit Netzwerkrecht und Status `success` bestätigt

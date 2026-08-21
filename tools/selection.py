@@ -1,12 +1,16 @@
 """Select registered tools from a fixed set of explicit German intents."""
 
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
 
 from tools.permissions import PermissionLevel
 from tools.registry import ToolArguments, ToolRegistry, ToolValue
+from tools.selection_matching import (
+    canonical_phrase,
+    normalize_phrase,
+    unmatched_message,
+)
 
 
 class ToolSelectionStatus(Enum):
@@ -53,6 +57,16 @@ class ToolSelection:
 
 
 DEFAULT_INTENT_RULES = (
+    ToolIntentRule(
+        (
+            "python version",
+            "aktuelle python version",
+            "welche python version ist aktuell",
+            "was ist die aktuelle python version",
+        ),
+        "research.python_latest_version",
+        "aktuelle stabile Python-Version prüfen",
+    ),
     ToolIntentRule(
         (
             "recherchequelle prüfen",
@@ -244,7 +258,7 @@ class ToolIntentSelector:
 
     def select(self, user_text: str) -> ToolSelection:
         """Return one registered safe selection for an exact user phrase."""
-        normalized = _normalize_phrase(user_text)
+        normalized = normalize_phrase(user_text)
         rule = self._resolve_rule(normalized)
         if rule is None:
             return _unmatched_selection(normalized)
@@ -264,23 +278,8 @@ class ToolIntentSelector:
 
     def _resolve_rule(self, normalized: str) -> ToolIntentRule | None:
         rule = self._rules.get(normalized)
-        if rule is None and _references_memory_status(normalized):
-            rule = self._rules.get("gedächtnis status")
-        if rule is None and _references_documentation_status(normalized):
-            rule = self._rules.get("dokumentation status")
-        if rule is None and _references_research_source_check(normalized):
-            rule = self._rules.get("recherchequelle prüfen")
-        if rule is None and _references_library_status(normalized):
-            rule = self._rules.get("bibliothek status")
-        if rule is None and _references_system_status(normalized):
-            rule = self._rules.get("system status")
-        if rule is None and _references_project_tests(normalized):
-            rule = self._rules.get("projekt test")
-        if rule is None and _references_project_status(normalized):
-            rule = self._rules.get("wie ist der projektstatus")
-        if rule is None and _references_next_project_item(normalized):
-            rule = self._rules.get("nächster projektpunkt")
-        return rule
+        representative = canonical_phrase(normalized) if rule is None else None
+        return self._rules.get(representative) if representative else rule
 
     @staticmethod
     def _index_rules(
@@ -291,89 +290,11 @@ class ToolIntentSelector:
             if not isinstance(rule, ToolIntentRule):
                 raise TypeError("Tool intent rules must be ToolIntentRule values.")
             for phrase in rule.phrases:
-                normalized = _normalize_phrase(phrase)
+                normalized = normalize_phrase(phrase)
                 if normalized in indexed:
                     raise ValueError("Tool intent phrases must be unique.")
                 indexed[normalized] = rule
         return indexed
-
-
-def _normalize_phrase(value: str) -> str:
-    if not isinstance(value, str):
-        return ""
-    collapsed = " ".join(value.casefold().strip().split())
-    return re.sub(r"[.!?]+$", "", collapsed).strip()
-
-
-def _looks_like_datetime_request(value: str) -> bool:
-    words = set(value.split())
-    question = bool(words & {"was", "wie", "welcher", "welchen", "welches"})
-    date = "heute" in words and bool(words & {"datum", "tag", "wievielte", "wievielten"})
-    clock = bool(words & {"uhr", "uhrzeit", "spät"})
-    return question and (date or clock)
-
-
-def _looks_like_project_status_request(value: str) -> bool:
-    words = set(value.split())
-    target = _references_project_status(value)
-    request = bool(words & {"wie", "was", "nenne", "zeige", "welcher"})
-    return target and request
-
-
-def _references_project_status(value: str) -> bool:
-    words = set(value.split())
-    return "projektstatus" in words or {"projekt", "status"} <= words
-
-
-def _references_system_status(value: str) -> bool:
-    words = set(value.split())
-    return "systemstatus" in words or {"system", "status"} <= words
-
-
-def _references_library_status(value: str) -> bool:
-    words = set(value.split())
-    return "bibliotheksstatus" in words or {"bibliothek", "status"} <= words
-
-
-def _references_memory_status(value: str) -> bool:
-    words = set(value.split())
-    return "gedächtnisstatus" in words or {"gedächtnis", "status"} <= words
-
-
-def _references_documentation_status(value: str) -> bool:
-    words = set(value.split())
-    combined = "dokumentationsstatus" in words
-    separated = "status" in words and bool(words & {"dokumentation", "dokumentations"})
-    return combined or separated
-
-
-def _references_research_source_check(value: str) -> bool:
-    words = set(value.split())
-    source = "recherchequelle" in words or {"recherche", "quelle"} <= words
-    research_check = source and bool(words & {"prüfen", "überprüfen"})
-    python_status = "python" in words and "status" in words
-    return research_check or python_status
-
-
-def _looks_like_research_source_request(value: str) -> bool:
-    words = set(value.split())
-    research = bool(words & {"recherche", "recherchequelle"})
-    source_terms = {"quelle", "quellen", "prüfen", "überprüfen", "überprüfung", "status"}
-    source = bool(words & source_terms)
-    return research and source
-
-
-def _references_project_tests(value: str) -> bool:
-    words = set(value.split())
-    tests = bool(words & {"test", "tests", "projekttest", "projekttests"})
-    return tests and ("projekt" in words or bool(words & {"projekttest", "projekttests"}))
-
-
-def _references_next_project_item(value: str) -> bool:
-    words = set(value.split())
-    target = "projektpunkt" in words or "punkt" in words
-    sequence = bool(words & {"nächste", "nächster", "nächsten", "nächstes"})
-    return target and sequence
 
 
 def _blocked_selection(message: str) -> ToolSelection:
@@ -381,19 +302,7 @@ def _blocked_selection(message: str) -> ToolSelection:
 
 
 def _unmatched_selection(normalized: str) -> ToolSelection:
-    if _looks_like_research_source_request(normalized):
-        return _blocked_selection(
-            "Ich habe die Recherchequellenfrage nicht eindeutig erkannt. "
-            "Bitte sage: Python Status.",
-        )
-    if _looks_like_project_status_request(normalized):
-        return _blocked_selection(
-            "Ich habe die Projektstatusfrage nicht eindeutig erkannt. "
-            "Bitte frage: Wie ist der Projektstatus?",
-        )
-    if _looks_like_datetime_request(normalized):
-        return _blocked_selection(
-            "Ich habe die Datums- oder Uhrzeitfrage nicht eindeutig erkannt. "
-            "Bitte frage: Welcher Tag ist heute? Oder: Wie spät ist es?",
-        )
+    message = unmatched_message(normalized)
+    if message is not None:
+        return _blocked_selection(message)
     return ToolSelection(ToolSelectionStatus.NO_MATCH)
