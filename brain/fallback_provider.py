@@ -14,6 +14,7 @@ class ProviderNotice(Enum):
 
     LOCAL_FALLBACK = "local_fallback"
     ALL_UNAVAILABLE = "all_unavailable"
+    PRIMARY_RECOVERED = "primary_recovered"
 
 
 class FallbackProvider:
@@ -34,9 +35,12 @@ class FallbackProvider:
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
         """Liefert die Primärantwort oder nutzt bewusst das lokale Rückfallmodell."""
+        outage_started = not self._primary_unavailable
         content = self._try_primary(messages)
         if content:
             return content
+        if not outage_started:
+            return self._generate_fallback(messages)
         print("OpenAI unavailable. Using local Ollama fallback.")
         emit_provider(
             self.diagnostics,
@@ -51,6 +55,7 @@ class FallbackProvider:
 
     def _try_primary(self, messages: Sequence[ChatMessage]) -> str:
         """Versucht das Primärmodell und merkt dessen Ausfall ohne Inhaltsprotokoll."""
+        was_unavailable = self._primary_unavailable
         try:
             content = self.primary.generate(messages).strip()
         except RuntimeError:
@@ -60,7 +65,11 @@ class FallbackProvider:
             self._mark_primary_unavailable()
             return ""
         self._primary_unavailable = False
-        self._pending_notice = None
+        if was_unavailable:
+            self._pending_notice = ProviderNotice.PRIMARY_RECOVERED
+            self._report_primary_recovery()
+        else:
+            self._pending_notice = None
         return content
 
     def _generate_fallback(self, messages: Sequence[ChatMessage]) -> str:
@@ -88,3 +97,15 @@ class FallbackProvider:
         if not self._primary_unavailable:
             self._pending_notice = ProviderNotice.ALL_UNAVAILABLE
         self._primary_unavailable = True
+
+    def _report_primary_recovery(self) -> None:
+        """Meldet die Wiederherstellung des Primärproviders ohne Inhaltsdaten."""
+        emit_provider(
+            self.diagnostics,
+            DiagnosticLevel.INFO,
+            "provider",
+            "fallback.recovered",
+            provider="openai",
+            fallback="ollama",
+            reason_code="primary-recovered",
+        )

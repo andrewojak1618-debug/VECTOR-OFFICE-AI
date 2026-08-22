@@ -6,7 +6,12 @@ from application.expression_delivery import speech_style_for_cue
 from application.thinking import run_with_thinking
 from brain.agent import Agent
 from brain.providers import ProviderNotice
-from vector.speech import PreparedSpeech, SpeechStyle, VectorSpeech
+from vector.speech import (
+    PreparedSpeech,
+    SpeechProviderNotice,
+    SpeechStyle,
+    VectorSpeech,
+)
 
 
 CLOUD_OFFLINE_NOTICE = (
@@ -16,6 +21,14 @@ CLOUD_OFFLINE_NOTICE = (
 PROVIDER_OFFLINE_NOTICE = (
     "Ich kann das Kollektiv gerade nicht erreichen. "
     "Offenbar besteht ein Verbindungsproblem."
+)
+TTS_OFFLINE_NOTICE = (
+    "Meine Cloud-Stimme ist gerade nicht erreichbar. "
+    "Ich spreche vorübergehend lokal weiter."
+)
+PROVIDER_RECOVERY_NOTICE = "Die unterbrochene Verbindung ist wiederhergestellt."
+VECTOR_UNAVAILABLE_MESSAGE = (
+    "Vector ist gerade nicht erreichbar. Die Unterhaltung bleibt aktiv."
 )
 
 
@@ -53,10 +66,13 @@ def speak_answer(
     style: SpeechStyle | None = None,
 ) -> bool:
     """Spricht eine Antwort und meldet Wiedergabefehler ohne sensible Details."""
-    completed = speech.say(answer) if style is None else speech.say(answer, style)
+    try:
+        completed = speech.say(answer) if style is None else speech.say(answer, style)
+    except (OSError, RuntimeError, TypeError, ValueError):
+        completed = False
     if completed:
         return True
-    print("Vector could not play the response.")
+    print(VECTOR_UNAVAILABLE_MESSAGE)
     return False
 
 
@@ -89,23 +105,42 @@ def _play_answer(speech: VectorSpeech, prepared: _PreparedAnswer) -> bool:
         prepared.audio.close()
         completed = False
     if not completed:
-        print("Vector could not play the response.")
+        print(VECTOR_UNAVAILABLE_MESSAGE)
     return completed
 
 
 def _speak_provider_notice(agent: Agent, speech: VectorSpeech) -> None:
-    """Spricht einmalige Hinweise zu Cloud-Ausfall und lokalem Rückfall."""
+    """Spricht höchstens einen priorisierten Hinweis je Providerübergang."""
     language_model = getattr(agent, "language_model", None)
-    consume = getattr(language_model, "consume_notice", None)
-    if not callable(consume):
+    model_notice = _consume_notice(language_model)
+    speech_notice = _consume_notice(speech)
+    message = _provider_notice_message(model_notice, speech_notice)
+    if message is None:
         return
-    notice = consume()
-    if notice is ProviderNotice.LOCAL_FALLBACK:
-        print(f"Vector: {CLOUD_OFFLINE_NOTICE}")
-        speak_answer(speech, CLOUD_OFFLINE_NOTICE)
-    elif notice is ProviderNotice.ALL_UNAVAILABLE:
-        print(f"Vector: {PROVIDER_OFFLINE_NOTICE}")
-        speak_answer(speech, PROVIDER_OFFLINE_NOTICE)
+    print(f"Vector: {message}")
+    local_speech = getattr(speech, "local_speech", speech)
+    speak_answer(local_speech, message)
+
+
+def _consume_notice(provider) -> object | None:
+    """Verbraucht einen optionalen Providerhinweis ohne konkrete Anbieterkopplung."""
+    consume = getattr(provider, "consume_notice", None)
+    return consume() if callable(consume) else None
+
+
+def _provider_notice_message(model_notice, speech_notice) -> str | None:
+    """Wählt aus gleichzeitigen Zustandswechseln genau eine Meldung."""
+    if model_notice is ProviderNotice.ALL_UNAVAILABLE:
+        return PROVIDER_OFFLINE_NOTICE
+    if model_notice is ProviderNotice.LOCAL_FALLBACK:
+        return CLOUD_OFFLINE_NOTICE
+    if speech_notice is SpeechProviderNotice.LOCAL_FALLBACK:
+        return TTS_OFFLINE_NOTICE
+    recovered = (
+        model_notice is ProviderNotice.PRIMARY_RECOVERED
+        or speech_notice is SpeechProviderNotice.CLOUD_RECOVERED
+    )
+    return PROVIDER_RECOVERY_NOTICE if recovered else None
 
 
 def _response_speech_style(agent: Agent) -> SpeechStyle | None:

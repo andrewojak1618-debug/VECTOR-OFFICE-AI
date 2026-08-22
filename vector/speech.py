@@ -8,6 +8,7 @@ import tempfile
 import threading
 import wave
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 from vector.sdk_client import VectorSDKClient
@@ -80,6 +81,13 @@ try {
 
 REFLECTIVE_LEADING_BREAK_MS = 180
 REFLECTIVE_HUM_RATE = "-32%"
+
+
+class SpeechProviderNotice(Enum):
+    """Beschreibt einen einmalig abrufbaren Wechsel der Sprachausgabe."""
+
+    LOCAL_FALLBACK = "local_fallback"
+    CLOUD_RECOVERED = "cloud_recovered"
 
 
 @dataclass(frozen=True)

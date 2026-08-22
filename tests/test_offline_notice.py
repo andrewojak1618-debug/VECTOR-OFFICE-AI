@@ -2,15 +2,19 @@
 
 import threading
 import unittest
+from unittest.mock import patch
 
-from application.conversation import (
+from application.response_delivery import (
     CLOUD_OFFLINE_NOTICE,
     PROVIDER_OFFLINE_NOTICE,
+    PROVIDER_RECOVERY_NOTICE,
+    TTS_OFFLINE_NOTICE,
+    VECTOR_UNAVAILABLE_MESSAGE,
     respond_and_speak,
 )
 from brain.agent import Agent
 from brain.providers import FallbackProvider
-from vector.speech import SpeechStyle
+from vector.speech import SpeechProviderNotice, SpeechStyle
 
 
 class ScriptedProvider:
@@ -66,6 +70,29 @@ class PreparingSpeech:
         return True
 
 
+class NoticingSpeech:
+    def __init__(self, notice):
+        self.notice = notice
+        self.local_speech = RecordingSpeech()
+
+    def prepare(self, _text, _style):
+        return FakePreparedSpeech()
+
+    def play_prepared(self, prepared):
+        prepared.close()
+        return True
+
+    def consume_notice(self):
+        notice = self.notice
+        self.notice = None
+        return notice
+
+
+class RaisingSpeech:
+    def say(self, _text, _style=SpeechStyle.CONVERSATIONAL):
+        raise RuntimeError("private Vector transport detail")
+
+
 class OfflineNoticeTests(unittest.TestCase):
     def test_cloud_outage_speaks_notice_before_local_answer(self):
         model = FallbackProvider(
@@ -107,6 +134,104 @@ class OfflineNoticeTests(unittest.TestCase):
 
         self.assertFalse(completed)
         self.assertEqual([PROVIDER_OFFLINE_NOTICE], speech.messages)
+
+    def test_repeated_total_failure_does_not_repeat_offline_notice(self):
+        model = FallbackProvider(
+            ScriptedProvider(RuntimeError("cloud one"), RuntimeError("cloud two")),
+            ScriptedProvider(RuntimeError("local one"), RuntimeError("local two")),
+        )
+        speech = RecordingSpeech()
+        agent = Agent(model)
+
+        respond_and_speak(agent, speech, "Erste Frage.")
+        respond_and_speak(agent, speech, "Zweite Frage.")
+
+        self.assertEqual(1, speech.messages.count(PROVIDER_OFFLINE_NOTICE))
+
+    def test_conversation_can_continue_after_complete_model_outage(self):
+        model = FallbackProvider(
+            ScriptedProvider(
+                RuntimeError("cloud offline"),
+                "Der nächste Turn funktioniert wieder.",
+            ),
+            ScriptedProvider(RuntimeError("local offline")),
+        )
+        speech = RecordingSpeech()
+        agent = Agent(model)
+
+        first = respond_and_speak(agent, speech, "Erste Frage.")
+        second = respond_and_speak(agent, speech, "Zweite Frage.")
+
+        self.assertFalse(first)
+        self.assertTrue(second)
+        self.assertEqual(1, speech.messages.count(PROVIDER_OFFLINE_NOTICE))
+        self.assertEqual(1, speech.messages.count(PROVIDER_RECOVERY_NOTICE))
+        self.assertEqual(
+            "Der nächste Turn funktioniert wieder.",
+            speech.messages[-1],
+        )
+
+    def test_primary_recovery_is_announced_only_once(self):
+        model = FallbackProvider(
+            ScriptedProvider(
+                RuntimeError("offline"),
+                "Cloud wieder verfügbar.",
+                "Cloud bleibt verfügbar.",
+            ),
+            ScriptedProvider("Lokale Antwort."),
+        )
+        speech = RecordingSpeech()
+        agent = Agent(model)
+
+        for question in ("Runde eins?", "Runde zwei?", "Runde drei?"):
+            respond_and_speak(agent, speech, question)
+
+        self.assertEqual(1, speech.messages.count(PROVIDER_RECOVERY_NOTICE))
+
+    def test_simultaneous_cloud_fallbacks_use_one_offline_notice(self):
+        model = FallbackProvider(
+            ScriptedProvider(RuntimeError("cloud offline")),
+            ScriptedProvider("Lokale Antwort."),
+        )
+        speech = NoticingSpeech(SpeechProviderNotice.LOCAL_FALLBACK)
+
+        completed = respond_and_speak(Agent(model), speech, "Bist du da?")
+
+        self.assertTrue(completed)
+        self.assertEqual([CLOUD_OFFLINE_NOTICE], speech.local_speech.messages)
+        self.assertNotIn(TTS_OFFLINE_NOTICE, speech.local_speech.messages)
+
+    def test_tts_fallback_uses_one_local_notice(self):
+        speech = NoticingSpeech(SpeechProviderNotice.LOCAL_FALLBACK)
+        agent = Agent(ScriptedProvider("Antwort ist verfügbar."))
+
+        completed = respond_and_speak(agent, speech, "Bist du da?")
+
+        self.assertTrue(completed)
+        self.assertEqual([TTS_OFFLINE_NOTICE], speech.local_speech.messages)
+
+    def test_tts_recovery_is_announced_once_through_local_voice(self):
+        speech = NoticingSpeech(SpeechProviderNotice.CLOUD_RECOVERED)
+        agent = Agent(ScriptedProvider("Cloud-Stimme antwortet wieder."))
+
+        completed = respond_and_speak(agent, speech, "Bist du wieder da?")
+
+        self.assertTrue(completed)
+        self.assertEqual(
+            [PROVIDER_RECOVERY_NOTICE],
+            speech.local_speech.messages,
+        )
+
+    def test_vector_delivery_exception_stays_inside_response_boundary(self):
+        agent = Agent(ScriptedProvider("Antwort bleibt erhalten."))
+
+        with patch("builtins.print") as output:
+            completed = respond_and_speak(agent, RaisingSpeech(), "Hallo?")
+
+        self.assertFalse(completed)
+        printed = " ".join(str(call) for call in output.call_args_list)
+        self.assertIn(VECTOR_UNAVAILABLE_MESSAGE, printed)
+        self.assertNotIn("private Vector transport detail", printed)
 
     def test_recovery_allows_a_later_outage_notice_again(self):
         model = FallbackProvider(

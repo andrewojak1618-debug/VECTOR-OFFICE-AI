@@ -40,6 +40,13 @@ Diese begrenzte Voice-Koordination ist getrennt in
 `application/voice_recovery.py` gekapselt; die allgemeine Gesprächsschleife
 enthält dadurch keine dienstspezifische Wiederanlauflogik.
 
+Beim ersten WirePod-Abruffehler sagt Vector einmalig: „Ich kann deine
+Spracheingabe gerade nicht erreichen. Ich versuche die Verbindung
+wiederherzustellen.“ Weitere Fehler desselben Ausfalls wiederholen diese
+Meldung nicht. Nach erfolgreicher Rückkehr folgt weiterhin genau eine
+Wiederherstellungsansage. Nach fünf aufeinanderfolgenden Fehlern endet nur die
+Sprachsitzung kontrolliert; es entsteht keine endlose Retry-Schleife.
+
 Der optionale Windows-Host-Watchdog prüft zusätzlich, ob der lokale
 `chipper.exe`-Prozess fehlt, und startet ausschließlich dann die konfigurierte
 WirePod-Datei neu. Architektur, Installation und Rückbau sind unter
@@ -72,6 +79,18 @@ nur, solange der lokale TTS- und Audioweg zum Roboter erreichbar ist.
 
 Beide Varianten wurden am physischen Vector nacheinander abgespielt und vom
 Benutzer hinsichtlich Aussprache, Tempo und Betonung bestätigt.
+
+Kehrt OpenAI nach einem lokalen Ollama-Fallback zurück, wird der Übergang
+erkannt und höchstens einmal angekündigt. Dasselbe gilt für ElevenLabs nach
+einer zwischenzeitlichen lokalen OneCore-Ausgabe. Fallen beide Cloudpfade im
+gleichen Antwortturn aus, priorisiert die Ausgabe genau einen verständlichen
+Offline-Hinweis. Die Providerhinweise werden bewusst über lokale TTS erzeugt
+und lösen keine zusätzliche kostenpflichtige Cloudanfrage aus.
+
+Kann vorbereitetes Audio wegen einer verlorenen Vector-Verbindung nicht
+abgespielt werden, bleibt der Fehler an der Auslieferungsgrenze. Die laufende
+Anwendung kann den nächsten Turn weiter verarbeiten; Tool-Aufrufe und
+verändernde Aktionen werden wegen eines Ausgabefehlers niemals wiederholt.
 
 ## Optionale Firmware-Forschung
 

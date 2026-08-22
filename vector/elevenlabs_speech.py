@@ -7,7 +7,7 @@ from pathlib import Path
 
 import httpx
 
-from vector.speech import PreparedSpeech, VectorSpeech
+from vector.speech import PreparedSpeech, SpeechProviderNotice, VectorSpeech
 from vector.speech_prosody import SpeechStyle, normalize_speech_text
 
 
@@ -111,6 +111,8 @@ class ElevenLabsSpeech(VectorSpeech):
         self.model = model.strip()
         self.voice_settings = voice_settings or ElevenLabsVoiceSettings()
         self.client = client or httpx.Client(timeout=timeout)
+        self._cloud_unavailable = False
+        self._pending_notice: SpeechProviderNotice | None = None
 
     def prepare(
         self,
@@ -119,15 +121,36 @@ class ElevenLabsSpeech(VectorSpeech):
     ) -> PreparedSpeech:
         """Bereitet Cloud-Sprache vor oder nutzt transparent die lokale Stimme."""
         try:
-            return super().prepare(text, style)
+            prepared = super().prepare(text, style)
         except (
             OSError,
             RuntimeError,
             subprocess.SubprocessError,
             wave.Error,
         ):
-            print("ElevenLabs speech unavailable. Using local German voice.")
+            self._mark_cloud_unavailable()
             return self.local_speech.prepare(text, style)
+        self._mark_cloud_available()
+        return prepared
+
+    def consume_notice(self) -> SpeechProviderNotice | None:
+        """Liefert einen Wechsel der Cloud-Stimme höchstens einmal aus."""
+        notice = self._pending_notice
+        self._pending_notice = None
+        return notice
+
+    def _mark_cloud_unavailable(self) -> None:
+        """Merkt den ersten Cloud-Ausfall ohne wiederholte Offline-Meldung."""
+        if not self._cloud_unavailable:
+            print("ElevenLabs speech unavailable. Using local German voice.")
+            self._pending_notice = SpeechProviderNotice.LOCAL_FALLBACK
+        self._cloud_unavailable = True
+
+    def _mark_cloud_available(self) -> None:
+        """Merkt die erste erfolgreiche Cloud-Synthese nach einem Ausfall."""
+        if self._cloud_unavailable:
+            self._pending_notice = SpeechProviderNotice.CLOUD_RECOVERED
+        self._cloud_unavailable = False
 
     def say_thinking_prelude(self) -> bool:
         """Hält die Denkphase lokal, privat und unmittelbar verfügbar."""

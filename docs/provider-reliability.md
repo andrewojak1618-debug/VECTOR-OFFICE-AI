@@ -70,6 +70,13 @@ die lokale Sperre von Dokumentwissen für Cloud-Provider nicht umgehen. Sind
 alle zulässigen Wege ausgefallen, erhält der Benutzer eine kurze und ehrliche
 Fehlermeldung statt einer erfundenen Antwort.
 
+Ein fortlaufender Ausfall erzeugt nur beim ersten Übergang einen Offline-Hinweis.
+Eine spätere Wiederherstellung wird als eigener Zustandswechsel erkannt und
+höchstens einmal angekündigt. Gleichzeitige LLM- und TTS-Ausfälle werden vor
+der Ausgabe zu genau einer priorisierten Meldung zusammengeführt. Die
+Auslieferung eines Hinweises oder einer Antwort besitzt keinerlei Berechtigung,
+einen bestätigten verändernden Tool-Aufruf erneut auszuführen.
+
 ### Healthchecks
 
 Healthchecks liefern ausschließlich begrenzte Zustände wie `healthy`,

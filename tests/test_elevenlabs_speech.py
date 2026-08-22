@@ -12,7 +12,7 @@ from vector.elevenlabs_speech import (
     ElevenLabsSpeech,
     ElevenLabsVoiceSettings,
 )
-from vector.speech import SpeechStyle, VectorSpeech
+from vector.speech import SpeechProviderNotice, SpeechStyle, VectorSpeech
 from vector.speech_factory import create_speech_output
 
 
@@ -93,6 +93,52 @@ class ElevenLabsSpeechTests(unittest.TestCase):
 
         self.assertIs(fallback_audio, result)
         local_prepare.assert_called_once_with("Antwort", SpeechStyle.SUPPORTIVE)
+
+    def test_cloud_fallback_and_recovery_notices_are_emitted_once(self):
+        speech = ElevenLabsSpeech(self.local, "secret-key", "felix-id")
+        local_audio = object()
+        recovered_audio = object()
+        stable_audio = object()
+        outcomes = [
+            RuntimeError("offline"),
+            local_audio,
+            recovered_audio,
+            stable_audio,
+        ]
+
+        with patch.object(VectorSpeech, "prepare", side_effect=outcomes):
+            self.assertIs(local_audio, speech.prepare("Antwort eins"))
+            self.assertIs(
+                SpeechProviderNotice.LOCAL_FALLBACK,
+                speech.consume_notice(),
+            )
+            self.assertIsNone(speech.consume_notice())
+            self.assertIs(recovered_audio, speech.prepare("Antwort zwei"))
+            self.assertIs(
+                SpeechProviderNotice.CLOUD_RECOVERED,
+                speech.consume_notice(),
+            )
+            self.assertIsNone(speech.consume_notice())
+            self.assertIs(stable_audio, speech.prepare("Antwort drei"))
+            self.assertIsNone(speech.consume_notice())
+
+    def test_continuous_cloud_outage_does_not_repeat_notice(self):
+        speech = ElevenLabsSpeech(self.local, "secret-key", "felix-id")
+        outcomes = [
+            RuntimeError("offline one"),
+            object(),
+            RuntimeError("offline two"),
+            object(),
+        ]
+
+        with patch.object(VectorSpeech, "prepare", side_effect=outcomes):
+            speech.prepare("Antwort eins")
+            first = speech.consume_notice()
+            speech.prepare("Antwort zwei")
+            second = speech.consume_notice()
+
+        self.assertIs(SpeechProviderNotice.LOCAL_FALLBACK, first)
+        self.assertIsNone(second)
 
     def test_thinking_prelude_always_remains_local(self):
         speech = ElevenLabsSpeech(self.local, "secret-key", "felix-id")

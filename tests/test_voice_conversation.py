@@ -5,7 +5,10 @@ from unittest.mock import Mock, patch
 
 from main import run_voice_conversation
 from application.connection_supervisor import ConnectionSupervisor
-from application.voice_recovery import CONNECTION_RECOVERY_NOTICE
+from application.voice_recovery import (
+    CONNECTION_OFFLINE_NOTICE,
+    CONNECTION_RECOVERY_NOTICE,
+)
 
 
 class FakeAgent:
@@ -126,10 +129,39 @@ class VoiceConversationRecoveryTests(unittest.TestCase):
 
         sleep.assert_called_once_with(1.0)
         self.assertEqual(
-            [CONNECTION_RECOVERY_NOTICE, "Antwort auf: hallo vector"],
+            [
+                CONNECTION_OFFLINE_NOTICE,
+                CONNECTION_RECOVERY_NOTICE,
+                "Antwort auf: hallo vector",
+            ],
             self.speech.spoken,
         )
         self.assertFalse(connections.consume_recovery("wirepod"))
+
+    def test_repeated_wirepod_failure_announces_outage_and_recovery_once(self):
+        listener = SequenceVoiceListener(
+            [
+                RuntimeError("private endpoint one"),
+                RuntimeError("private endpoint two"),
+                "hallo vector",
+            ],
+        )
+        connections = ConnectionSupervisor()
+
+        with patch("application.conversation.time.sleep"), patch(
+            "sys.stdout",
+            new_callable=io.StringIO,
+        ):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                max_turns=1,
+                connections=connections,
+            )
+
+        self.assertEqual(1, self.speech.spoken.count(CONNECTION_OFFLINE_NOTICE))
+        self.assertEqual(1, self.speech.spoken.count(CONNECTION_RECOVERY_NOTICE))
 
     def test_transient_prime_failure_is_retried(self):
         listener = SequenceVoiceListener(["hallo"], prime_failures=1)
@@ -165,7 +197,11 @@ class VoiceConversationRecoveryTests(unittest.TestCase):
             )
 
         self.assertEqual(
-            [CONNECTION_RECOVERY_NOTICE, "Antwort auf: hallo"],
+            [
+                CONNECTION_OFFLINE_NOTICE,
+                CONNECTION_RECOVERY_NOTICE,
+                "Antwort auf: hallo",
+            ],
             self.speech.spoken,
         )
 

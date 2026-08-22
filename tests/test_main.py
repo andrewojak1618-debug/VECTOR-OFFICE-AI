@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from application.voice_recovery import CONNECTION_OFFLINE_NOTICE
 from main import run_conversation, run_voice_conversation
 
 
@@ -347,7 +348,7 @@ class ConversationLoopTests(unittest.TestCase):
 
         self.assertIn("Voice input failed", output.getvalue())
         self.assertEqual([], agent.requests)
-        self.assertEqual([], speech.spoken)
+        self.assertEqual([CONNECTION_OFFLINE_NOTICE], speech.spoken)
 
 
 if __name__ == "__main__":

@@ -136,6 +136,26 @@ class ConnectionSupervisorTests(unittest.TestCase):
         status = supervisor.provider_status("vector-sdk")
         self.assertEqual(ProviderHealth.HEALTHY, status.health)
 
+    def test_provider_recovery_is_consumed_exactly_once(self):
+        supervisor = ConnectionSupervisor()
+        supervisor.register_provider("openai", enabled=True)
+        supervisor.observe_provider("openai", ProviderHealth.UNAVAILABLE)
+        supervisor.observe_provider("openai", ProviderHealth.HEALTHY)
+
+        self.assertTrue(supervisor.consume_provider_recovery("openai"))
+        self.assertFalse(supervisor.consume_provider_recovery("openai"))
+
+        supervisor.observe_provider("openai", ProviderHealth.HEALTHY)
+        self.assertFalse(supervisor.consume_provider_recovery("openai"))
+
+    def test_initial_provider_success_is_not_reported_as_recovery(self):
+        supervisor = ConnectionSupervisor()
+        supervisor.register_provider("ollama", enabled=True)
+
+        supervisor.observe_provider("ollama", ProviderHealth.HEALTHY)
+
+        self.assertFalse(supervisor.consume_provider_recovery("ollama"))
+
     def test_provider_transitions_emit_only_fixed_content_free_metadata(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "events.jsonl"

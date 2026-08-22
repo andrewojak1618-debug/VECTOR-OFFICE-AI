@@ -54,7 +54,7 @@ class MultiTurnProviderSessionTests(unittest.TestCase):
         )
         self.assertIn("Ollama übernimmt Runde zwei.", final_context)
         self.assertEqual(
-            ["fallback.activated"],
+            ["fallback.activated", "fallback.recovered"],
             [event["code"] for event in events],
         )
 

@@ -76,6 +76,8 @@ class ConnectionSupervisor:
         self._statuses: dict[str, ConnectionStatus] = {}
         self._provider_statuses: dict[str, ProviderStatus] = {}
         self._pending_recoveries: set[str] = set()
+        self._pending_provider_recoveries: set[str] = set()
+        self._provider_recovery_armed: set[str] = set()
 
     def observe(self, service: str, available: bool) -> ConnectionStatus:
         """Speichert einen Healthcheck und liefert den begrenzten nächsten Retryzustand."""
@@ -113,7 +115,9 @@ class ConnectionSupervisor:
         if type(enabled) is not bool:
             raise TypeError("Provider enabled flag must be boolean.")
         health = ProviderHealth.UNAVAILABLE if enabled else ProviderHealth.DISABLED
-        return self.observe_provider(provider, health)
+        status = self.observe_provider(provider, health)
+        self._provider_recovery_armed.discard(provider)
+        return status
 
     def observe_provider(
         self,
@@ -131,6 +135,7 @@ class ConnectionSupervisor:
             previous is None or previous.health is not health,
         )
         self._provider_statuses[provider] = status
+        self._update_provider_recovery(previous, status)
         self._emit_provider(status)
         return status
 
@@ -145,6 +150,14 @@ class ConnectionSupervisor:
             provider: status.health.value
             for provider, status in sorted(self._provider_statuses.items())
         }
+
+    def consume_provider_recovery(self, provider: str) -> bool:
+        """Verbraucht genau einmal die Wiederherstellung eines Providers."""
+        self._validate_service(provider)
+        if provider not in self._pending_provider_recoveries:
+            return False
+        self._pending_provider_recoveries.remove(provider)
+        return True
 
     def consume_recovery(self, service: str) -> bool:
         """Verbraucht genau einmal einen Wiederherstellungsübergang ohne Dienstdaten."""
@@ -222,6 +235,26 @@ class ConnectionSupervisor:
             return
         if previous is not None and previous.state is ConnectionState.UNAVAILABLE:
             self._pending_recoveries.add(current.service)
+
+    def _update_provider_recovery(
+        self,
+        previous: ProviderStatus | None,
+        current: ProviderStatus,
+    ) -> None:
+        """Merkt die Rückkehr eines eingeschränkten Providers genau einmal vor."""
+        recoverable = {ProviderHealth.DEGRADED, ProviderHealth.UNAVAILABLE}
+        if current.health in recoverable:
+            self._pending_provider_recoveries.discard(current.provider)
+            self._provider_recovery_armed.add(current.provider)
+            return
+        if current.health is not ProviderHealth.HEALTHY:
+            self._pending_provider_recoveries.discard(current.provider)
+            self._provider_recovery_armed.discard(current.provider)
+            return
+        armed = current.provider in self._provider_recovery_armed
+        if armed and previous is not None and previous.health in recoverable:
+            self._pending_provider_recoveries.add(current.provider)
+        self._provider_recovery_armed.discard(current.provider)
 
     @staticmethod
     def _next_failure_count(previous: ConnectionStatus | None) -> int:

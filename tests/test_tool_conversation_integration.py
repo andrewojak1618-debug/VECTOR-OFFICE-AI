@@ -52,6 +52,12 @@ class RecordingSpeech:
         return True
 
 
+class RaisingSpeech(RecordingSpeech):
+    def say(self, text, _style=None):
+        self.spoken.append(text)
+        raise RuntimeError("private Vector transport detail")
+
+
 class TranscriptEvent:
     def __init__(self, text):
         self.text = text
@@ -100,6 +106,18 @@ class ToolConversationIntegrationTests(unittest.TestCase):
         self.assertEqual(0, self.model.calls)
         self.assertEqual(2, len(self.speech.spoken))
         self.assertIn("Ja oder Nein", self.speech.spoken[0])
+
+    def test_output_failure_never_retries_confirmed_mutating_tool(self):
+        speech = RaisingSpeech()
+
+        with patch(
+            "builtins.input",
+            side_effect=["begrüße mich", "ja", "/exit"],
+        ), patch("sys.stdout", new_callable=io.StringIO):
+            run_conversation(self.agent, speech)
+
+        self.actions.perform.assert_called_once_with("greeting")
+        self.assertEqual(0, self.model.calls)
 
     def test_voice_keeps_confirmation_across_two_transcripts(self):
         listener = SequenceListener(("schau nach oben", "ja"))
