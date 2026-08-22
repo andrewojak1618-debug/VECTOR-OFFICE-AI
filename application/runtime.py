@@ -18,7 +18,10 @@ from vector.speech_factory import create_speech_output
 from voice.wirepod_input import WirePodTranscriptListener
 
 from application.conversation import run_conversation, run_voice_conversation
-from application.connection_supervisor import ConnectionSupervisor
+from application.connection_supervisor import (
+    CORE_PROVIDERS,
+    ConnectionSupervisor,
+)
 from application.runtime_resources import (
     _create_audit_store,
     _create_knowledge_library,
@@ -63,6 +66,7 @@ def run_application(settings) -> None:
     mode = get_runtime_mode(settings)
     diagnostics = _create_diagnostics(settings)
     connections = ConnectionSupervisor(diagnostics)
+    _register_provider_statuses(settings, mode, connections)
     _emit_runtime_start(diagnostics, mode)
     vector = _prepare_vector(settings, mode, diagnostics, connections)
     if vector is None:
@@ -102,6 +106,24 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
         library,
         memory_store,
     )
+
+
+def _register_provider_statuses(settings, mode, connections) -> None:
+    """Registriert zentrale Provider anhand der gewählten Laufzeitoptionen."""
+    llm_providers = {mode.provider, mode.fallback_provider}
+    tts_provider = getattr(settings, "TTS_PROVIDER", "onecore").casefold().strip()
+    enabled = {
+        "vector-sdk": True,
+        "wirepod": True,
+        "ollama": mode.needs_ollama,
+        "openai": "openai" in llm_providers and not mode.local_voice_required,
+        "elevenlabs": (
+            tts_provider == "elevenlabs"
+            and bool(getattr(settings, "TTS_ALLOW_CLOUD", False))
+        ),
+    }
+    for provider in CORE_PROVIDERS:
+        connections.register_provider(provider, enabled[provider])
 
 
 def _prepare_vector(

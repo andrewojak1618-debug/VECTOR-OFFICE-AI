@@ -11,6 +11,13 @@ from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
 
 DEFAULT_RETRY_DELAYS = (1.0, 2.0, 5.0, 10.0, 30.0)
 SERVICE_PATTERN = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
+CORE_PROVIDERS = (
+    "vector-sdk",
+    "wirepod",
+    "ollama",
+    "openai",
+    "elevenlabs",
+)
 
 
 class ConnectionState(Enum):
@@ -18,6 +25,15 @@ class ConnectionState(Enum):
 
     AVAILABLE = "available"
     UNAVAILABLE = "unavailable"
+
+
+class ProviderHealth(Enum):
+    """Define the safe public health states of one provider."""
+
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNAVAILABLE = "unavailable"
+    DISABLED = "disabled"
 
 
 @dataclass(frozen=True)
@@ -28,6 +44,15 @@ class ConnectionStatus:
     state: ConnectionState
     consecutive_failures: int
     retry_after_seconds: float
+    changed: bool
+
+
+@dataclass(frozen=True)
+class ProviderStatus:
+    """Expose one immutable, content-free provider health snapshot."""
+
+    provider: str
+    health: ProviderHealth
     changed: bool
 
 
@@ -49,6 +74,7 @@ class ConnectionSupervisor:
         self.retry_delays = retry_delays
         self.sleeper = sleeper
         self._statuses: dict[str, ConnectionStatus] = {}
+        self._provider_statuses: dict[str, ProviderStatus] = {}
         self._pending_recoveries: set[str] = set()
 
     def observe(self, service: str, available: bool) -> ConnectionStatus:
@@ -74,12 +100,51 @@ class ConnectionSupervisor:
         self._statuses[service] = status
         self._update_recovery(previous, status)
         self._emit(status)
+        self._sync_provider_status(service, available)
         return status
 
     def status(self, service: str) -> ConnectionStatus | None:
         """Liefert den letzten Zustand für einen validierten Dienstnamen."""
         self._validate_service(service)
         return self._statuses.get(service)
+
+    def register_provider(self, provider: str, enabled: bool) -> ProviderStatus:
+        """Registriert einen Provider als deaktiviert oder noch nicht erreichbar."""
+        if type(enabled) is not bool:
+            raise TypeError("Provider enabled flag must be boolean.")
+        health = ProviderHealth.UNAVAILABLE if enabled else ProviderHealth.DISABLED
+        return self.observe_provider(provider, health)
+
+    def observe_provider(
+        self,
+        provider: str,
+        health: ProviderHealth,
+    ) -> ProviderStatus:
+        """Speichert den letzten sicheren Providerzustand und meldet Übergänge."""
+        self._validate_service(provider)
+        if not isinstance(health, ProviderHealth):
+            raise TypeError("Provider health must be a ProviderHealth value.")
+        previous = self._provider_statuses.get(provider)
+        status = ProviderStatus(
+            provider,
+            health,
+            previous is None or previous.health is not health,
+        )
+        self._provider_statuses[provider] = status
+        self._emit_provider(status)
+        return status
+
+    def provider_status(self, provider: str) -> ProviderStatus | None:
+        """Liefert den letzten inhaltsfreien Zustand eines Providers."""
+        self._validate_service(provider)
+        return self._provider_statuses.get(provider)
+
+    def provider_overview(self) -> dict[str, str]:
+        """Liefert alle bekannten Providerzustände sortiert als sichere Übersicht."""
+        return {
+            provider: status.health.value
+            for provider, status in sorted(self._provider_statuses.items())
+        }
 
     def consume_recovery(self, service: str) -> bool:
         """Verbraucht genau einmal einen Wiederherstellungsübergang ohne Dienstdaten."""
@@ -120,6 +185,30 @@ class ConnectionSupervisor:
             count=status.consecutive_failures,
             retry_delay_seconds=status.retry_after_seconds,
         )
+
+    def _emit_provider(self, status: ProviderStatus) -> None:
+        """Schreibt nur geänderte Providerzustände ohne Inhalte in die Diagnose."""
+        if self.diagnostics is None or not status.changed:
+            return
+        level = (
+            DiagnosticLevel.INFO
+            if status.health in {ProviderHealth.HEALTHY, ProviderHealth.DISABLED}
+            else DiagnosticLevel.WARNING
+        )
+        self.diagnostics.emit(
+            level,
+            status.provider,
+            f"provider.health.{status.health.value}",
+            provider=status.provider,
+            status=status.health.value,
+        )
+
+    def _sync_provider_status(self, service: str, available: bool) -> None:
+        """Spiegelt bekannte Verbindungsprüfungen in die Providerübersicht."""
+        if service not in self._provider_statuses:
+            return
+        health = ProviderHealth.HEALTHY if available else ProviderHealth.UNAVAILABLE
+        self.observe_provider(service, health)
 
     def _retry_delay(self, failure_count: int) -> float:
         """Liefert die begrenzte Wartezeit für eine fortlaufende Fehleranzahl."""

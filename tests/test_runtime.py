@@ -7,9 +7,11 @@ from application.runtime import (
     _create_tool_registry,
     _ensure_ollama,
     _knowledge_enabled,
+    _register_provider_statuses,
     _run_input_mode,
     get_runtime_mode,
 )
+from application.connection_supervisor import ConnectionSupervisor
 
 
 def make_settings(**overrides):
@@ -20,6 +22,8 @@ def make_settings(**overrides):
         "VOICE_ALLOW_CLOUD": False,
         "EMBEDDING_PROVIDER": "ollama",
         "KNOWLEDGE_ALLOW_CLOUD": False,
+        "TTS_PROVIDER": "onecore",
+        "TTS_ALLOW_CLOUD": False,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -71,6 +75,47 @@ class RuntimeModeTests(unittest.TestCase):
 
         self.assertTrue(mode.needs_ollama)
         self.assertTrue(mode.local_voice_required)
+
+    def test_runtime_registers_all_central_provider_states(self):
+        settings = make_settings(
+            TTS_PROVIDER="elevenlabs",
+            TTS_ALLOW_CLOUD=True,
+        )
+        connections = ConnectionSupervisor()
+
+        _register_provider_statuses(
+            settings,
+            get_runtime_mode(settings),
+            connections,
+        )
+
+        self.assertEqual(
+            {
+                "elevenlabs": "unavailable",
+                "ollama": "unavailable",
+                "openai": "unavailable",
+                "vector-sdk": "unavailable",
+                "wirepod": "unavailable",
+            },
+            connections.provider_overview(),
+        )
+
+    def test_runtime_marks_unselected_optional_providers_disabled(self):
+        settings = make_settings(
+            LLM_PROVIDER="ollama",
+            LLM_FALLBACK_PROVIDER="none",
+        )
+        connections = ConnectionSupervisor()
+
+        _register_provider_statuses(
+            settings,
+            get_runtime_mode(settings),
+            connections,
+        )
+
+        overview = connections.provider_overview()
+        self.assertEqual("disabled", overview["openai"])
+        self.assertEqual("disabled", overview["elevenlabs"])
 
     @patch("application.runtime.OllamaRuntime")
     def test_private_wirepod_voice_preloads_local_chat_model(self, runtime_type):

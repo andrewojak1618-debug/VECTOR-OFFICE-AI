@@ -12,6 +12,23 @@ Endzustand ebenfalls an den Supervisor. Strukturierte Ereignisse entstehen nur
 bei einem Zustandswechsel und enthalten keine Adressen, Transkripte oder
 Zugangsdaten.
 
+## Zentrale Provider-Zustandsübersicht
+
+Der Supervisor verwaltet zusätzlich eine inhaltsfreie Übersicht für
+`vector-sdk`, `wirepod`, `ollama`, `openai` und `elevenlabs`. Jeder Eintrag
+besitzt genau einen der Zustände `healthy`, `degraded`, `unavailable` oder
+`disabled`. Verpflichtende lokale Dienste starten als `unavailable`, bis ihre
+erste erfolgreiche Prüfung vorliegt. Nicht gewählte optionale Cloud-Provider
+werden als `disabled` registriert.
+
+`provider_overview()` liefert eine alphabetisch sortierte Kopie der zuletzt
+beobachteten Zustände. Wiederholte identische Beobachtungen erzeugen keinen
+neuen Zustandswechsel. Die Diagnose speichert ausschließlich Providername und
+festen Zustandswert; API-Schlüssel, Endpunkte, Anfragen, Antworten und
+Gesprächsinhalte sind nicht zulässig. Die Übersicht autorisiert weder
+Provideraufrufe noch Robot-Aktionen und ersetzt keine späteren aktiven
+Healthchecks.
+
 Während einer laufenden WirePod-Sprachsitzung werden vorübergehende Abruffehler
 ebenfalls an den Supervisor gemeldet. Die vier Wiederholungen warten gemäß der
 gemeinsamen Staffel 1, 2, 5 und 10 Sekunden. Kehrt die Verbindung innerhalb der

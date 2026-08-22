@@ -6,8 +6,10 @@ import unittest
 from pathlib import Path
 
 from application.connection_supervisor import (
+    CORE_PROVIDERS,
     ConnectionState,
     ConnectionSupervisor,
+    ProviderHealth,
 )
 from diagnostics.events import StructuredDiagnosticReporter
 
@@ -91,6 +93,79 @@ class ConnectionSupervisorTests(unittest.TestCase):
                 lambda: False,
                 max_attempts=2,
             )
+
+    def test_provider_overview_supports_all_safe_health_states(self):
+        supervisor = ConnectionSupervisor()
+        for provider in CORE_PROVIDERS:
+            supervisor.register_provider(provider, enabled=False)
+
+        self.assertEqual("disabled", supervisor.provider_overview()["openai"])
+        unavailable = supervisor.observe_provider(
+            "openai",
+            ProviderHealth.UNAVAILABLE,
+        )
+        degraded = supervisor.observe_provider("openai", ProviderHealth.DEGRADED)
+        healthy = supervisor.observe_provider("openai", ProviderHealth.HEALTHY)
+
+        self.assertTrue(unavailable.changed)
+        self.assertTrue(degraded.changed)
+        self.assertTrue(healthy.changed)
+        self.assertEqual("healthy", supervisor.provider_overview()["openai"])
+        self.assertEqual(
+            ProviderHealth.HEALTHY,
+            supervisor.provider_status("openai").health,
+        )
+
+    def test_provider_overview_retains_last_state_without_duplicate_transition(self):
+        supervisor = ConnectionSupervisor()
+        supervisor.register_provider("ollama", enabled=True)
+
+        first = supervisor.observe_provider("ollama", ProviderHealth.DEGRADED)
+        repeated = supervisor.observe_provider("ollama", ProviderHealth.DEGRADED)
+
+        self.assertTrue(first.changed)
+        self.assertFalse(repeated.changed)
+        self.assertEqual("degraded", supervisor.provider_overview()["ollama"])
+
+    def test_registered_connection_updates_matching_provider_health(self):
+        supervisor = ConnectionSupervisor()
+        supervisor.register_provider("vector-sdk", enabled=True)
+
+        supervisor.observe("vector-sdk", True)
+
+        status = supervisor.provider_status("vector-sdk")
+        self.assertEqual(ProviderHealth.HEALTHY, status.health)
+
+    def test_provider_transitions_emit_only_fixed_content_free_metadata(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "events.jsonl"
+            supervisor = ConnectionSupervisor(StructuredDiagnosticReporter(path))
+            supervisor.register_provider("elevenlabs", enabled=False)
+            supervisor.observe_provider("elevenlabs", ProviderHealth.UNAVAILABLE)
+            supervisor.observe_provider("elevenlabs", ProviderHealth.DEGRADED)
+            supervisor.observe_provider("elevenlabs", ProviderHealth.HEALTHY)
+            events = [
+                json.loads(line)
+                for line in path.read_text(encoding="utf-8").splitlines()
+            ]
+
+        self.assertEqual(
+            [
+                "provider.health.disabled",
+                "provider.health.unavailable",
+                "provider.health.degraded",
+                "provider.health.healthy",
+            ],
+            [event["code"] for event in events],
+        )
+        self.assertEqual({"provider", "status"}, set(events[-1]["details"]))
+        self.assertNotIn("api_key", json.dumps(events))
+
+    def test_invalid_provider_state_is_rejected(self):
+        with self.assertRaisesRegex(TypeError, "enabled flag"):
+            ConnectionSupervisor().register_provider("openai", enabled=1)
+        with self.assertRaisesRegex(TypeError, "Provider health"):
+            ConnectionSupervisor().observe_provider("openai", "healthy")
 
 
 if __name__ == "__main__":
