@@ -70,6 +70,7 @@
 - ✅ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
 - ✅ erste inhaltlich begrenzte Python-Versionsabfrage absichern
 - ✅ kontrollierte letzte Projektänderung aus festem Changelog nennen
+- ✅ lokalen count-only Codequalitätsstatus ohne freie Pfade ergänzen
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
 ## Codequalität und Dokumentation

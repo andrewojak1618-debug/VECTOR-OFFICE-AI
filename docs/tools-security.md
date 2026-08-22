@@ -150,6 +150,7 @@ erfolgte erst nach Ende der Animation.
 | Gedächtnisstatus | „Gedächtnis Status“ | ausschließlich bestätigte lokale Zähler |
 | Nächster Projektpunkt | „Was ist der nächste Projektpunkt?“ | erster offener Eintrag aus dem festen Roadmap-Abschnitt |
 | Dokumentationsstatus | „Dokumentation Status“ | ausschließlich Zähler für sechs feste Kerndokumente |
+| Codequalitätsstatus | „Codequalität Status“ | feste Python-Regeln, ausschließlich begrenzte Zähler |
 | Letzte Projektänderung | „Projekt Änderung“ | erster sicherer Eintrag aus dem festen lokalen Changelog |
 | Recherchequelle | „Recherchequelle prüfen“ | feste Python.org-Quelle, separates Ja erforderlich |
 | Python-Version | „Python Version“ | nur neueste stabile Versionsnummer von Python.org, separates Ja erforderlich |
@@ -326,6 +327,38 @@ Der feste Sprachbefehl `Dokumentation Status` benötigt keine Bestätigung und
 keine Interpretation durch OpenAI oder Ollama. Eine konfigurierte Cloud-TTS
 erhält höchstens die nicht sensible Zählerzusammenfassung, niemals gelesene
 Dokumentinhalte.
+
+## Lokaler Codequalitätsstatus
+
+`tools/code_quality_status.py` registriert
+`development.code_quality_status` mit `READ_ONLY` und ohne Parameter. Die
+Prüfung ist auf `main.py` und die festen Produktivpakete aus
+`docs/quality.md` beschränkt. Nutzer und Modell können weder Pfade,
+Dateimuster, Regeln, Grenzwerte noch Ausgabeformat beeinflussen.
+
+Die Python-Dateien werden lokal geparst. Geprüft werden fehlende Modul- und
+Funktions-Docstrings, blockierte englische Standardformulierungen, Funktionen
+oberhalb von 35 Zeilen und Module mit 400 oder mehr Zeilen. Ein fehlender fester
+Produktivpfad, eine ungültige Python-Datei oder ein Lesefehler beendet den
+Aufruf an der bereinigenden Registry-Grenze, statt einen unvollständigen
+Erfolgsstatus zu melden.
+
+Die Ausgabe enthält ausschließlich die Anzahl geprüfter Module und Funktionen,
+fünf begrenzte Verstoßzähler, ihre Summe und einen lokal erzeugten Sprechtext.
+Dateinamen, Pfade, Funktionsnamen, Docstrings, Quelltexte und interne Fehler
+gelangen weder in Gesprächskontext noch Audit. `Codequalität Status` benötigt
+keine Bestätigung und kein Sprachmodell; eine konfigurierte Cloud-TTS erhält
+höchstens die nicht sensible Zählerzusammenfassung.
+
+Für eine deutliche physische Ausgabe werden die begrenzten Zähler lokal in
+deutsche Zahlwörter umgewandelt und in getrennten kurzen Sätzen gesprochen.
+Dadurch entstehen klare Satzpausen, ohne die allgemeine ElevenLabs-Stimme oder
+deren Geschwindigkeit für andere Antworten zu verändern.
+
+WirePod hat den vollständigen Befehl im physischen Test als `qualität status`
+verkürzt. Diese eine beobachtete Kurzform ist deshalb zusätzlich exakt auf
+dasselbe argumentlose Tool abgebildet; allgemeinere Qualitätsfragen bleiben
+weiterhin normaler Dialog und erzeugen keine freien Toolparameter.
 
 ## Letzte dokumentierte Projektänderung
 

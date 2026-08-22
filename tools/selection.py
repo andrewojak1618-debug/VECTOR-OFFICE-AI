@@ -96,6 +96,18 @@ DEFAULT_INTENT_RULES = (
     ),
     ToolIntentRule(
         (
+            "codequalität status",
+            "code qualität status",
+            "codequalitätsstatus",
+            "qualität status",
+            "wie ist die codequalität",
+            "prüfe die codequalität",
+        ),
+        "development.code_quality_status",
+        "lokalen Codequalitätsstatus nennen",
+    ),
+    ToolIntentRule(
+        (
             "dokumentation status",
             "dokumentations status",
             "dokumentationsstatus",

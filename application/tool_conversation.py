@@ -175,6 +175,8 @@ def _success_message(
         return str(result.output["spoken_text"])
     if selection.tool_name == "research.python_source_status":
         return str(result.output["spoken_text"])
+    if selection.tool_name == "development.code_quality_status":
+        return str(result.output["spoken_text"])
     if selection.tool_name == "development.documentation_status":
         return str(result.output["spoken_text"])
     if selection.tool_name == "memory.local_status":

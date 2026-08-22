@@ -66,6 +66,7 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("diagnostics/tool_audit.py"): Path("docs/tools-security.md"),
     Path("tools/audit_store.py"): Path("docs/tools-security.md"),
     Path("tools/changelog_status.py"): Path("docs/tools-security.md"),
+    Path("tools/code_quality_status.py"): Path("docs/tools-security.md"),
     Path("tools/registry.py"): Path("docs/progress.md"),
     Path("tools/inspection.py"): Path("docs/tools-security.md"),
     Path("tools/proposals.py"): Path("docs/tools-security.md"),

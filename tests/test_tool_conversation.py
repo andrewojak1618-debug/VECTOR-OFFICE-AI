@@ -10,6 +10,10 @@ from application.tool_conversation import (
 )
 from brain.agent import Agent
 from memory.models import DocumentIndexStatus, KnowledgeDocument, MemoryStatistics
+from tools.code_quality_status import (
+    CodeQualityStatus,
+    register_code_quality_status_tool,
+)
 from tools.documentation_status import (
     DOCUMENT_COUNT,
     DocumentationStatus,
@@ -55,6 +59,10 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
+        register_code_quality_status_tool(
+            self.registry,
+            status_reader=lambda _root: CodeQualityStatus(90, 763, 0, 0, 0, 0, 0),
+        )
         register_documentation_status_tool(
             self.registry,
             status_reader=lambda _root: DocumentationStatus(
@@ -143,6 +151,21 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("Projektdokumentation ist vollständig", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_code_quality_status_executes_without_model_or_confirmation(self):
+        result = self.controller.handle("Codequalität Status")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Codequalität erfüllt die festen Regeln", result.message)
+        self.assertIn("neunzig Module", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_observed_short_quality_status_never_reaches_model(self):
+        result = self.controller.handle("Qualität Status")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("neunzig Module", result.message)
         self.assertEqual(0, self.model.calls)
 
     def test_latest_project_change_executes_without_model_or_confirmation(self):

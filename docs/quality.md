@@ -77,6 +77,13 @@ Eine zusätzliche Prüfung blockiert die früher verwendeten englischen
 Standardformulierungen. Damit fallen undokumentierte oder in den alten Stil
 zurückfallende Funktionen unmittelbar in der Testsuite auf.
 
+Der feste Sprachbefehl `Codequalität Status` verwendet dieselben dokumentierten
+Grenzen für eine rein lokale, argumentlose Bestandsprüfung. Die Registry gibt
+nur Modul-, Funktions- und Verstoßzähler weiter; Dateinamen, Funktionsnamen,
+Pfade, Docstrings und Quelltexte bleiben innerhalb der Prüfung. Dieser Status
+ersetzt keinen vollständigen Testlauf, sondern meldet ausschließlich die
+statisch prüfbaren Leitplanken.
+
 Die vollständige Abnahme erfolgt mit:
 
 ```powershell

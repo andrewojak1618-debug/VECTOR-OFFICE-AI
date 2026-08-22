@@ -6,6 +6,9 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+- lokalen count-only Codequalitätsstatus für feste Python-Regeln ergänzt
+- beobachtete WirePod-Kurzform `Qualität Status` gezielt abgesichert
+- gesprochene Codequalitätszähler durch Zahlwörter und Satzpausen verdeutlicht
 - alle produktiven Python-Funktionen und Methoden mit deutschen Docstrings erklärt
 - dauerhafte Qualitätsprüfung für private Funktions-Docstrings und englische Altformulierungen ergänzt
 - kontrollierten lokalen Changelog-Abruf ohne freie Dateipfade ergänzt

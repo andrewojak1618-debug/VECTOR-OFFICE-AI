@@ -85,6 +85,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokaler Read-only-Gedächtnisstatus ausschließlich mit bestätigten Zählern
 - lokaler Read-only-Roadmapstatus für den nächsten kontrollierten Projektpunkt
 - lokaler Read-only-Dokumentationsstatus für sechs feste Kerndokumente
+- lokaler Read-only-Codequalitätsstatus ausschließlich mit Regelzählern
 - feste Python.org-Recherchequelle mit separater Netzwerkbestätigung
 - aktuelle stabile Python-Version als streng gefilterte Python.org-Abfrage
 - letzte dokumentierte Projektänderung aus dem festen lokalen Changelog
@@ -327,6 +328,13 @@ bestätigte Stil-Feedbacks lokal gespeichert sind. Inhalte, Kategorien, Quellen,
 Zeitpunkte und IDs werden weder gesprochen noch als Toolergebnis ausgegeben.
 Der argumentlose Read-only-Aufruf verwendet kein Sprachmodell und benötigt
 keine Bestätigung.
+
+`Codequalität Status` prüft lokal die festen Python-Produktivpfade auf
+Modul- und Funktions-Docstrings sowie die 35- und 400-Zeilen-Grenzen. Vector
+nennt ausschließlich die Anzahl geprüfter Module und Funktionen sowie
+zusammengefasste Regelverstöße. Dateinamen, Pfade und Quelltexte verlassen die
+Prüfung nicht; der argumentlose Read-only-Aufruf benötigt weder Bestätigung
+noch Sprachmodell.
 
 ## 🛠️ Technik
 
@@ -922,6 +930,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzen
 - ✅ lokalen Read-only-Roadmapstatus ohne freie Pfade ergänzen
 - ✅ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
+- ✅ kontrollierten lokalen Codequalitätsstatus ohne freie Pfade ergänzen
 - ✅ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
 - ✅ erste inhaltlich begrenzte Python-Versionsabfrage absichern
 - ✅ kontrollierte letzte Projektänderung aus festem Changelog nennen

@@ -3,6 +3,10 @@
 import unittest
 from unittest.mock import MagicMock
 
+from tools.code_quality_status import (
+    CodeQualityStatus,
+    register_code_quality_status_tool,
+)
 from tools.documentation_status import (
     DOCUMENT_COUNT,
     DocumentationStatus,
@@ -55,6 +59,10 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.registry = ToolRegistry()
         register_vector_action_tools(self.registry, self.actions)
         register_office_tools(self.registry)
+        register_code_quality_status_tool(
+            self.registry,
+            status_reader=lambda _root: CodeQualityStatus(90, 763, 0, 0, 0, 0, 0),
+        )
         register_documentation_status_tool(
             self.registry,
             status_reader=lambda _root: DocumentationStatus(
@@ -154,6 +162,26 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual("development.documentation_status", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_code_quality_status_selects_fixed_read_only_tool(self):
+        selection = self.selector.select("Wie ist die Codequalität?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.code_quality_status", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_code_quality_word_variation_maps_to_fixed_tool(self):
+        selection = self.selector.select("Code Qualität Status")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.code_quality_status", selection.tool_name)
+
+    def test_observed_short_code_quality_phrase_maps_to_fixed_tool(self):
+        selection = self.selector.select("Qualität Status")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.code_quality_status", selection.tool_name)
 
     def test_documentation_status_word_variation_maps_to_fixed_tool(self):
         selection = self.selector.select("Dokumentation Projekt Status")

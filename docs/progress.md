@@ -895,3 +895,21 @@ Die deutsche TTS wurde schrittweise verbessert:
 - neun strukturelle Qualitätsprüfungen einschließlich 35- und 400-Zeilen-Grenzen bestanden
 - 549 automatisierte Tests, Python-Kompilierung und strikter Dokumentationsbau bestanden
 - vollständige lokale Kernabnahme mit vier von vier Prüfungen abgeschlossen
+
+## Punkt 33 – Kontrollierter lokaler Codequalitätsstatus
+
+- `development.code_quality_status` als argumentloses Read-only-Tool implementiert
+- `main.py` und acht feste Python-Produktivpakete als einzige Prüfquellen festgelegt
+- fehlende Modul- und Funktions-Docstrings lokal über den Python-AST gezählt
+- englische Altformulierungen sowie 35- und 400-Zeilen-Verstöße erfasst
+- freie Pfade, Dateimuster, Regeln, Grenzwerte und Modellparameter ausgeschlossen
+- Ausgabe auf Modul-, Funktions- und fünf begrenzte Verstoßzähler reduziert
+- Dateinamen, Funktionsnamen, Docstrings, Quelltext und Lesefehler verworfen
+- unvollständige Produktivpfade und ungültige Quellen als sicheren Fehler behandelt
+- festen Sprachbefehl `Codequalität Status` ohne Modellaufruf ergänzt
+- Runtime, Registry, Auswahl und Gesprächspfad automatisiert abgesichert
+- realen lokalen Aufruf mit 91 Modulen, 781 Funktionen und null Verstößen geprüft
+- 562 automatisierte Tests, Python-Kompilierung und strikten Dokumentationsbau bestanden
+- vollständige lokale Kernabnahme mit vier von vier Prüfungen abgeschlossen
+- von WirePod beobachtete Kurzform `qualität status` gezielt freigegeben
+- Qualitätszähler als deutsche Zahlwörter mit getrennten Satzpausen ausgegeben

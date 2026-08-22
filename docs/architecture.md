@@ -139,6 +139,9 @@ dem festen Abschnitt `Tools und Sicherheit` der lokalen Projekt-Roadmap und
 verwirft unzulässige oder übergroße Ausgaben.
 `tools/documentation_status.py` prüft sechs fest vorgegebene öffentliche
 Kerndokumente und gibt ausschließlich bereinigte Vollständigkeitszähler zurück.
+`tools/code_quality_status.py` parst nur die festen Python-Produktivpfade und
+gibt ausschließlich begrenzte Zähler für die dokumentierten Qualitätsregeln
+zurück; Pfade, Namen und Quelltext bleiben innerhalb der lokalen Prüfgrenze.
 `tools/changelog_status.py` liest nur den ersten validierten Eintrag im festen
 `[Unreleased]`-Abschnitt der lokalen `CHANGELOG.md` und verwirft weitere Inhalte.
 `tools/research_source.py` darf nach separater Einmalbestätigung nur die feste

@@ -96,6 +96,14 @@ def _references_documentation_status(value: str) -> bool:
     )
 
 
+def _references_code_quality_status(value: str) -> bool:
+    """Prüft, ob eine Phrase den festen lokalen Codequalitätsstatus bezeichnet."""
+    words = set(value.split())
+    return "codequalitätsstatus" in words or "codequalität" in words or (
+        {"code", "qualität"} <= words
+    )
+
+
 def _references_research_source(value: str) -> bool:
     """Prüft, ob eine Phrase die feste Quellen-Erreichbarkeitsprüfung meint."""
     words = set(value.split())
@@ -127,6 +135,7 @@ def _references_next_project_item(value: str) -> bool:
 
 _CANONICAL_MATCHERS: tuple[tuple[IntentMatcher, str], ...] = (
     (lambda value: _references_status(value, "gedächtnisstatus", "gedächtnis"), "gedächtnis status"),
+    (_references_code_quality_status, "codequalität status"),
     (_references_documentation_status, "dokumentation status"),
     (_references_python_version, "python version"),
     (_references_research_source, "recherchequelle prüfen"),
