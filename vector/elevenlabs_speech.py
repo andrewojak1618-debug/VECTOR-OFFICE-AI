@@ -20,6 +20,10 @@ CAUTIOUS_STABILITY_OFFSET = 0.07
 CAUTIOUS_SPEED_OFFSET = -0.01
 
 
+class ElevenLabsTimeoutError(RuntimeError):
+    """Meldet eine ElevenLabs-Frist ohne Anfrageinhalte offenzulegen."""
+
+
 @dataclass(frozen=True)
 class ElevenLabsVoiceSettings:
     """Hold bounded voice controls for one ElevenLabs speech provider."""
@@ -157,6 +161,10 @@ class ElevenLabsSpeech(VectorSpeech):
                 headers={"xi-api-key": self.api_key},
                 json=self._request_payload(text, style),
             )
+        except httpx.TimeoutException:
+            raise ElevenLabsTimeoutError(
+                "ElevenLabs TTS request timed out."
+            ) from None
         except httpx.HTTPError as exc:
             raise RuntimeError("ElevenLabs TTS request could not be completed.") from exc
         if response.status_code != 200:

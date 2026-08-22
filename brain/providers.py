@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import httpx
-from openai import OpenAI, OpenAIError
+from openai import APITimeoutError, OpenAI, OpenAIError
 
 from brain.agent import LanguageModel
 from brain.context import ChatMessage
@@ -18,6 +18,10 @@ DEFAULT_OLLAMA_TEMPERATURE = 0.25
 DEFAULT_OLLAMA_MAX_OUTPUT_TOKENS = 64
 DEFAULT_OLLAMA_CONTEXT_WINDOW = 4_096
 DEFAULT_OLLAMA_KEEP_ALIVE = "30m"
+
+
+class ProviderTimeoutError(RuntimeError):
+    """Meldet eine Anbieterfrist ohne Anfrageinhalte oder geheime Werte."""
 
 
 def _message_payload(messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
@@ -61,14 +65,13 @@ class OpenAIProvider:
                 model=self.model,
                 input=_message_payload(messages),
             )
+        except APITimeoutError:
+            self._report_failure("timeout")
+            raise ProviderTimeoutError(
+                "OpenAI request timed out. The local fallback may be used."
+            ) from None
         except OpenAIError:
-            emit_provider(
-                self.diagnostics,
-                DiagnosticLevel.ERROR,
-                "openai",
-                "request.failed",
-                reason_code="provider-error",
-            )
+            self._report_failure("provider-error")
             raise RuntimeError(
                 "OpenAI request failed. Check API key, model access, and billing."
             ) from None
@@ -80,6 +83,16 @@ class OpenAIProvider:
             status="success",
         )
         return response.output_text
+
+    def _report_failure(self, reason_code: str) -> None:
+        """Meldet einen OpenAI-Fehler ausschließlich mit festem Ursachencode."""
+        emit_provider(
+            self.diagnostics,
+            DiagnosticLevel.ERROR,
+            "openai",
+            "request.failed",
+            reason_code=reason_code,
+        )
 
 
 class OllamaProvider:
@@ -128,10 +141,12 @@ class OllamaProvider:
 
     def _request(self, messages: Sequence[ChatMessage]) -> httpx.Response:
         """Sendet eine Ollama-Anfrage mit begrenzten Wiederholungen."""
+        last_error: httpx.HTTPError | None = None
         for attempt in range(1, self.max_attempts + 1):
             try:
                 response = self._send(messages)
             except httpx.HTTPError as exc:
+                last_error = exc
                 if not self._may_retry(exc, attempt):
                     break
                 self._report_retry(attempt)
@@ -139,14 +154,19 @@ class OllamaProvider:
                 continue
             self._report_success(attempt)
             return response
+        timed_out = isinstance(last_error, httpx.TimeoutException)
         emit_provider(
             self.diagnostics,
             DiagnosticLevel.ERROR,
             "ollama",
             "request.failed",
             max_attempts=self.max_attempts,
-            reason_code="provider-error",
+            reason_code="timeout" if timed_out else "provider-error",
         )
+        if timed_out:
+            raise ProviderTimeoutError(
+                "Ollama request timed out. Check the local service and model."
+            ) from None
         raise RuntimeError(
             "Ollama request failed. Check service, host, and model."
         ) from None
@@ -238,7 +258,7 @@ def _create_openai_model(settings, diagnostics=None) -> LanguageModel:
     primary = OpenAIProvider(
         settings.OPENAI_API_KEY,
         settings.OPENAI_MODEL,
-        timeout=_request_timeout(settings),
+        timeout=_openai_timeout(settings),
         max_attempts=_max_attempts(settings),
         diagnostics=diagnostics,
     )
@@ -259,7 +279,7 @@ def _create_ollama_model(settings, diagnostics=None) -> OllamaProvider:
     return OllamaProvider(
         settings.OLLAMA_HOST,
         settings.OLLAMA_MODEL,
-        timeout=_request_timeout(settings),
+        timeout=_ollama_timeout(settings),
         max_attempts=_max_attempts(settings),
         retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
         temperature=getattr(
@@ -281,9 +301,14 @@ def _create_ollama_model(settings, diagnostics=None) -> OllamaProvider:
     )
 
 
-def _request_timeout(settings) -> float:
-    """Liest die begrenzte Anfragefrist mit sicherem Standardwert."""
-    return getattr(settings, "LLM_REQUEST_TIMEOUT", 120.0)
+def _openai_timeout(settings) -> float:
+    """Liest ausschließlich die begrenzte OpenAI-Anfragefrist."""
+    return getattr(settings, "OPENAI_REQUEST_TIMEOUT", 120.0)
+
+
+def _ollama_timeout(settings) -> float:
+    """Liest ausschließlich die begrenzte Ollama-Anfragefrist."""
+    return getattr(settings, "OLLAMA_REQUEST_TIMEOUT", 120.0)
 
 
 def _max_attempts(settings) -> int:

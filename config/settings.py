@@ -37,6 +37,13 @@ class Settings:
         "http://127.0.0.1:8080",
     )
 
+    WIREPOD_REQUEST_TIMEOUT = get_float_setting(
+        "WIREPOD_REQUEST_TIMEOUT",
+        default=5.0,
+        minimum=1.0,
+        maximum=30.0,
+    )
+
     HOST_WATCHDOG_WIREPOD_EXECUTABLE = os.getenv(
         "HOST_WATCHDOG_WIREPOD_EXECUTABLE",
         str(
@@ -203,8 +210,15 @@ class Settings:
         maximum=32_768,
     )
 
-    LLM_REQUEST_TIMEOUT = get_float_setting(
-        "LLM_REQUEST_TIMEOUT",
+    OPENAI_REQUEST_TIMEOUT = get_float_setting(
+        "OPENAI_REQUEST_TIMEOUT",
+        default=120.0,
+        minimum=1.0,
+        maximum=600.0,
+    )
+
+    OLLAMA_REQUEST_TIMEOUT = get_float_setting(
+        "OLLAMA_REQUEST_TIMEOUT",
         default=120.0,
         minimum=1.0,
         maximum=600.0,
@@ -246,11 +260,11 @@ class Settings:
         maximum=65536,
     )
 
-    OLLAMA_EMBEDDING_TIMEOUT = get_int_setting(
+    OLLAMA_EMBEDDING_TIMEOUT = get_float_setting(
         "OLLAMA_EMBEDDING_TIMEOUT",
-        default=60,
-        minimum=1,
-        maximum=600,
+        default=60.0,
+        minimum=1.0,
+        maximum=600.0,
     )
 
     MEMORY_DB_PATH = Path(

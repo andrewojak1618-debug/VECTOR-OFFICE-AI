@@ -10,6 +10,7 @@ from memory.embeddings import (
     EmbeddingModelUnavailableError,
     EmbeddingProvider,
     EmbeddingText,
+    EmbeddingTimeoutError,
     EmbeddingVector,
     OllamaEmbeddingProvider,
     create_embedding_provider,
@@ -152,6 +153,15 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
         with self.assertRaisesRegex(EmbeddingError, "Local Ollama embedding failed"):
             provider.embed(EmbeddingText("Test"))
 
+    def test_embedding_timeout_is_reported_separately(self):
+        def fail(request):
+            raise httpx.ReadTimeout("private delay", request=request)
+
+        provider = self._provider(fail)
+
+        with self.assertRaisesRegex(EmbeddingTimeoutError, "timed out"):
+            provider.embed(EmbeddingText("Test"))
+
     def test_invalid_response_is_rejected(self):
         provider = self._provider(
             lambda request: httpx.Response(200, json={"embeddings": []})
@@ -205,6 +215,18 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
         self.addCleanup(provider.client.close)
 
         self.assertEqual(12.5, provider.client.timeout.read)
+
+    def test_timeout_outside_safe_range_is_rejected(self):
+        for timeout in (0.9, 600.1):
+            with self.subTest(timeout=timeout), self.assertRaisesRegex(
+                ValueError,
+                "between 1 and 600",
+            ):
+                OllamaEmbeddingProvider(
+                    "http://127.0.0.1:11434",
+                    "embeddinggemma",
+                    timeout=timeout,
+                )
 
     @staticmethod
     def _response(request):

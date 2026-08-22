@@ -124,7 +124,7 @@ class RuntimeModeTests(unittest.TestCase):
             OLLAMA_HOST="http://127.0.0.1:11434",
             OLLAMA_EXECUTABLE="",
             OLLAMA_MODEL="llama3.2:3b",
-            LLM_REQUEST_TIMEOUT=90.0,
+            OLLAMA_REQUEST_TIMEOUT=90.0,
         )
         runtime = runtime_type.return_value
         runtime.ensure_available.return_value = True
@@ -149,7 +149,7 @@ class RuntimeModeTests(unittest.TestCase):
             OLLAMA_HOST="http://127.0.0.1:11434",
             OLLAMA_EXECUTABLE="",
             OLLAMA_MODEL="llama3.2:3b",
-            LLM_REQUEST_TIMEOUT=90.0,
+            OLLAMA_REQUEST_TIMEOUT=90.0,
         )
         runtime = runtime_type.return_value
         runtime.ensure_available.return_value = True

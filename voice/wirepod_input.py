@@ -17,12 +17,17 @@ TRANSCRIPT_PATTERN = re.compile(
     r"'(?P<text>.*)', device: (?P<device>\S+)$"
 )
 DEFAULT_POLL_INTERVAL = 0.5
-REQUEST_TIMEOUT_SECONDS = 5.0
+MIN_REQUEST_TIMEOUT_SECONDS = 1.0
+MAX_REQUEST_TIMEOUT_SECONDS = 30.0
 MAX_SEEN_LINES = 200
 RETAINED_SEEN_LINES = 50
 DUPLICATE_TRANSCRIPT_WINDOW_SECONDS = 3.0
 MAX_RECENT_TRANSCRIPTS = 50
 WIREPOD_TIMESTAMP_FORMAT = "%Y.%m.%d %H:%M:%S"
+
+
+class WirePodTranscriptTimeoutError(RuntimeError):
+    """Meldet, dass WirePod nicht innerhalb der HTTP-Anfragefrist antwortet."""
 
 
 @dataclass(frozen=True)
@@ -44,16 +49,24 @@ class WirePodTranscriptListener:
         wirepod_host: str,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         duplicate_window: float = DUPLICATE_TRANSCRIPT_WINDOW_SECONDS,
+        request_timeout: float = 5.0,
         client: httpx.Client | None = None,
     ):
         """Initialisiert die lokale Abfrage mit begrenzter Duplikaterkennung."""
         if not math.isfinite(duplicate_window) or not 0 <= duplicate_window <= 30:
             raise ValueError("Duplicate transcript window must be between 0 and 30.")
+        if not (
+            MIN_REQUEST_TIMEOUT_SECONDS
+            <= request_timeout
+            <= MAX_REQUEST_TIMEOUT_SECONDS
+        ):
+            raise ValueError("WirePod timeout must be between 1 and 30 seconds.")
         self.poll_interval = poll_interval
         self.duplicate_window = duplicate_window
+        self.request_timeout = request_timeout
         self.client = client or httpx.Client(
             base_url=wirepod_host.rstrip("/"),
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=request_timeout,
         )
         self._seen_line_fingerprints: set[str] = set()
         self._recent_transcripts: dict[str, datetime] = {}
@@ -202,6 +215,10 @@ class WirePodTranscriptListener:
         try:
             response = self.client.get("/api/get_logs")
             response.raise_for_status()
+        except httpx.TimeoutException:
+            raise WirePodTranscriptTimeoutError(
+                "WirePod transcript request timed out."
+            ) from None
         except httpx.HTTPError:
             raise RuntimeError(
                 "WirePod transcript endpoint is unavailable."

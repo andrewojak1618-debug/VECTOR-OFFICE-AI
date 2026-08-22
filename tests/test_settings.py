@@ -71,6 +71,22 @@ class SettingsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "between"):
                 get_float_setting("TEST_FLOAT", 0.5, 0.0, 1.0)
 
+    def test_provider_timeout_environment_values_are_bounded(self):
+        limits = {
+            "WIREPOD_REQUEST_TIMEOUT": (1.0, 30.0),
+            "OPENAI_REQUEST_TIMEOUT": (1.0, 600.0),
+            "OLLAMA_REQUEST_TIMEOUT": (1.0, 600.0),
+            "ELEVENLABS_TIMEOUT": (1.0, 60.0),
+            "OLLAMA_EMBEDDING_TIMEOUT": (1.0, 600.0),
+        }
+        for name, (minimum, maximum) in limits.items():
+            for value in (minimum - 0.1, maximum + 0.1):
+                with self.subTest(name=name, value=value), patch.dict(
+                    os.environ,
+                    {name: str(value)},
+                ), self.assertRaisesRegex(ValueError, name):
+                    get_float_setting(name, minimum, minimum, maximum)
+
 
 if __name__ == "__main__":
     unittest.main()

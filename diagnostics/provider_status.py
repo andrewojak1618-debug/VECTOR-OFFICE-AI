@@ -164,7 +164,10 @@ def _default_checkers(settings_obj) -> dict[str, ProviderChecker]:
     """Erzeugt ausschließlich passive lokale Verfügbarkeitsprüfungen."""
     return {
         "vector-sdk": VectorSDKClient(settings_obj.VECTOR_SERIAL).is_available,
-        "wirepod": VectorClient(settings_obj.WIREPOD_HOST).is_available,
+        "wirepod": VectorClient(
+            settings_obj.WIREPOD_HOST,
+            getattr(settings_obj, "WIREPOD_REQUEST_TIMEOUT", 5.0),
+        ).is_available,
         "ollama": OllamaRuntime(settings_obj.OLLAMA_HOST).is_available,
     }
 

@@ -45,6 +45,22 @@ idempotente Lesezugriffe zulässig. Verändernde oder gefährliche Aktionen werd
 niemals automatisch wiederholt. Ein abgelaufenes Zeitlimit wird als eigener
 Fehlerzustand behandelt und darf keine endlose Warteschleife auslösen.
 
+Die Providerfristen werden zentral in `config/settings.py` validiert:
+
+| Einstellung | Standard | Bereich | Verwendung |
+| --- | ---: | ---: | --- |
+| `WIREPOD_REQUEST_TIMEOUT` | 5 s | 1 bis 30 s | Status und lokale Transkriptabfrage |
+| `OPENAI_REQUEST_TIMEOUT` | 120 s | 1 bis 600 s | OpenAI-Antwortgenerierung |
+| `OLLAMA_REQUEST_TIMEOUT` | 120 s | 1 bis 600 s | Ollama-Chat und Modellvorladen |
+| `ELEVENLABS_TIMEOUT` | 15 s | 1 bis 60 s | ElevenLabs-Spracherzeugung |
+| `OLLAMA_EMBEDDING_TIMEOUT` | 60 s | 1 bis 600 s | lokale semantische Vektoren |
+
+Die getrennten Standardwerte erhalten das bisherige Laufzeitverhalten. Der
+WirePod-Timeout wird von Statusprüfung und Voice-Eingabe gemeinsam verwendet;
+der Embedding-Timeout bleibt bewusst unabhängig von Ollama-Chat. Timeoutfehler
+werden ohne Anfrageinhalte oder Transportdetails als eigener Fehlergrund
+gemeldet.
+
 ### Fallbacks
 
 Fallbacks erhalten eine feste, nachvollziehbare Reihenfolge. Der bestehende

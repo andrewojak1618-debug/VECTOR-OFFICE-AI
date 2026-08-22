@@ -124,6 +124,7 @@ def _generate_local_answer(library: IndexedKnowledgeLibrary) -> str:
         OllamaProvider(
             settings.OLLAMA_HOST,
             settings.OLLAMA_MODEL,
+            timeout=settings.OLLAMA_REQUEST_TIMEOUT,
             temperature=0.0,
         ),
         knowledge_library=library,
@@ -156,7 +157,10 @@ def _answer_has_expected_fact(answer: str) -> bool:
 def _connect_vector() -> VectorSDKClient | None:
     """Prüft WirePod und verbindet Vector für die physische Abnahme."""
     print("Checking WirePod and Vector SDK...")
-    if not VectorClient(settings.WIREPOD_HOST).check_wirepod():
+    if not VectorClient(
+        settings.WIREPOD_HOST,
+        settings.WIREPOD_REQUEST_TIMEOUT,
+    ).check_wirepod():
         print("WirePod is unavailable. [ERROR]")
         return None
     vector = VectorSDKClient(settings.VECTOR_SERIAL)

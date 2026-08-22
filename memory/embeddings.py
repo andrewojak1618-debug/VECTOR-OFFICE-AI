@@ -11,6 +11,7 @@ from memory.embedding_types import (
     EmbeddingProvider,
     EmbeddingResult,
     EmbeddingText,
+    EmbeddingTimeoutError,
     EmbeddingVector,
 )
 
@@ -36,8 +37,11 @@ class OllamaEmbeddingProvider:
         self.expected_dimension = self._validate_dimension(expected_dimension)
         self._observed_dimension: int | None = None
         self._model_version: str | None = None
-        if timeout <= 0:
-            raise ValueError("Embedding timeout must be greater than zero.")
+        if (
+            type(timeout) not in (int, float)
+            or not 1.0 <= timeout <= 600.0
+        ):
+            raise ValueError("Embedding timeout must be between 1 and 600 seconds.")
         self.timeout = timeout
         self.client = client or httpx.Client(
             base_url=self._require_text(base_url, "Ollama host").rstrip("/"),
@@ -67,6 +71,10 @@ class OllamaEmbeddingProvider:
                 json={"model": self.model_name, "verbose": False},
             )
             self._raise_for_model_status(response)
+        except httpx.TimeoutException:
+            raise EmbeddingTimeoutError(
+                "Local Ollama model check timed out."
+            ) from None
         except httpx.HTTPError:
             raise EmbeddingError(
                 "Local Ollama is unavailable. Check service and timeout."
@@ -114,6 +122,10 @@ class OllamaEmbeddingProvider:
             response = self.client.post(OLLAMA_EMBED_ENDPOINT, json=payload)
             self._raise_for_model_status(response)
             return response
+        except httpx.TimeoutException:
+            raise EmbeddingTimeoutError(
+                "Local Ollama embedding request timed out."
+            ) from None
         except httpx.HTTPError:
             raise EmbeddingError(
                 "Local Ollama embedding failed. Check service and timeout."
@@ -181,6 +193,10 @@ class OllamaEmbeddingProvider:
                 model for model in models if self._matches_model(model.get("name"))
             )
             digest = matching["digest"]
+        except httpx.TimeoutException:
+            raise EmbeddingTimeoutError(
+                "Local Ollama model version request timed out."
+            ) from None
         except (httpx.HTTPError, KeyError, StopIteration, TypeError, ValueError):
             raise EmbeddingError(
                 "Local Ollama model version could not be determined."

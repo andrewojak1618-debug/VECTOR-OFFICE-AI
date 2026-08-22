@@ -88,7 +88,10 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
     audit_store = _create_audit_store(settings)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
     library = _create_knowledge_library(settings)
-    wirepod_status = VectorClient(settings.WIREPOD_HOST)
+    wirepod_status = VectorClient(
+        settings.WIREPOD_HOST,
+        settings.WIREPOD_REQUEST_TIMEOUT,
+    )
     ollama_status = OllamaRuntime(settings.OLLAMA_HOST)
     registry = _create_tool_registry(
         actions,
@@ -199,7 +202,7 @@ def _ensure_ollama(settings, mode: RuntimeMode, diagnostics, connections) -> boo
     if ready and mode.local_voice_required:
         ready = runtime.preload_model(
             settings.OLLAMA_MODEL,
-            settings.LLM_REQUEST_TIMEOUT,
+            settings.OLLAMA_REQUEST_TIMEOUT,
         )
     connections.observe("ollama", ready)
     if ready:
@@ -238,7 +241,10 @@ def _connect_vector(
 ) -> VectorSDKClient | None:
     """Prüft WirePod und baut anschließend die kontrollierte SDK-Verbindung auf."""
     print("\nChecking WirePod connection...")
-    client = VectorClient(settings.WIREPOD_HOST)
+    client = VectorClient(
+        settings.WIREPOD_HOST,
+        settings.WIREPOD_REQUEST_TIMEOUT,
+    )
     ready = _wait_for_connection(connections, "wirepod", client.check_wirepod)
     if not ready:
         print("WirePod is not reachable. [ERROR]")
@@ -299,7 +305,7 @@ def _create_language_model(settings, mode: RuntimeMode, diagnostics=None):
     return OllamaProvider(
         settings.OLLAMA_HOST,
         settings.OLLAMA_MODEL,
-        timeout=getattr(settings, "LLM_REQUEST_TIMEOUT", 120.0),
+        timeout=getattr(settings, "OLLAMA_REQUEST_TIMEOUT", 120.0),
         max_attempts=getattr(settings, "LLM_MAX_ATTEMPTS", 2),
         retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
         temperature=getattr(settings, "OLLAMA_TEMPERATURE", 0.25),
@@ -357,7 +363,10 @@ def _report_input_started(diagnostics, mode) -> None:
 
 def _run_wirepod_input(settings, agent, speech, connections) -> None:
     """Startet die private WirePod-Transkription mit lokaler Verbindungsaufsicht."""
-    listener = WirePodTranscriptListener(settings.WIREPOD_HOST)
+    listener = WirePodTranscriptListener(
+        settings.WIREPOD_HOST,
+        request_timeout=settings.WIREPOD_REQUEST_TIMEOUT,
+    )
     run_voice_conversation(
         agent,
         speech,

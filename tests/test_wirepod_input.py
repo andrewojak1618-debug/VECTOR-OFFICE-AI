@@ -2,7 +2,10 @@ import unittest
 
 import httpx
 
-from voice.wirepod_input import WirePodTranscriptListener
+from voice.wirepod_input import (
+    WirePodTranscriptListener,
+    WirePodTranscriptTimeoutError,
+)
 
 
 LOG_LINE = (
@@ -76,6 +79,30 @@ class WirePodTranscriptListenerTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "endpoint is unavailable"):
             listener.poll()
+
+    def test_endpoint_timeout_is_reported_separately(self):
+        def handle_request(request):
+            raise httpx.ReadTimeout("private details", request=request)
+
+        client = httpx.Client(
+            base_url="http://test",
+            transport=httpx.MockTransport(handle_request),
+        )
+        listener = WirePodTranscriptListener("http://test", client=client)
+
+        with self.assertRaisesRegex(WirePodTranscriptTimeoutError, "timed out"):
+            listener.poll()
+
+    def test_request_timeout_is_bounded(self):
+        for timeout in (0.9, 30.1):
+            with self.subTest(timeout=timeout), self.assertRaisesRegex(
+                ValueError,
+                "timeout",
+            ):
+                WirePodTranscriptListener(
+                    "http://test",
+                    request_timeout=timeout,
+                )
 
     def test_wait_ignores_no_audio_event(self):
         responses = iter(("", NO_AUDIO_LINE, f"{NO_AUDIO_LINE}\n{LOG_LINE}"))

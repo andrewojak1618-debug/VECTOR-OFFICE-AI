@@ -9,6 +9,10 @@ class EmbeddingError(RuntimeError):
     """Report a safe, understandable local embedding failure."""
 
 
+class EmbeddingTimeoutError(EmbeddingError):
+    """Meldet eine lokale Einbettungsfrist getrennt von anderen Fehlern."""
+
+
 class EmbeddingModelUnavailableError(EmbeddingError):
     """Report that the configured local embedding model is not installed."""
 

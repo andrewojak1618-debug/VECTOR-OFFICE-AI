@@ -8,6 +8,7 @@ import httpx
 
 from vector.elevenlabs_speech import (
     NATURAL_VECTOR_AUDIO_FILTER,
+    ElevenLabsTimeoutError,
     ElevenLabsSpeech,
     ElevenLabsVoiceSettings,
 )
@@ -164,6 +165,33 @@ class ElevenLabsSpeechTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "could not be completed"):
             speech._request_audio("private answer")
+
+    def test_timeout_is_reported_separately(self):
+        client = MagicMock()
+        request = httpx.Request("POST", "https://api.elevenlabs.io")
+        client.post.side_effect = httpx.ReadTimeout("private delay", request=request)
+        speech = ElevenLabsSpeech(
+            self.local,
+            "secret-key",
+            "felix-id",
+            client=client,
+        )
+
+        with self.assertRaisesRegex(ElevenLabsTimeoutError, "timed out"):
+            speech._request_audio("private answer")
+
+    def test_timeout_outside_safe_range_is_rejected(self):
+        for timeout in (0.9, 60.1):
+            with self.subTest(timeout=timeout), self.assertRaisesRegex(
+                ValueError,
+                "timeout",
+            ):
+                ElevenLabsSpeech(
+                    self.local,
+                    "secret-key",
+                    "felix-id",
+                    timeout=timeout,
+                )
 
 
 class SpeechFactoryTests(unittest.TestCase):

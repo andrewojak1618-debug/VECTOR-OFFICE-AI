@@ -3,12 +3,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import httpx
+from openai import APITimeoutError
 
 from brain.context import ChatMessage, ConversationContext
 from brain.providers import (
     FallbackProvider,
     OllamaProvider,
     OpenAIProvider,
+    ProviderTimeoutError,
     ProviderNotice,
     create_language_model,
 )
@@ -186,7 +188,7 @@ class ProviderTests(unittest.TestCase):
             LLM_PROVIDER="ollama",
             OLLAMA_HOST="http://test",
             OLLAMA_MODEL="test-model",
-            LLM_REQUEST_TIMEOUT=45.0,
+            OLLAMA_REQUEST_TIMEOUT=45.0,
             LLM_MAX_ATTEMPTS=1,
             LLM_RETRY_DELAY=0.0,
             OLLAMA_TEMPERATURE=0.1,
@@ -199,6 +201,50 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(0.1, provider.temperature)
         self.assertEqual(72, provider.max_output_tokens)
         self.assertEqual(2048, provider.context_window)
+        self.assertEqual(45.0, provider.client.timeout.read)
+
+    @patch("brain.providers.OpenAIProvider")
+    def test_factory_uses_independent_openai_timeout(self, provider_type):
+        settings = SimpleNamespace(
+            LLM_PROVIDER="openai",
+            LLM_FALLBACK_PROVIDER="none",
+            OPENAI_API_KEY="test-key",
+            OPENAI_MODEL="test-model",
+            OPENAI_REQUEST_TIMEOUT=33.0,
+            LLM_MAX_ATTEMPTS=1,
+        )
+
+        create_language_model(settings)
+
+        self.assertEqual(33.0, provider_type.call_args.kwargs["timeout"])
+
+    def test_openai_timeout_is_distinct_from_other_provider_errors(self):
+        client = FakeOpenAIClient()
+        client.responses.create = lambda **kwargs: (_ for _ in ()).throw(
+            APITimeoutError(request=httpx.Request("POST", "https://api.test"))
+        )
+        provider = OpenAIProvider("test-key", "test-model", client=client)
+
+        with self.assertRaisesRegex(ProviderTimeoutError, "timed out"):
+            provider.generate(MESSAGES)
+
+    def test_ollama_timeout_is_distinct_from_connection_errors(self):
+        def handle_request(request):
+            raise httpx.ReadTimeout("slow", request=request)
+
+        client = httpx.Client(
+            base_url="http://test",
+            transport=httpx.MockTransport(handle_request),
+        )
+        provider = OllamaProvider(
+            "http://test",
+            "test-model",
+            max_attempts=1,
+            client=client,
+        )
+
+        with self.assertRaisesRegex(ProviderTimeoutError, "timed out"):
+            provider.generate(MESSAGES)
 
     def test_ollama_provider_sanitizes_connection_errors(self):
         def handle_request(request):

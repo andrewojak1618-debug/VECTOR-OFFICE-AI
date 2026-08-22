@@ -86,7 +86,11 @@ def _report_match(library: SQLiteKnowledgeLibrary) -> bool:
 def _build_agent(library: SQLiteKnowledgeLibrary) -> Agent:
     """Erzeugt einen lokalen Ollama-Agenten mit freigegebenem Dokumentkontext."""
     return Agent(
-        OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL),
+        OllamaProvider(
+            settings.OLLAMA_HOST,
+            settings.OLLAMA_MODEL,
+            timeout=settings.OLLAMA_REQUEST_TIMEOUT,
+        ),
         knowledge_library=library,
         knowledge_context_enabled=True,
     )
@@ -95,7 +99,10 @@ def _build_agent(library: SQLiteKnowledgeLibrary) -> Agent:
 def _connect_vector() -> VectorSDKClient | None:
     """Prüft WirePod und verbindet den physischen Vector über die SDK-Grenze."""
     print("Checking WirePod connection...")
-    if not VectorClient(settings.WIREPOD_HOST).check_wirepod():
+    if not VectorClient(
+        settings.WIREPOD_HOST,
+        settings.WIREPOD_REQUEST_TIMEOUT,
+    ).check_wirepod():
         print("WirePod is unavailable. [ERROR]")
         return None
     vector = VectorSDKClient(settings.VECTOR_SERIAL)
