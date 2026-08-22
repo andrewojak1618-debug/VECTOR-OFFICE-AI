@@ -7,7 +7,7 @@ from application.runtime import (
     _create_tool_registry,
     _ensure_ollama,
     _knowledge_enabled,
-    _register_provider_statuses,
+    register_provider_statuses,
     _run_input_mode,
     get_runtime_mode,
 )
@@ -83,7 +83,7 @@ class RuntimeModeTests(unittest.TestCase):
         )
         connections = ConnectionSupervisor()
 
-        _register_provider_statuses(
+        register_provider_statuses(
             settings,
             get_runtime_mode(settings),
             connections,
@@ -107,7 +107,7 @@ class RuntimeModeTests(unittest.TestCase):
         )
         connections = ConnectionSupervisor()
 
-        _register_provider_statuses(
+        register_provider_statuses(
             settings,
             get_runtime_mode(settings),
             connections,

@@ -66,7 +66,7 @@ def run_application(settings) -> None:
     mode = get_runtime_mode(settings)
     diagnostics = _create_diagnostics(settings)
     connections = ConnectionSupervisor(diagnostics)
-    _register_provider_statuses(settings, mode, connections)
+    register_provider_statuses(settings, mode, connections)
     _emit_runtime_start(diagnostics, mode)
     vector = _prepare_vector(settings, mode, diagnostics, connections)
     if vector is None:
@@ -108,7 +108,7 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
     )
 
 
-def _register_provider_statuses(settings, mode, connections) -> None:
+def register_provider_statuses(settings, mode, connections) -> None:
     """Registriert zentrale Provider anhand der gewählten Laufzeitoptionen."""
     llm_providers = {mode.provider, mode.fallback_provider}
     tts_provider = getattr(settings, "TTS_PROVIDER", "onecore").casefold().strip()

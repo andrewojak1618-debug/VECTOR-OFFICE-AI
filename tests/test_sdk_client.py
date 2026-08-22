@@ -20,6 +20,35 @@ class VectorSDKClientTests(unittest.TestCase):
 
         robot.get_battery_state.assert_called_once_with()
 
+    def test_availability_check_uses_no_behavior_control_or_action(self):
+        robot = MagicMock()
+        robot.get_battery_state.return_value = object()
+
+        with patch("vector.sdk_client.anki_vector.Robot", return_value=robot) as factory:
+            available = VectorSDKClient("test-serial").is_available(timeout=4.2)
+
+        self.assertTrue(available)
+        factory.assert_called_once_with(
+            serial="test-serial",
+            cache_animation_lists=False,
+            default_logging=False,
+            behavior_activation_timeout=5,
+            behavior_control_level=None,
+        )
+        robot.connect.assert_called_once_with(timeout=5)
+        robot.get_battery_state.assert_called_once_with()
+        robot.disconnect.assert_called_once_with()
+
+    def test_availability_check_sanitizes_connection_failure(self):
+        robot = MagicMock()
+        robot.connect.side_effect = RuntimeError("private connection detail")
+
+        with patch("vector.sdk_client.anki_vector.Robot", return_value=robot):
+            available = VectorSDKClient("test-serial").is_available()
+
+        self.assertFalse(available)
+        robot.disconnect.assert_called_once_with()
+
     def test_play_wav_streams_file_with_requested_volume(self):
         robot_context, robot = self._robot_context()
         with tempfile.TemporaryDirectory() as temp_dir:

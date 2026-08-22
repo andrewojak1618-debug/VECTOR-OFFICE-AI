@@ -47,6 +47,27 @@ class VectorSDKClient:
         except Exception as exc:
             return self._report_sdk_failure("Vector SDK connection", exc)
 
+    def is_available(self, timeout: float = 5.0) -> bool:
+        """Prüft Vector passiv, zeitlich begrenzt und ohne Verhaltenskontrolle."""
+        if not self._valid_action_timeout(timeout):
+            raise ValueError("Vector availability timeout is outside the safe range.")
+        activation_timeout = max(1, math.ceil(timeout))
+        robot = None
+        try:
+            robot = anki_vector.Robot(
+                serial=self.serial,
+                cache_animation_lists=False,
+                default_logging=False,
+                behavior_activation_timeout=activation_timeout,
+                behavior_control_level=None,
+            )
+            robot.connect(timeout=activation_timeout)
+            return robot.get_battery_state() is not None
+        except Exception:
+            return False
+        finally:
+            self._disconnect_quietly(robot)
+
     def play_wav(self, path: str | Path, volume: int = 50) -> bool:
         """Überträgt eine validierte lokale WAV-Datei an Vectors Lautsprecher."""
         audio_path = Path(path)
@@ -188,6 +209,16 @@ class VectorSDKClient:
         try:
             stop_future = robot.motors.stop_all_motors()
             stop_future.result(timeout=min(timeout, 2.0))
+        except Exception:
+            pass
+
+    @staticmethod
+    def _disconnect_quietly(robot: object | None) -> None:
+        """Trennt eine passive Diagnoseverbindung ohne interne Fehler auszugeben."""
+        if robot is None:
+            return
+        try:
+            robot.disconnect()
         except Exception:
             pass
 

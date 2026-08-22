@@ -380,6 +380,7 @@ VECTOR OFFICE AI CORE/
 │   ├── library_ollama.py
 │   ├── library_vector.py
 │   ├── personality_ollama.py
+│   ├── provider_status.py
 │   └── vector_actions.py
 ├── docs/
 │   ├── api/
@@ -706,6 +707,22 @@ uv pip install --python .venv\Scripts\python.exe -r requirements-docs.txt
 
 Der statische Build wird mit `.venv\Scripts\python.exe -m mkdocs build`
 erzeugt. Das Ausgabe-Verzeichnis `site/` wird nicht committed.
+
+### Provider-Status ohne Cloud-Kosten prüfen
+
+Ein einzelner, ausschließlich lesender Diagnosebefehl prüft Vector SDK,
+WirePod und Ollama. OpenAI und ElevenLabs werden nur anhand ihrer lokalen
+Konfiguration bewertet; es entstehen dabei keine Cloud-Anfragen, keine
+Spracherzeugung und keine Robot-Aktionen:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.provider_status
+```
+
+Die Ausgabe verwendet ausschließlich feste Zustände und enthält keine
+API-Schlüssel, Stimmenkennung, Vector-Seriennummer oder privaten Endpunkte.
+Weitere Sicherheits- und Statusdetails stehen in
+[`docs/diagnostics.md`](docs/diagnostics.md).
 
 ### Vollständige Systemabnahme
 
