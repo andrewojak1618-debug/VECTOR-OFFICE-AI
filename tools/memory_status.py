@@ -20,7 +20,7 @@ class LocalMemoryStatusTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free read-only memory status request."""
+        """Beschreibt die argumentlose rein lesende Gedächtnisstatus-Abfrage."""
         return ToolDefinition(
             name="memory.local_status",
             description="Return count-only confirmed local memory status.",
@@ -28,7 +28,7 @@ class LocalMemoryStatusTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Return bounded counts without exposing remembered content."""
+        """Liefert begrenzte Zähler, ohne gespeicherte Inhalte offenzulegen."""
         status = self.status_reader()
         _validate_status(status)
         total = status.memories + status.feedback
@@ -44,11 +44,12 @@ def register_local_memory_status_tool(
     registry: ToolRegistry,
     status_reader: MemoryStatusReader,
 ) -> None:
-    """Register one count-only local memory status reader."""
+    """Registriert einen lokalen Gedächtnisstatus mit reinen Zählerausgaben."""
     registry.register(LocalMemoryStatusTool(status_reader))
 
 
 def _validate_status(status: MemoryStatistics) -> None:
+    """Validiert Gedächtnis- und Feedbackzähler gegen feste Obergrenzen."""
     if not isinstance(status, MemoryStatistics):
         raise TypeError("Memory status reader returned an invalid value.")
     values = (status.memories, status.feedback)
@@ -61,6 +62,7 @@ def _validate_status(status: MemoryStatistics) -> None:
 
 
 def _spoken_status(status: MemoryStatistics) -> str:
+    """Formuliert die lokalen Gedächtniszähler als deutschen Sprechtext."""
     if status.memories == 0 and status.feedback == 0:
         return (
             "Mein lokales Gedächtnis enthält noch keine bestätigten "
@@ -72,12 +74,14 @@ def _spoken_status(status: MemoryStatistics) -> str:
 
 
 def _memory_count(count: int) -> str:
+    """Formatiert die Anzahl bestätigter Erinnerungen grammatikalisch korrekt."""
     if count == 1:
         return "eine bestätigte Erinnerung"
     return f"{count} bestätigte Erinnerungen"
 
 
 def _feedback_count(count: int) -> str:
+    """Formatiert die Anzahl bestätigter Stil-Feedbacks grammatikalisch korrekt."""
     if count == 1:
         return "ein bestätigtes Stil-Feedback"
     return f"{count} bestätigte Stil-Feedbacks"

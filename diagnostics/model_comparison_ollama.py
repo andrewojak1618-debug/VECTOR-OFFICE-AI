@@ -21,18 +21,19 @@ class _RecordingModel:
     """Retain fixed diagnostic responses without changing provider behavior."""
 
     def __init__(self, provider: OllamaProvider):
+        """Initialisiert die Aufzeichnung ausschließlich für feste Diagnoseantworten."""
         self.provider = provider
         self.responses: list[str] = []
 
     def generate(self, messages) -> str:
-        """Delegate one request and retain its safe fixed-prompt response."""
+        """Delegiert eine Anfrage und hält ihre sichere Festfragenantwort fest."""
         response = self.provider.generate(messages)
         self.responses.append(response)
         return response
 
 
 def compare_model(model: str) -> None:
-    """Print fixed answers and per-turn latency for one explicit model."""
+    """Gibt feste Antworten und Turnlatenzen eines ausdrücklich gewählten Modells aus."""
     provider = OllamaProvider(
         settings.OLLAMA_HOST,
         model,
@@ -46,6 +47,7 @@ def compare_model(model: str) -> None:
 
 
 def _run_question(provider, model: str, number: int, question: str) -> None:
+    """Misst einen festen Modellturn und gibt dessen Antwort und Latenz aus."""
     started = perf_counter()
     recorder = _RecordingModel(provider)
     try:
@@ -60,6 +62,7 @@ def _run_question(provider, model: str, number: int, question: str) -> None:
 
 
 def _print_rejection(model, number, question, responses, error) -> None:
+    """Zeigt die Ablehnung fester Diagnoseantworten zur manuellen Modellbewertung."""
     print(f"{model} #{number}: rejected after {len(responses)} responses")
     print(f"Question: {question}")
     for attempt, response in enumerate(responses, start=1):
@@ -68,6 +71,7 @@ def _print_rejection(model, number, question, responses, error) -> None:
 
 
 def _parse_models(arguments: Sequence[str] | None = None) -> tuple[str, ...]:
+    """Liest eine ausdrücklich angegebene Liste lokaler Modellnamen ein."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("models", nargs="+", help="Explicit Ollama model names")
     namespace = parser.parse_args(arguments)
@@ -75,7 +79,7 @@ def _parse_models(arguments: Sequence[str] | None = None) -> tuple[str, ...]:
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
-    """Run the fixed comparison for every requested local model."""
+    """Führt den festen Vergleich für jedes angeforderte lokale Modell aus."""
     for model in _parse_models(arguments):
         compare_model(model)
     return 0

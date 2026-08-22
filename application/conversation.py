@@ -65,12 +65,12 @@ class _ConversationControllers:
     contextual: ControlledContextualToolConversation | None
 
     def cancel_pending(self) -> None:
-        """Discard every optional pending action without execution."""
+        """Verwirft alle optional offenen Aktionen ohne Ausführung."""
         _cancel_pending(self.expression, self.contextual)
 
 
 def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
-    """Run the interactive console conversation until the user exits."""
+    """Führt die interaktive Konsolenunterhaltung bis zum Nutzerabbruch aus."""
     print("\nConversation started.")
     print(COMMAND_HELP)
     print(TOOL_HELP)
@@ -92,6 +92,7 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
 
 
 def _read_console_input() -> str | None:
+    """Liest eine Konsoleneingabe und behandelt Dateiende als Sitzungsende."""
     print()
     try:
         return input("Du: ").strip()
@@ -108,7 +109,7 @@ def run_voice_conversation(
     max_turns: int | None = None,
     connections: ConnectionSupervisor | None = None,
 ) -> None:
-    """Run a private WirePod conversation until exit or the turn limit."""
+    """Führt eine private WirePod-Unterhaltung bis zum Abbruch oder Turnlimit aus."""
     _print_voice_intro()
     controllers = _create_conversation_controllers(agent, speech)
     recovery = VoiceRecovery(
@@ -143,6 +144,7 @@ def _run_voice_turns(
     max_turns: int | None,
     recovery: VoiceRecovery,
 ) -> None:
+    """Verarbeitet begrenzt aufeinanderfolgende Spracheingaben und Wiederholungen."""
     completed_turns = 0
     failures = 0
     while max_turns is None or completed_turns < max_turns:
@@ -168,6 +170,7 @@ def _prime_voice_listener(
     listener: WirePodTranscriptListener,
     recovery: VoiceRecovery,
 ) -> bool:
+    """Initialisiert den Listener und meldet Startfehler ohne Gesprächsdaten."""
     for attempt in range(1, recovery.max_failures + 1):
         try:
             listener.prime()
@@ -180,12 +183,14 @@ def _prime_voice_listener(
 
 
 def _is_voice_exit_signal(user_text: str) -> bool:
+    """Erkennt feste gesprochene Signale zum kontrollierten Sitzungsende."""
     normalized = " ".join(user_text.casefold().strip().split())
     normalized = re.sub(r"[.!?,;:]+$", "", normalized).strip()
     return normalized in VOICE_EXIT_PHRASES
 
 
 def _print_voice_intro() -> None:
+    """Zeigt die lokalen Hinweise für den WirePod-Sprachmodus an."""
     print("\nWirePod voice conversation started.")
     print("Say 'Hey Vector' followed by your question.")
     print("Controlled movements require a separate spoken yes.")
@@ -198,6 +203,7 @@ def _listen_for_user_text(
     listener: WirePodTranscriptListener,
     listen_timeout: float,
 ) -> str | None:
+    """Wartet begrenzt auf eine eindeutige neue WirePod-Transkription."""
     print("\nListening...")
     event = listener.wait_for_transcript(listen_timeout)
     if event is None:
@@ -211,6 +217,7 @@ def _listen_for_user_text(
 def _create_tool_conversation(
     agent: Agent,
 ) -> ControlledToolConversation | None:
+    """Erzeugt den deterministischen, Registry-gebundenen Tooldialog."""
     registry = getattr(agent, "tool_registry", None)
     if not isinstance(registry, ToolRegistry):
         return None
@@ -221,6 +228,7 @@ def _create_conversation_controllers(
     agent: Agent,
     speech: VectorSpeech,
 ) -> _ConversationControllers:
+    """Setzt die optionalen Tool- und Ausdruckscontroller einer Sitzung zusammen."""
     return _ConversationControllers(
         _create_tool_conversation(agent),
         _create_expression_conversation(agent, speech),
@@ -232,6 +240,7 @@ def _create_expression_conversation(
     agent: Agent,
     speech: VectorSpeech,
 ) -> ControlledExpressionConversation | None:
+    """Erzeugt den Ausdrucksdialog nur bei verfügbaren Aktionswerkzeugen."""
     registry = getattr(agent, "tool_registry", None)
     if not isinstance(registry, ToolRegistry):
         return None
@@ -244,6 +253,7 @@ def _create_expression_conversation(
 def _create_contextual_tool_conversation(
     agent: Agent,
 ) -> ControlledContextualToolConversation | None:
+    """Erzeugt den Kontextvorschlagsdialog nur bei freigegebenem Profil."""
     registry = getattr(agent, "tool_registry", None)
     language_model = getattr(agent, "language_model", None)
     if not isinstance(registry, ToolRegistry) or language_model is None:
@@ -262,6 +272,7 @@ def _handle_user_turn(
     controllers: _ConversationControllers,
     user_text: str,
 ) -> None:
+    """Leitet einen Nutzerturn geordnet durch Befehle und Dialoggrenzen."""
     if _handle_tool_turn(controllers.tools, speech, user_text):
         controllers.cancel_pending()
         return
@@ -279,6 +290,7 @@ def _handle_tool_turn(
     speech: VectorSpeech,
     user_text: str,
 ) -> bool:
+    """Verarbeitet einen kontrollierten Toolturn und spricht dessen Ergebnis."""
     if controller is None:
         return False
     result = controller.handle(user_text)
@@ -296,6 +308,7 @@ def _handle_expression_turn(
     speech: VectorSpeech,
     user_text: str,
 ) -> bool:
+    """Verarbeitet einen bestätigten Ausdrucksturn samt sicherer Ausgabe."""
     if controller is None:
         return False
     result = controller.handle(user_text)
@@ -315,6 +328,7 @@ def _handle_contextual_tool_turn(
     speech: VectorSpeech,
     user_text: str,
 ) -> bool:
+    """Verarbeitet einen geprüften kontextbezogenen Toolvorschlag."""
     if controller is None:
         return False
     result = controller.handle(user_text)
@@ -328,6 +342,7 @@ def _handle_contextual_tool_turn(
 
 
 def _cancel_pending(*controllers) -> None:
+    """Verwirft offene Zustände aller vorhandenen Dialogcontroller."""
     for controller in controllers:
         if controller is not None:
             controller.cancel_pending()

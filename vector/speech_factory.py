@@ -6,7 +6,7 @@ from vector.speech import VectorSpeech
 
 
 def create_speech_output(settings, vector: VectorSDKClient) -> VectorSpeech:
-    """Create local speech or explicitly enabled ElevenLabs with fallback."""
+    """Erzeugt lokale Sprache oder ausdrücklich freigegebenes ElevenLabs mit Rückfall."""
     local = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
     provider = getattr(settings, "TTS_PROVIDER", "onecore").casefold().strip()
     if provider == "onecore":
@@ -23,12 +23,14 @@ def create_speech_output(settings, vector: VectorSDKClient) -> VectorSpeech:
 
 
 def _has_cloud_credentials(settings) -> bool:
+    """Prüft Schlüssel und Stimmenkennung, ohne ihre Werte offenzulegen."""
     key = getattr(settings, "ELEVENLABS_API_KEY", "")
     voice_id = getattr(settings, "ELEVENLABS_VOICE_ID", "")
     return bool(key.strip() and voice_id.strip())
 
 
 def _create_elevenlabs(settings, local: VectorSpeech) -> ElevenLabsSpeech:
+    """Erzeugt den Cloud-TTS-Adapter mit begrenzter lokaler Rückfallstimme."""
     controls = ElevenLabsVoiceSettings(
         stability=settings.ELEVENLABS_STABILITY,
         similarity=settings.ELEVENLABS_SIMILARITY,

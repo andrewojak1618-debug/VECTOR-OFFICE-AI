@@ -9,7 +9,7 @@ def get_int_setting(
     minimum: int,
     maximum: int,
 ) -> int:
-    """Read one bounded integer setting or return its default."""
+    """Liest eine begrenzte Ganzzahleinstellung oder liefert ihren Standardwert."""
     raw_value = os.getenv(name)
     if raw_value is None:
         return default
@@ -23,7 +23,7 @@ def get_int_setting(
 
 
 def get_bool_setting(name: str, default: bool) -> bool:
-    """Read one strict boolean setting or return its default."""
+    """Liest eine strenge boolesche Einstellung oder liefert ihren Standardwert."""
     raw_value = os.getenv(name)
     if raw_value is None:
         return default
@@ -43,7 +43,7 @@ def get_float_setting(
     minimum: float,
     maximum: float,
 ) -> float:
-    """Read one bounded floating-point setting or return its default."""
+    """Liest eine begrenzte Fließkommaeinstellung oder liefert ihren Standardwert."""
     raw_value = os.getenv(name)
     if raw_value is None:
         return default

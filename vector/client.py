@@ -10,17 +10,19 @@ class VectorClient:
     """Check whether the configured local WirePod host is reachable."""
 
     def __init__(self, wirepod_host: str):
+        """Initialisiert die lokale WirePod-Adresse ohne abschließenden Schrägstrich."""
         self.wirepod_host = wirepod_host.rstrip("/")
 
     def check_wirepod(self) -> bool:
-        """Return whether WirePod responds without a server error."""
+        """Meldet, ob WirePod ohne Serverfehler antwortet."""
         return self._check_wirepod(report_error=True)
 
     def is_available(self) -> bool:
-        """Check WirePod quietly for bounded status reporting."""
+        """Prüft WirePod still für eine begrenzte Statusausgabe."""
         return self._check_wirepod(report_error=False)
 
     def _check_wirepod(self, report_error: bool) -> bool:
+        """Führt die zeitlich begrenzte HTTP-Prüfung mit optionaler Fehlermeldung aus."""
         try:
             response = httpx.get(
                 self.wirepod_host,

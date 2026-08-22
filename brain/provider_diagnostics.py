@@ -10,6 +10,6 @@ def emit_provider(
     code: str,
     **details: bool | float | int | str | None,
 ) -> None:
-    """Emit validated provider metadata when diagnostics are enabled."""
+    """Schreibt validierte Anbietermetadaten bei aktivierter Diagnose."""
     if diagnostics is not None:
         diagnostics.emit(level, component, code, **details)

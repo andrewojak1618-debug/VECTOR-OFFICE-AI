@@ -22,6 +22,7 @@ class ToolAuthorization:
     allow_network: bool = False
 
     def __post_init__(self) -> None:
+        """Stellt sicher, dass alle Autorisierungskennzeichen boolesch sind."""
         flags = (self.allow_mutation, self.confirmed, self.allow_network)
         if not all(type(value) is bool for value in flags):
             raise TypeError("Tool authorization flags must be boolean.")
@@ -44,7 +45,7 @@ class ToolPermissionPolicy:
         level: PermissionLevel,
         authorization: ToolAuthorization | None = None,
     ) -> PermissionDecision:
-        """Return the deterministic permission decision for one invocation."""
+        """Liefert die deterministische Berechtigungsentscheidung für einen Aufruf."""
         invalid = self._invalid_request(level, authorization)
         if invalid is not None:
             return invalid
@@ -69,6 +70,7 @@ class ToolPermissionPolicy:
 
     @staticmethod
     def _network_decision(authority: ToolAuthorization) -> PermissionDecision:
+        """Prüft Netzwerkfreigabe und separate Einmalbestätigung."""
         if not authority.allow_network:
             return PermissionDecision(
                 False,
@@ -88,6 +90,7 @@ class ToolPermissionPolicy:
         level: object,
         authorization: object,
     ) -> PermissionDecision | None:
+        """Erkennt ungültige Berechtigungsstufen und Autorisierungsobjekte."""
         if not isinstance(level, PermissionLevel):
             return PermissionDecision(
                 False,

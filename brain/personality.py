@@ -28,7 +28,7 @@ def build_runtime_personality(
     reflection_guidance: str,
     confirmed_feedback: Sequence[str] = (),
 ) -> str:
-    """Compose bounded state, reflection, and confirmed style feedback."""
+    """Verbindet Zustand, Reflexion und bestätigtes Stilfeedback in festen Grenzen."""
     sections = [
         "Aktuelle providerunabhängige Gesprächsregeln:",
         emotional_guidance.strip(),

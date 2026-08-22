@@ -25,6 +25,7 @@ class OllamaRuntime:
         client: httpx.Client | None = None,
         process_launcher: Callable[..., object] | None = None,
     ):
+        """Initialisiert Erreichbarkeitsprüfung und begrenzte lokale Startparameter."""
         self.base_url = base_url.rstrip("/")
         self.executable = executable.strip()
         self.startup_timeout = startup_timeout
@@ -33,7 +34,7 @@ class OllamaRuntime:
         self.process_launcher = process_launcher or subprocess.Popen
 
     def ensure_available(self) -> bool:
-        """Return whether Ollama is online, starting it when necessary."""
+        """Meldet Ollamas Verfügbarkeit und startet den Dienst bei Bedarf."""
         if self.is_available():
             print("Ollama is online. [OK]")
             return True
@@ -52,7 +53,7 @@ class OllamaRuntime:
         timeout: float,
         keep_alive: str = DEFAULT_MODEL_KEEP_ALIVE,
     ) -> bool:
-        """Load one local model through an empty, content-free request."""
+        """Lädt ein lokales Modell über eine leere, inhaltsfreie Anfrage vor."""
         normalized_name = model_name.strip()
         if not normalized_name or timeout <= 0:
             raise ValueError("Ollama preload settings are invalid.")
@@ -75,6 +76,7 @@ class OllamaRuntime:
         return True
 
     def _start_service(self, executable: Path) -> bool:
+        """Startet ausschließlich die aufgelöste lokale Ollama-Programmdatei."""
         try:
             self.process_launcher(
                 [str(executable), "serve"],
@@ -89,6 +91,7 @@ class OllamaRuntime:
         return True
 
     def _wait_until_ready(self) -> bool:
+        """Wartet innerhalb einer festen Frist auf den lokalen Ollama-Dienst."""
         deadline = time.monotonic() + self.startup_timeout
         while time.monotonic() < deadline:
             time.sleep(self.poll_interval)
@@ -99,7 +102,7 @@ class OllamaRuntime:
         return False
 
     def is_available(self) -> bool:
-        """Check the local version endpoint without leaking transport errors."""
+        """Prüft den lokalen Versionsendpunkt ohne Transportdetails offenzulegen."""
         try:
             response = self.client.get(f"{self.base_url}/api/version")
             response.raise_for_status()
@@ -108,6 +111,7 @@ class OllamaRuntime:
             return False
 
     def _resolve_executable(self) -> Path | None:
+        """Löst nur konfigurierte oder bekannte lokale Ollama-Pfade auf."""
         if self.executable:
             configured_path = Path(self.executable).expanduser()
 
@@ -135,6 +139,7 @@ class OllamaRuntime:
 
     @staticmethod
     def _creation_flags() -> int:
+        """Liefert Windows-Flags für einen unsichtbaren, abgetrennten Dienst."""
         if os.name != "nt":
             return 0
 

@@ -38,7 +38,7 @@ class RuntimeMode:
 
 
 def get_runtime_mode(settings) -> RuntimeMode:
-    """Derive normalized runtime decisions from application settings."""
+    """Leitet normalisierte Laufzeitentscheidungen aus den Einstellungen ab."""
     provider = settings.LLM_PROVIDER.casefold().strip()
     fallback = settings.LLM_FALLBACK_PROVIDER.casefold().strip()
     input_mode = settings.INPUT_MODE.casefold().strip()
@@ -58,7 +58,7 @@ def get_runtime_mode(settings) -> RuntimeMode:
 
 
 def run_application(settings) -> None:
-    """Start services, compose dependencies, and run the selected input mode."""
+    """Startet Dienste, setzt Abhängigkeiten zusammen und führt den Eingabemodus aus."""
     _print_header(settings)
     mode = get_runtime_mode(settings)
     diagnostics = _create_diagnostics(settings)
@@ -80,7 +80,7 @@ def run_application(settings) -> None:
 
 
 def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
-    """Compose one agent with shared local storage and status readers."""
+    """Setzt einen Agenten mit gemeinsamem lokalen Speicher und Statuslesern zusammen."""
     audit_store = _create_audit_store(settings)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
     library = _create_knowledge_library(settings)
@@ -110,6 +110,7 @@ def _prepare_vector(
     diagnostics,
     connections,
 ) -> VectorSDKClient | None:
+    """Prüft lokale Voraussetzungen und verbindet Vector für den Anwendungsstart."""
     if not _ensure_ollama(settings, mode, diagnostics, connections):
         _emit_startup_blocked(diagnostics, "ollama-unavailable")
         return None
@@ -120,6 +121,7 @@ def _prepare_vector(
 
 
 def _emit_startup_blocked(diagnostics, reason_code: str) -> None:
+    """Meldet einen blockierten Start mit einem begrenzten Ursachencode."""
     diagnostics.emit(
         DiagnosticLevel.ERROR,
         "application",
@@ -129,7 +131,7 @@ def _emit_startup_blocked(diagnostics, reason_code: str) -> None:
 
 
 def _create_diagnostics(settings) -> StructuredDiagnosticReporter:
-    """Create the bounded local runtime diagnostic sink."""
+    """Erzeugt die begrenzte lokale Diagnoseablage der Laufzeit."""
     return StructuredDiagnosticReporter(
         getattr(settings, "DIAGNOSTICS_PATH", "data/diagnostics/events.jsonl"),
         getattr(settings, "DIAGNOSTICS_ENABLED", True),
@@ -141,6 +143,7 @@ def _emit_runtime_start(
     diagnostics: StructuredDiagnosticReporter,
     mode: RuntimeMode,
 ) -> None:
+    """Protokolliert die nicht sensiblen Entscheidungen des Anwendungsstarts."""
     diagnostics.emit(
         DiagnosticLevel.INFO,
         "application",
@@ -153,6 +156,7 @@ def _emit_runtime_start(
 
 
 def _print_header(settings) -> None:
+    """Zeigt die wesentlichen lokalen Anwendungs- und Verbindungsdaten an."""
     print("=" * 50)
     print(f"{settings.APP_NAME} v{settings.VERSION}")
     print("=" * 50)
@@ -161,6 +165,7 @@ def _print_header(settings) -> None:
 
 
 def _ensure_ollama(settings, mode: RuntimeMode, diagnostics, connections) -> bool:
+    """Stellt Ollama nur dann bereit, wenn der gewählte Modus es benötigt."""
     if not mode.needs_ollama:
         return True
     print("\nChecking local Ollama service...")
@@ -196,6 +201,7 @@ def _ensure_ollama(settings, mode: RuntimeMode, diagnostics, connections) -> boo
 
 
 def _handle_unavailable_ollama(mode: RuntimeMode) -> bool:
+    """Entscheidet, ob ein Start ohne das nicht erreichbare Ollama zulässig ist."""
     if mode.provider == "ollama" or mode.local_voice_required:
         print("Ollama is required as the active LLM provider. [ERROR]")
         return False
@@ -208,6 +214,7 @@ def _connect_vector(
     behavior_control: BehaviorControl | None = None,
     connections: ConnectionSupervisor | None = None,
 ) -> VectorSDKClient | None:
+    """Prüft WirePod und baut anschließend die kontrollierte SDK-Verbindung auf."""
     print("\nChecking WirePod connection...")
     client = VectorClient(settings.WIREPOD_HOST)
     ready = _wait_for_connection(connections, "wirepod", client.check_wirepod)
@@ -226,6 +233,7 @@ def _connect_vector(
 
 
 def _wait_for_connection(connections, service, health_check) -> bool:
+    """Führt eine direkte oder überwachte Verfügbarkeitsprüfung aus."""
     if connections is None:
         return health_check()
     return connections.wait_until_available(service, health_check, max_attempts=3)
@@ -239,6 +247,7 @@ def _create_agent(
     knowledge_library=None,
     memory_store=None,
 ) -> Agent:
+    """Erzeugt den Agenten mit Modell, lokalem Wissen und Tool Registry."""
     print(f"\nLLM provider: {settings.LLM_PROVIDER}")
     language_model = _create_language_model(settings, mode, diagnostics)
     store = memory_store
@@ -260,6 +269,7 @@ def _create_agent(
 
 
 def _create_language_model(settings, mode: RuntimeMode, diagnostics=None):
+    """Wählt das Sprachmodell unter Beachtung der lokalen Sprachdatengrenze."""
     if not mode.local_voice_required:
         return create_language_model(settings, diagnostics)
     print("Application voice model: local Ollama (cloud disabled here).")
@@ -278,6 +288,7 @@ def _create_language_model(settings, mode: RuntimeMode, diagnostics=None):
 
 
 def _knowledge_enabled(settings, mode: RuntimeMode) -> bool:
+    """Prüft, ob lokales Dokumentwissen den gewählten Modellkontext erreichen darf."""
     return (
         mode.provider == "ollama"
         or mode.local_voice_required
@@ -293,6 +304,7 @@ def _run_input_mode(
     diagnostics: StructuredDiagnosticReporter,
     connections: ConnectionSupervisor,
 ) -> None:
+    """Startet ausschließlich den konfigurierten Konsolen- oder WirePod-Eingabemodus."""
     _report_input_started(diagnostics, mode)
     if mode.input_mode == "console":
         run_conversation(agent, speech)
@@ -311,6 +323,7 @@ def _run_input_mode(
 
 
 def _report_input_started(diagnostics, mode) -> None:
+    """Meldet Eingabemodus und Cloud-Grenze ohne Gesprächsinhalte."""
     diagnostics.emit(
         DiagnosticLevel.INFO,
         "conversation",
@@ -321,6 +334,7 @@ def _report_input_started(diagnostics, mode) -> None:
 
 
 def _run_wirepod_input(settings, agent, speech, connections) -> None:
+    """Startet die private WirePod-Transkription mit lokaler Verbindungsaufsicht."""
     listener = WirePodTranscriptListener(settings.WIREPOD_HOST)
     run_voice_conversation(
         agent,

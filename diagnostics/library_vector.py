@@ -20,7 +20,7 @@ TEST_QUESTION = (
 
 
 def run_diagnostic() -> bool:
-    """Answer from README knowledge with Ollama and speak via Vector."""
+    """Beantwortet README-Wissen mit Ollama und spricht es über Vector."""
     document_path = BASE_DIR / "README.md"
     if not _valid_document(document_path) or not _ensure_ollama():
         return False
@@ -37,6 +37,7 @@ def run_diagnostic() -> bool:
 
 
 def _valid_document(document_path: Path) -> bool:
+    """Prüft das fest vorgegebene Projektdokument vor dem Import."""
     if document_path.is_file():
         return True
     print(f"Project document is missing: {document_path} [ERROR]")
@@ -44,6 +45,7 @@ def _valid_document(document_path: Path) -> bool:
 
 
 def _ensure_ollama() -> bool:
+    """Stellt den lokalen Ollama-Dienst für den physischen Wissenspfad bereit."""
     print("Checking local Ollama service...")
     runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
     if runtime.ensure_available():
@@ -53,6 +55,7 @@ def _ensure_ollama() -> bool:
 
 
 def _answer_from_document(document_path: Path) -> str | None:
+    """Importiert temporär das Dokument und erzeugt daraus lokal eine Antwort."""
     with tempfile.TemporaryDirectory(prefix="vector-readme-") as temp_dir:
         library = SQLiteKnowledgeLibrary(Path(temp_dir) / "diagnostic.db")
         imported = library.import_document(document_path)
@@ -68,6 +71,7 @@ def _answer_from_document(document_path: Path) -> str | None:
 
 
 def _report_match(library: SQLiteKnowledgeLibrary) -> bool:
+    """Bestätigt einen passenden Abschnitt und meldet nur dessen Nummer."""
     matches = library.search(TEST_QUESTION)
     if not matches:
         print("No relevant README section found. [ERROR]")
@@ -80,6 +84,7 @@ def _report_match(library: SQLiteKnowledgeLibrary) -> bool:
 
 
 def _build_agent(library: SQLiteKnowledgeLibrary) -> Agent:
+    """Erzeugt einen lokalen Ollama-Agenten mit freigegebenem Dokumentkontext."""
     return Agent(
         OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL),
         knowledge_library=library,
@@ -88,6 +93,7 @@ def _build_agent(library: SQLiteKnowledgeLibrary) -> Agent:
 
 
 def _connect_vector() -> VectorSDKClient | None:
+    """Prüft WirePod und verbindet den physischen Vector über die SDK-Grenze."""
     print("Checking WirePod connection...")
     if not VectorClient(settings.WIREPOD_HOST).check_wirepod():
         print("WirePod is unavailable. [ERROR]")
@@ -100,6 +106,7 @@ def _connect_vector() -> VectorSDKClient | None:
 
 
 def _speak(vector: VectorSDKClient, answer: str) -> bool:
+    """Spricht die lokale Wissensantwort mit der konfigurierten deutschen Stimme."""
     speech = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
     if speech.say(answer):
         return True

@@ -33,6 +33,7 @@ class ConversationContext:
     _history: list[ChatMessage] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        """Validiert Systemanweisung und Grenze des flüchtigen Gesprächsverlaufs."""
         if not self.system_prompt.strip():
             raise ValueError("System prompt must not be empty.")
 
@@ -41,30 +42,30 @@ class ConversationContext:
 
     @property
     def history(self) -> tuple[ChatMessage, ...]:
-        """Return an immutable snapshot without the system prompt."""
+        """Liefert eine unveränderliche Momentaufnahme ohne Systemanweisung."""
         return tuple(self._history)
 
     def add_user_message(self, content: str) -> None:
-        """Append one validated user message."""
+        """Fügt eine validierte Nutzernachricht hinzu."""
         self._add_message("user", content)
 
     def add_assistant_message(self, content: str) -> None:
-        """Append one validated assistant message."""
+        """Fügt eine validierte Assistentenantwort hinzu."""
         self._add_message("assistant", content)
 
     def messages(self) -> tuple[ChatMessage, ...]:
-        """Return the complete model-ready message sequence."""
+        """Liefert die vollständige modellfertige Nachrichtenfolge."""
         return (
             ChatMessage(role="system", content=self.system_prompt),
             *self._history,
         )
 
     def checkpoint(self) -> ConversationCheckpoint:
-        """Capture the current bounded history for a tentative response."""
+        """Sichert den begrenzten Verlauf für eine vorläufige Antwort."""
         return ConversationCheckpoint(tuple(self._history))
 
     def restore(self, checkpoint: ConversationCheckpoint) -> None:
-        """Restore one validated snapshot without changing configuration."""
+        """Stellt eine validierte Momentaufnahme ohne Konfigurationsänderung wieder her."""
         if not isinstance(checkpoint, ConversationCheckpoint):
             raise TypeError("Context restore requires a checkpoint.")
         history = checkpoint.history
@@ -77,10 +78,11 @@ class ConversationContext:
         self._history = list(history)
 
     def clear(self) -> None:
-        """Clear conversational history while preserving configuration."""
+        """Leert den Gesprächsverlauf und erhält die Konfiguration."""
         self._history.clear()
 
     def _add_message(self, role: MessageRole, content: str) -> None:
+        """Normalisiert eine Nachricht und hält den Verlauf innerhalb seiner Grenze."""
         normalized_content = content.strip()
 
         if not normalized_content:

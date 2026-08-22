@@ -30,7 +30,7 @@ UNRELATED_QUERY = "Welche Temperatur benötigt ein Apfelkuchen?"
 
 
 def run_diagnostic() -> bool:
-    """Run the isolated paraphrase evaluation and print metadata only."""
+    """Prüft isoliert Paraphrasen und gibt ausschließlich Metadaten aus."""
     runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
     if not runtime.ensure_available():
         print("Local Ollama service is unavailable. [ERROR]")
@@ -44,6 +44,7 @@ def run_diagnostic() -> bool:
 
 
 def _run_in_directory(root: Path) -> bool:
+    """Baut die isolierte lokale Paraphrasensuche mit festen Fakten auf."""
     document_path = root / "eindeutige-fakten.md"
     document_path.write_text("\n\n".join(FACTS), encoding="utf-8")
     database_path = root / "diagnostic.db"
@@ -64,6 +65,7 @@ def _run_in_directory(root: Path) -> bool:
 
 
 def _evaluate(library: IndexedKnowledgeLibrary, expected_chunk_id: int) -> bool:
+    """Bewertet direkte, sinngleiche und irrelevante Anfragen nur über Metadaten."""
     top_ids = tuple(
         _top_chunk_id(library.search(query, limit=1))
         for query in EVALUATION_QUERIES
@@ -83,6 +85,7 @@ def _evaluate(library: IndexedKnowledgeLibrary, expected_chunk_id: int) -> bool:
 
 
 def _top_chunk_id(results) -> int | None:
+    """Liefert ausschließlich die Kennung des bestplatzierten Abschnitts."""
     return results[0].id if results else None
 
 

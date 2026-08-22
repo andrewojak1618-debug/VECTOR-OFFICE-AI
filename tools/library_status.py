@@ -22,6 +22,7 @@ class LibraryInventory:
     stale_vectors: int
 
     def __post_init__(self) -> None:
+        """Validiert alle Bibliothekszähler gegen Typ- und Sicherheitsgrenzen."""
         values = (
             self.documents,
             self.chunks,
@@ -42,7 +43,7 @@ class LocalLibraryStatusTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free read-only library inventory."""
+        """Beschreibt die argumentlose rein lesende Bibliotheksübersicht."""
         return ToolDefinition(
             name="knowledge.library_status",
             description="Return count-only local knowledge library status.",
@@ -50,7 +51,7 @@ class LocalLibraryStatusTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Aggregate statuses without returning document-identifying data."""
+        """Aggregiert Zustände, ohne identifizierende Dokumentdaten zurückzugeben."""
         inventory = _summarize_statuses(self.status_reader())
         return {
             "documents": inventory.documents,
@@ -65,13 +66,14 @@ def register_local_library_status_tool(
     registry: ToolRegistry,
     status_reader: LibraryStatusReader,
 ) -> None:
-    """Register one local count-only library status reader."""
+    """Registriert einen lokalen Bibliotheksstatus mit reinen Zählerausgaben."""
     registry.register(LocalLibraryStatusTool(status_reader))
 
 
 def _summarize_statuses(
     statuses: Iterable[DocumentIndexStatus],
 ) -> LibraryInventory:
+    """Fasst Dokument- und Vektorstatus zu einer begrenzten Inventur zusammen."""
     items = tuple(statuses)
     if not all(isinstance(status, DocumentIndexStatus) for status in items):
         raise TypeError("Library status reader returned an invalid value.")
@@ -84,6 +86,7 @@ def _summarize_statuses(
 
 
 def _spoken_inventory(inventory: LibraryInventory) -> str:
+    """Erzeugt eine deutsche Sprachausgabe aus den Bibliothekszählern."""
     if inventory.documents == 0:
         return "Die lokale Wissensbibliothek ist leer."
     documents = _count_text(inventory.documents, "Dokument", "Dokumente")
@@ -97,11 +100,13 @@ def _spoken_inventory(inventory: LibraryInventory) -> str:
 
 
 def _count_text(count: int, singular: str, plural: str) -> str:
+    """Verbindet einen Zähler mit der passenden Singular- oder Pluralform."""
     label = singular if count == 1 else plural
     return f"{count} {label}"
 
 
 def _vector_state(count: int, state: str) -> str:
+    """Formuliert Anzahl und Aktualitätszustand gespeicherter Vektoren."""
     subject = _count_text(count, "Vektor", "Vektoren")
     verb = "ist" if count == 1 else "sind"
     return f"{subject} {verb} {state}."

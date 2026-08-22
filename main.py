@@ -10,7 +10,7 @@ from config.settings import settings
 
 
 def main() -> None:
-    """Run Vector Office AI Core with the local environment settings."""
+    """Startet Vector Office AI Core mit den lokalen Umgebungseinstellungen."""
     run_application(settings)
 
 

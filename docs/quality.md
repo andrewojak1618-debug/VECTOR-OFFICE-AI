@@ -8,7 +8,7 @@ Python übertragen. Sie gelten für produktiven Code in `application/`, `brain/`
 ## Verbindliche Leitplanken
 
 - Jedes Modul und jede Funktion besitzt eine klar erkennbare Verantwortung.
-- Öffentliche Klassen und Funktionen erhalten kurze englische Docstrings.
+- Jede produktive Funktion und Methode erhält einen kurzen deutschen Docstring.
 - Abhängigkeiten werden explizit zusammengesetzt und bleiben testbar.
 - Wiederverwendete Grenzwerte stehen als benannte Konstanten oder Settings.
 - Fehler werden an Systemgrenzen abgefangen, ohne Secrets offenzulegen.
@@ -24,6 +24,31 @@ sein, wenn die zusammengehörige Logik dadurch klarer bleibt. Der automatische
 Qualitätstest verwendet 35 Zeilen als harte Rückfallgrenze. So erzwingt er keine
 sinnlosen Kleinstfunktionen, verhindert aber erneut entstehende Monolithen.
 
+## Deutsche Funktionsdokumentation
+
+Docstrings erklären unmittelbar unter der jeweiligen `def`- oder `async def`-
+Zeile knapp, was die Funktion in ihrer aktuellen Verantwortung tut. Das gilt
+für öffentliche APIs, private Hilfsfunktionen, Konstruktoren, Properties und
+Protokollmethoden im produktiven Code.
+
+- Die Beschreibung beginnt mit einem aktiven deutschen Verb wie `Liest`,
+  `Prüft`, `Erzeugt`, `Liefert`, `Speichert` oder `Verbindet`.
+- Sie beschreibt beobachtbares Verhalten oder die konkrete interne Aufgabe,
+  nicht bloß den Funktionsnamen.
+- Parameter und Rückgabewerte werden nur erläutert, wenn ihre Bedeutung nicht
+  bereits durch Typen und Namen eindeutig ist.
+- Sicherheits-, Datenschutz- und Fehlergrenzen werden erwähnt, wenn sie für die
+  Verantwortung der Funktion wesentlich sind.
+- Kommentare innerhalb einer Funktion bleiben besonderen Entscheidungen und
+  nicht offensichtlichen Gründen vorbehalten.
+- Testmethoden benötigen keine zusätzlichen Docstrings, wenn ihr eindeutiger
+  `test_...`-Name das geprüfte Verhalten bereits vollständig beschreibt.
+
+Die deutschen Docstrings sind in VS Code über Signaturhilfe und
+Hover-Informationen sichtbar. Sie ersetzen keine Architektur- oder
+Sicherheitsdokumentation, sondern bilden die kleinste Erklärungsebene direkt am
+Code.
+
 ## Modulgröße
 
 Produktive Python-Module bleiben strikt unter 400 physischen Zeilen. Nähert
@@ -34,10 +59,11 @@ fachliche Verhaltensänderung.
 
 ## Automatische Kontrolle
 
-`tests/test_code_quality.py` prüft:
+`tests/test_code_quality.py` prüft dauerhaft:
 
 - fehlende Verantwortungs-Docstrings an Produktivmodulen,
-- fehlende Docstrings an öffentlichen synchronen und asynchronen Python-APIs,
+- fehlende deutsche Docstrings an allen produktiven synchronen und asynchronen
+  Funktionen und Methoden,
 - Funktionen oberhalb der harten Größenbegrenzung,
 - Python-Produktivmodule mit 400 oder mehr Zeilen,
 - versehentlich eingecheckte Git-Konfliktmarker,
@@ -45,7 +71,11 @@ fachliche Verhaltensänderung.
 - dokumentierte Verweise für zentrale Architekturmodule.
 
 Die Dateisuche erfolgt rekursiv, damit dieselben Leitplanken auch für später
-ergänzte Unterpakete gelten.
+ergänzte Unterpakete gelten. Die Vollständigkeitssperre umfasst öffentliche und
+private Funktionen, Methoden, Konstruktoren, Properties und Protokollmethoden.
+Eine zusätzliche Prüfung blockiert die früher verwendeten englischen
+Standardformulierungen. Damit fallen undokumentierte oder in den alten Stil
+zurückfallende Funktionen unmittelbar in der Testsuite auf.
 
 Die vollständige Abnahme erfolgt mit:
 

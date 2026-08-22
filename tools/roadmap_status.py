@@ -31,12 +31,13 @@ class NextRoadmapItemTool:
     reader: RoadmapReader | None = None
 
     def __post_init__(self) -> None:
+        """Setzt den festen Roadmap-Leser, wenn keiner injiziert wurde."""
         if self.reader is None:
             object.__setattr__(self, "reader", _read_next_tools_item)
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free local roadmap lookup."""
+        """Beschreibt die argumentlose lokale Roadmap-Abfrage."""
         return ToolDefinition(
             name="development.next_roadmap_item",
             description="Return the next pending item from the fixed local roadmap.",
@@ -44,7 +45,7 @@ class NextRoadmapItemTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Read and validate one non-sensitive roadmap summary."""
+        """Liest und validiert einen nicht sensiblen Roadmap-Eintrag."""
         item = self.reader(self.project_root.resolve())
         if item is not None:
             _validate_item(item)
@@ -60,11 +61,12 @@ def register_next_roadmap_item_tool(
     project_root: Path = PROJECT_ROOT,
     reader: RoadmapReader | None = None,
 ) -> None:
-    """Register the fixed argument-free roadmap lookup."""
+    """Registriert die feste argumentlose Roadmap-Abfrage."""
     registry.register(NextRoadmapItemTool(project_root, reader))
 
 
 def _read_next_tools_item(project_root: Path) -> str | None:
+    """Liest den ersten offenen Eintrag im festen Sicherheitsabschnitt."""
     roadmap = (project_root / ROADMAP_PATH).resolve()
     _ensure_local_roadmap(project_root, roadmap)
     lines = roadmap.read_text(encoding="utf-8").splitlines()
@@ -81,6 +83,7 @@ def _read_next_tools_item(project_root: Path) -> str | None:
 
 
 def _ensure_local_roadmap(project_root: Path, roadmap: Path) -> None:
+    """Begrenzt die Roadmap auf die erwartete lokale Projektdatei und Größe."""
     try:
         roadmap.relative_to(project_root.resolve())
     except ValueError as error:
@@ -90,6 +93,7 @@ def _ensure_local_roadmap(project_root: Path, roadmap: Path) -> None:
 
 
 def _validate_item(item: str) -> None:
+    """Prüft einen Roadmap-Eintrag auf Länge und sicheren Zeichenvorrat."""
     if not isinstance(item, str):
         raise TypeError("Roadmap reader returned an invalid value.")
     if len(item) > MAX_ITEM_LENGTH or SAFE_ITEM_PATTERN.fullmatch(item) is None:
@@ -97,6 +101,7 @@ def _validate_item(item: str) -> None:
 
 
 def _spoken_item(item: str | None) -> str:
+    """Formuliert den nächsten offenen Roadmap-Eintrag als deutschen Sprechtext."""
     if item is None:
         return "Im Bereich Tools und Sicherheit ist kein offener Punkt eingetragen."
     return f"Der nächste offene Projektpunkt lautet: {item.rstrip('.')}."

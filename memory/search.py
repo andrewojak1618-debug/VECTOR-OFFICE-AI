@@ -21,7 +21,7 @@ DEFAULT_CANDIDATE_LIMIT = 200
 
 
 def cosine_similarity(left: EmbeddingVector, right: EmbeddingVector) -> float:
-    """Return clamped cosine similarity for two equal-dimension vectors."""
+    """Berechnet die begrenzte Kosinusähnlichkeit gleich großer Vektoren."""
     if left.dimension != right.dimension:
         raise ValueError("Embedding dimensions must match for cosine similarity.")
     dot_product = sum(a * b for a, b in zip(left.values, right.values))
@@ -43,6 +43,7 @@ class HybridSearchConfig:
     candidate_limit: int = DEFAULT_CANDIDATE_LIMIT
 
     def __post_init__(self) -> None:
+        """Validiert Gewichte, Mindestähnlichkeit und Kandidatengrenze."""
         weights = (self.lexical_weight, self.semantic_weight)
         if not all(math.isfinite(weight) for weight in weights):
             raise ValueError("Hybrid search weights must be finite.")
@@ -84,13 +85,14 @@ class HybridKnowledgeSearch:
         provider: EmbeddingProvider,
         config: HybridSearchConfig | None = None,
     ):
+        """Initialisiert die hybride Suche mit lokaler Bibliothek und Vektorablage."""
         self.library = library
         self.store = store
         self.provider = provider
         self.config = config or HybridSearchConfig()
 
     def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
-        """Return hybrid results or lexical results if semantics are unavailable."""
+        """Liefert hybride oder bei Semantikausfall rein lexikalische Treffer."""
         return tuple(
             result.chunk for result in self.search_with_scores(query, limit)
         )
@@ -100,7 +102,7 @@ class HybridKnowledgeSearch:
         query: str,
         limit: int = 5,
     ) -> tuple[HybridSearchResult, ...]:
-        """Return ranked chunks with combined and component scores."""
+        """Liefert sortierte Abschnitte mit Gesamt- und Teilwerten."""
         normalized_query = query.strip()
         if not normalized_query:
             return ()
@@ -117,6 +119,7 @@ class HybridKnowledgeSearch:
         return ranked[:limit]
 
     def _semantic_matches(self, query: str) -> tuple[_SemanticMatch, ...]:
+        """Berechnet lokale semantische Treffer oberhalb der Mindestähnlichkeit."""
         model = self.provider.ensure_model_available()
         query_vector = self.provider.embed(EmbeddingText(query)).vector
         matches = []
@@ -131,6 +134,7 @@ class HybridKnowledgeSearch:
         lexical: tuple[KnowledgeChunk, ...],
         semantic: tuple[_SemanticMatch, ...],
     ) -> tuple[HybridSearchResult, ...]:
+        """Führt lexikalische und semantische Treffer ohne Duplikate zusammen."""
         lexical_scores = self._lexical_scores(lexical)
         semantic_scores = {match.chunk.id: match for match in semantic}
         chunks = {chunk.id: chunk for chunk in lexical}
@@ -145,6 +149,7 @@ class HybridKnowledgeSearch:
         self,
         chunks: tuple[KnowledgeChunk, ...],
     ) -> tuple[HybridSearchResult, ...]:
+        """Überführt lexikalische Treffer nachvollziehbar in das gemeinsame Format."""
         scores = self._lexical_scores(chunks)
         return tuple(
             HybridSearchResult(chunk, scores[chunk.id], scores[chunk.id], None)
@@ -153,6 +158,7 @@ class HybridKnowledgeSearch:
 
     @staticmethod
     def _lexical_scores(chunks: tuple[KnowledgeChunk, ...]) -> dict[int, float]:
+        """Leitet normalisierte lexikalische Werte aus der bestehenden Rangfolge ab."""
         count = len(chunks)
         if count == 0:
             return {}
@@ -167,6 +173,7 @@ class HybridKnowledgeSearch:
         lexical_scores: dict[int, float],
         semantic_matches: dict[int, _SemanticMatch],
     ) -> HybridSearchResult:
+        """Gewichtet die Teilwerte eines Abschnitts zur reproduzierbaren Gesamtwertung."""
         lexical = lexical_scores.get(chunk.id, 0.0)
         semantic = semantic_matches.get(chunk.id)
         similarity = semantic.similarity if semantic is not None else 0.0
@@ -182,6 +189,7 @@ class HybridKnowledgeSearch:
     def _sort_key(
         match: HybridSearchResult,
     ) -> tuple[float, float, float, str, int, int]:
+        """Erzeugt einen stabilen Sortierschlüssel aus Werten und Quellenmetadaten."""
         return (
             -match.score,
             -(match.semantic_similarity or 0.0),

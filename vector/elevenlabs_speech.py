@@ -30,6 +30,7 @@ class ElevenLabsVoiceSettings:
     speed: float = 1.02
 
     def __post_init__(self) -> None:
+        """Validiert alle Cloud-Stimmwerte innerhalb enger sicherer Grenzen."""
         for name in ("stability", "similarity", "style"):
             if not 0.0 <= getattr(self, name) <= 1.0:
                 raise ValueError(f"ElevenLabs {name} must be between 0 and 1.")
@@ -37,7 +38,7 @@ class ElevenLabsVoiceSettings:
             raise ValueError("ElevenLabs speed must be between 0.7 and 1.2.")
 
     def payload(self) -> dict[str, float | bool]:
-        """Return the API voice-settings object without any secret values."""
+        """Liefert die API-Stimmeinstellungen ohne geheime Werte."""
         return {
             "stability": self.stability,
             "similarity_boost": self.similarity,
@@ -50,7 +51,7 @@ class ElevenLabsVoiceSettings:
         self,
         speech_style: SpeechStyle,
     ) -> "ElevenLabsVoiceSettings":
-        """Return a narrowly adjusted copy for one transparent speech stance."""
+        """Liefert eine eng angepasste Kopie für eine transparente Sprechhaltung."""
         if speech_style is SpeechStyle.SUPPORTIVE:
             return self._adjusted(
                 stability=SUPPORTIVE_STABILITY_OFFSET,
@@ -69,6 +70,7 @@ class ElevenLabsVoiceSettings:
         stability: float,
         speed: float,
     ) -> "ElevenLabsVoiceSettings":
+        """Begrenzt relative Stabilitäts- und Geschwindigkeitsänderungen auf API-Werte."""
         return ElevenLabsVoiceSettings(
             stability=min(1.0, max(0.0, self.stability + stability)),
             similarity=self.similarity,
@@ -92,6 +94,7 @@ class ElevenLabsSpeech(VectorSpeech):
         voice_settings: ElevenLabsVoiceSettings | None = None,
         client: httpx.Client | None = None,
     ):
+        """Initialisiert Cloud-TTS mit validierter Konfiguration und lokalem Rückfall."""
         self._validate_configuration(api_key, voice_id, model, timeout)
         super().__init__(
             local_speech.vector_client,
@@ -110,7 +113,7 @@ class ElevenLabsSpeech(VectorSpeech):
         text: str,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> PreparedSpeech:
-        """Prepare cloud speech or transparently use the local voice."""
+        """Bereitet Cloud-Sprache vor oder nutzt transparent die lokale Stimme."""
         try:
             return super().prepare(text, style)
         except (
@@ -123,10 +126,11 @@ class ElevenLabsSpeech(VectorSpeech):
             return self.local_speech.prepare(text, style)
 
     def say_thinking_prelude(self) -> bool:
-        """Keep the thinking prelude local, private, and immediately available."""
+        """Hält die Denkphase lokal, privat und unmittelbar verfügbar."""
         return self.local_speech.say_thinking_prelude()
 
     def _source_filename(self) -> str:
+        """Liefert den festen Dateinamen des ElevenLabs-Quellformats."""
         return "source.mp3"
 
     def _synthesize_german_wav(
@@ -135,6 +139,7 @@ class ElevenLabsSpeech(VectorSpeech):
         output_path: Path,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> None:
+        """Ruft normalisierte deutsche Cloud-Sprache ab und schreibt temporäres Audio."""
         output_path.write_bytes(
             self._request_audio(normalize_speech_text(text), style)
         )
@@ -144,6 +149,7 @@ class ElevenLabsSpeech(VectorSpeech):
         text: str,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> bytes:
+        """Fordert Audiodaten mit festem Ziel und ohne Protokollierung des Schlüssels an."""
         try:
             response = self.client.post(
                 f"{ELEVENLABS_TTS_URL}/{self.voice_id}",
@@ -166,6 +172,7 @@ class ElevenLabsSpeech(VectorSpeech):
         text: str,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> dict:
+        """Erzeugt die begrenzte ElevenLabs-Nutzlast für Text, Modell und Sprechstil."""
         voice_settings = self.voice_settings.for_speech_style(style)
         return {
             "text": text,
@@ -181,6 +188,7 @@ class ElevenLabsSpeech(VectorSpeech):
         model: str,
         timeout: float,
     ) -> None:
+        """Validiert Zugangsdatenfelder, Modell und Cloud-Anfragefrist."""
         values = (api_key, voice_id, model)
         if not all(isinstance(value, str) and value.strip() for value in values):
             raise ValueError("ElevenLabs key, voice ID, and model are required.")

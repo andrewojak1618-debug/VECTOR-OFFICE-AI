@@ -26,17 +26,18 @@ class VoiceRecovery:
         speaker: Callable[[str], bool],
         sleeper: Callable[[float], None] = time.sleep,
     ):
+        """Initialisiert begrenzte Voice-Retries und die lokale Wiederherstellungsansage."""
         self.connections = connections
         self.speaker = speaker
         self.sleeper = sleeper
 
     @property
     def max_failures(self) -> int:
-        """Return the fixed maximum number of consecutive voice failures."""
+        """Liefert die feste Höchstzahl aufeinanderfolgender Spracheingabefehler."""
         return MAX_CONSECUTIVE_VOICE_FAILURES
 
     def retry_failure(self, failure_count: int) -> bool:
-        """Wait after one failure or report that the fixed limit is exhausted."""
+        """Wartet nach einem Fehler oder meldet das Erreichen der festen Grenze."""
         if failure_count >= self.max_failures:
             print("Voice input failed repeatedly. Conversation ended.")
             return False
@@ -48,7 +49,7 @@ class VoiceRecovery:
         return True
 
     def complete(self) -> None:
-        """Record availability and speak one pending recovery exactly once."""
+        """Speichert Verfügbarkeit und spricht eine Wiederherstellung genau einmal."""
         if self.connections is None:
             return
         self.connections.observe("wirepod", True)
@@ -58,6 +59,7 @@ class VoiceRecovery:
         self.speaker(CONNECTION_RECOVERY_NOTICE)
 
     def _failure_delay(self) -> float:
+        """Liefert die überwachte oder lokale feste Wartezeit nach Voice-Ausfall."""
         if self.connections is None:
             return VOICE_RETRY_DELAY_SECONDS
         return self.connections.observe(

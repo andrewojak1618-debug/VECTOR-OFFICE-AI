@@ -24,5 +24,5 @@ class ToolCallInspection:
 
     @property
     def valid(self) -> bool:
-        """Report whether name and arguments match the registered definition."""
+        """Meldet, ob Name und Argumente zur registrierten Definition passen."""
         return self.definition is not None and self.error_code is None

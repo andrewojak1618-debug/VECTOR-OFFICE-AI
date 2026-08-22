@@ -24,12 +24,14 @@ class SQLiteEmbeddingStore:
     """Persist generated document vectors with model and content provenance."""
 
     def __init__(self, database_path: str | Path):
+        """Initialisiert die lokale SQLite-Ablage für versionierte Vektoren."""
         self.database_path = Path(database_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
+        """Öffnet eine transaktionale Verbindung mit aktiven Fremdschlüsseln."""
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
@@ -40,6 +42,7 @@ class SQLiteEmbeddingStore:
             connection.close()
 
     def _initialize(self) -> None:
+        """Erweitert die Datenbank sicher um das Einbettungsschema."""
         with self._connect() as connection:
             initialize_embedding_schema(connection)
 
@@ -48,7 +51,7 @@ class SQLiteEmbeddingStore:
         embedding: ChunkEmbedding,
         model: EmbeddingModelInfo,
     ) -> StoredEmbedding:
-        """Upsert one chunk embedding and return its stored representation."""
+        """Speichert eine Abschnittseinbettung und liefert ihre Datenbankdarstellung."""
         return self.save_many((embedding,), model)[0]
 
     def save_many(
@@ -56,7 +59,7 @@ class SQLiteEmbeddingStore:
         embeddings: Sequence[ChunkEmbedding],
         model: EmbeddingModelInfo,
     ) -> tuple[StoredEmbedding, ...]:
-        """Atomically persist an ordered batch without duplicate identities."""
+        """Speichert einen geordneten Stapel atomar ohne doppelte Identitäten."""
         batch = tuple(embeddings)
         if not batch:
             return ()
@@ -73,7 +76,7 @@ class SQLiteEmbeddingStore:
         return tuple(self._to_stored(row) for row in rows)
 
     def list_for_document(self, document_id: int) -> tuple[StoredEmbedding, ...]:
-        """Return stored vectors ordered by their source document section."""
+        """Liefert gespeicherte Vektoren nach ihrem Quelldokumentabschnitt geordnet."""
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -92,7 +95,7 @@ class SQLiteEmbeddingStore:
         document_id: int,
         model: EmbeddingModelInfo,
     ) -> tuple[StoredEmbedding, ...]:
-        """Return vectors that no longer match content or current model identity."""
+        """Liefert Vektoren, die nicht mehr zu Inhalt oder Modellidentität passen."""
         self._validate_model(model)
         with self._connect() as connection:
             rows = connection.execute(
@@ -113,7 +116,7 @@ class SQLiteEmbeddingStore:
         document_id: int,
         model: EmbeddingModelInfo,
     ) -> tuple[int, ...]:
-        """Return chunk IDs without a current embedding for ``model``."""
+        """Liefert Abschnittskennungen ohne aktuelle Einbettung für das Modell."""
         self._validate_model(model)
         with self._connect() as connection:
             rows = connection.execute(
@@ -142,7 +145,7 @@ class SQLiteEmbeddingStore:
         document_id: int,
         model: EmbeddingModelInfo,
     ) -> bool:
-        """Report whether a document has vectors from another model identity."""
+        """Meldet Vektoren eines Dokuments mit abweichender Modellidentität."""
         self._validate_model(model)
         with self._connect() as connection:
             row = connection.execute(
@@ -162,7 +165,7 @@ class SQLiteEmbeddingStore:
         self,
         model: EmbeddingModelInfo,
     ) -> tuple[EmbeddedKnowledgeChunk, ...]:
-        """Return all sections with a valid embedding for one model identity."""
+        """Liefert alle Abschnitte mit gültiger Einbettung einer Modellidentität."""
         self._validate_model(model)
         with self._connect() as connection:
             rows = connection.execute(
@@ -191,6 +194,7 @@ class SQLiteEmbeddingStore:
         embedding: ChunkEmbedding,
         model: EmbeddingModelInfo,
     ) -> int:
+        """Validiert und speichert eine Einbettung unter ihrer eindeutigen Identität."""
         content = self._chunk_content(connection, embedding.chunk_id)
         self._validate_embedding_content(content, embedding.result)
         self._validate_result_dimension(embedding.result, model)
@@ -202,6 +206,7 @@ class SQLiteEmbeddingStore:
 
     @staticmethod
     def _upsert_sql() -> str:
+        """Liefert die feste SQL-Anweisung für kollisionsfreie Aktualisierungen."""
         return """
             INSERT INTO knowledge_embeddings (
                 chunk_id, model_name, model_version, dimension,
@@ -220,6 +225,7 @@ class SQLiteEmbeddingStore:
         model: EmbeddingModelInfo,
         content: str,
     ) -> tuple:
+        """Erzeugt die serialisierten Werte für eine Einbettungszeile."""
         return (
             embedding.chunk_id,
             model.model_name,
@@ -231,6 +237,7 @@ class SQLiteEmbeddingStore:
 
     @staticmethod
     def _chunk_content(connection: sqlite3.Connection, chunk_id: int) -> str:
+        """Liest den Quelltext eines vorhandenen Dokumentabschnitts."""
         row = connection.execute(
             "SELECT content FROM knowledge_chunks WHERE id = ?",
             (chunk_id,),
@@ -241,6 +248,7 @@ class SQLiteEmbeddingStore:
 
     @staticmethod
     def _validate_embedding_content(content: str, result: EmbeddingResult) -> None:
+        """Verhindert die Zuordnung eines Vektors zu abweichendem Quelltext."""
         if content != result.text.value:
             raise ValueError("Embedding text does not match its source chunk.")
 
@@ -249,11 +257,13 @@ class SQLiteEmbeddingStore:
         result: EmbeddingResult,
         model: EmbeddingModelInfo,
     ) -> None:
+        """Prüft die Ergebnisdimension gegen die bekannte Modellmetadimension."""
         if result.dimension != model.dimension:
             raise ValueError("Embedding dimension does not match model metadata.")
 
     @staticmethod
     def _validate_model(model: EmbeddingModelInfo) -> None:
+        """Verlangt eine vollständige lokale Modellidentität samt Dimension."""
         if not model.model_name.strip() or not model.model_version.strip():
             raise ValueError("Embedding model identity must not be empty.")
         if model.dimension is None or model.dimension < 1:
@@ -265,6 +275,7 @@ class SQLiteEmbeddingStore:
         chunk_id: int,
         model: EmbeddingModelInfo,
     ) -> int:
+        """Liest die Datenbankkennung einer eindeutigen Abschnitt-Modell-Kombination."""
         row = connection.execute(
             """
             SELECT id FROM knowledge_embeddings
@@ -279,6 +290,7 @@ class SQLiteEmbeddingStore:
         connection: sqlite3.Connection,
         embedding_id: int,
     ) -> sqlite3.Row:
+        """Liest eine gespeicherte Einbettung anhand ihrer Kennung."""
         return connection.execute(
             "SELECT * FROM knowledge_embeddings WHERE id = ?",
             (embedding_id,),
@@ -286,6 +298,7 @@ class SQLiteEmbeddingStore:
 
     @staticmethod
     def _content_hash(content: str) -> str:
+        """Berechnet die stabile SHA-256-Prüfsumme eines Abschnittstextes."""
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     @classmethod
@@ -294,6 +307,7 @@ class SQLiteEmbeddingStore:
         row: sqlite3.Row,
         model: EmbeddingModelInfo,
     ) -> bool:
+        """Prüft Modell, Dimension und Inhalt einer gespeicherten Zeile auf Aktualität."""
         return (
             row["model_name"] == model.model_name
             and row["model_version"] == model.model_version
@@ -303,6 +317,7 @@ class SQLiteEmbeddingStore:
 
     @staticmethod
     def _to_stored(row: sqlite3.Row) -> StoredEmbedding:
+        """Überführt eine SQLite-Zeile in eine validierte gespeicherte Einbettung."""
         return StoredEmbedding(
             id=row["id"],
             chunk_id=row["chunk_id"],
@@ -317,6 +332,7 @@ class SQLiteEmbeddingStore:
 
     @staticmethod
     def _to_embedded_chunk(row: sqlite3.Row) -> EmbeddedKnowledgeChunk:
+        """Verbindet einen belegten Wissensabschnitt mit seinem dekodierten Vektor."""
         chunk = KnowledgeChunk(
             id=row["chunk_id"],
             document_id=row["document_id"],

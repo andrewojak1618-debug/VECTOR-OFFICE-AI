@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS knowledge_document_versions (
 
 
 def initialize_knowledge_schema(connection: sqlite3.Connection) -> None:
-    """Create current tables and backfill one version for legacy documents."""
+    """Legt aktuelle Tabellen an und ergänzt eine Version für ältere Dokumente."""
     connection.executescript(KNOWLEDGE_SCHEMA)
     initialize_embedding_schema(connection)
     connection.execute(

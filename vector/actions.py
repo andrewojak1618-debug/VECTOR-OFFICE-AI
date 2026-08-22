@@ -42,13 +42,14 @@ class VectorActions:
     """Map fixed safe action names onto bounded SDK client operations."""
 
     def __init__(self, client: VectorSDKClient, timeout: float = 8.0):
+        """Initialisiert sichere Aktionen mit einer positiven Ausführungsfrist."""
         if timeout <= 0:
             raise ValueError("Robot action timeout must be positive.")
         self.client = client
         self.timeout = float(timeout)
 
     def perform(self, action_name: str) -> bool:
-        """Execute one allowlisted action and reject every other name."""
+        """Führt eine freigegebene Aktion aus und weist jeden anderen Namen ab."""
         action = self._parse_action(action_name)
         if action is SafeRobotAction.REFLECTIVE_EXPRESSION:
             return self._perform_reflective_expression()
@@ -62,6 +63,7 @@ class VectorActions:
         )
 
     def _perform_reflective_expression(self) -> bool:
+        """Kombiniert Kopf und Augen zu einem festen nachdenklichen Ausdruck."""
         if not self.client.set_head_angle(
             REFLECTIVE_HEAD_DEGREES,
             self.timeout,
@@ -75,20 +77,21 @@ class VectorActions:
         return animated and reset
 
     def emergency_stop(self) -> bool:
-        """Cancel active behavior, stop all motors, and latch the stop state."""
+        """Bricht Verhalten ab, stoppt alle Motoren und verriegelt den Notstopp."""
         return self.client.emergency_stop()
 
     def reset_emergency_stop(self) -> None:
-        """Explicitly re-enable actions after the physical situation is safe."""
+        """Gibt Aktionen nach gesicherter physischer Lage ausdrücklich wieder frei."""
         self.client.behavior_control.reset_emergency_stop()
 
     @staticmethod
     def available_actions() -> tuple[str, ...]:
-        """Return the immutable public action allowlist."""
+        """Liefert die unveränderliche öffentliche Aktionsfreigabeliste."""
         return SAFE_ACTION_NAMES
 
     @staticmethod
     def _parse_action(action_name: str) -> SafeRobotAction:
+        """Normalisiert einen Aktionsnamen und prüft ihn gegen die Freigabeliste."""
         if not isinstance(action_name, str):
             raise TypeError("Robot action name must be text.")
         try:

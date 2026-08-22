@@ -18,7 +18,7 @@ TEST_QUESTION = (
 
 
 def run_diagnostic() -> bool:
-    """Import test knowledge and verify a real local Ollama response."""
+    """Importiert Testwissen und prüft eine echte lokale Ollama-Antwort."""
     if not _ensure_ollama():
         return False
     with tempfile.TemporaryDirectory(prefix="vector-library-") as temp_dir:
@@ -34,6 +34,7 @@ def run_diagnostic() -> bool:
 
 
 def _ensure_ollama() -> bool:
+    """Stellt den lokalen Ollama-Dienst für die Bibliotheksprüfung bereit."""
     print("Checking local Ollama service...")
     runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
     if runtime.ensure_available():
@@ -43,6 +44,7 @@ def _ensure_ollama() -> bool:
 
 
 def _prepare_library(root: Path) -> SQLiteKnowledgeLibrary | None:
+    """Erzeugt eine temporäre Bibliothek und prüft den festen lexikalischen Treffer."""
     document_path = root / "projektwissen.md"
     document_path.write_text(_test_document(), encoding="utf-8")
     library = SQLiteKnowledgeLibrary(root / "diagnostic.db")
@@ -60,6 +62,7 @@ def _prepare_library(root: Path) -> SQLiteKnowledgeLibrary | None:
 
 
 def _test_document() -> str:
+    """Liefert das feste ungefährliche Dokumentwissen der Diagnose."""
     return (
         "# Kontrolliertes Projektwissen\n\n"
         "Der interne Codename der Dokumentbibliothek lautet "
@@ -70,6 +73,7 @@ def _test_document() -> str:
 
 
 def _ask_ollama(library: SQLiteKnowledgeLibrary) -> str:
+    """Stellt eine feste Frage ausschließlich an Ollama mit lokalem Dokumentkontext."""
     agent = Agent(
         OllamaProvider(settings.OLLAMA_HOST, settings.OLLAMA_MODEL),
         knowledge_library=library,

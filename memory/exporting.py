@@ -26,7 +26,7 @@ SECRET_PATTERNS = (
 
 
 def redact_secrets(value: str) -> str:
-    """Replace common credential forms without logging the original value."""
+    """Ersetzt typische Zugangsdatenmuster, ohne den Originalwert zu protokollieren."""
     redacted = SECRET_PATTERNS[0].sub(REDACTED, value)
     redacted = SECRET_PATTERNS[1].sub(f"Bearer {REDACTED}", redacted)
     return SECRET_PATTERNS[2].sub(rf"\1\2{REDACTED}", redacted)
@@ -41,7 +41,7 @@ class LocalDataExporter:
         statuses: Sequence[DocumentIndexStatus],
         versions: Mapping[int, Sequence[KnowledgeDocumentVersion]],
     ) -> Path:
-        """Export document, version, and index metadata without source text."""
+        """Exportiert Dokument-, Versions- und Indexmetadaten ohne Quelltext."""
         documents = tuple(
             self._document_payload(status, versions.get(status.document.id, ()))
             for status in statuses
@@ -57,7 +57,7 @@ class LocalDataExporter:
         destination: str | Path,
         memories: Sequence[MemoryEntry],
     ) -> Path:
-        """Export confirmed memories separately with credential redaction."""
+        """Exportiert bestätigte Erinnerungen getrennt und bereinigt Zugangsdaten."""
         entries = tuple(
             {
                 "id": memory.id,
@@ -79,6 +79,7 @@ class LocalDataExporter:
         status: DocumentIndexStatus,
         versions: Sequence[KnowledgeDocumentVersion],
     ) -> dict[str, Any]:
+        """Erzeugt sichere Dokument- und Einbettungsmetadaten für den Export."""
         document = status.document
         return {
             "id": document.id,
@@ -100,6 +101,7 @@ class LocalDataExporter:
 
     @staticmethod
     def _version_payload(version: KnowledgeDocumentVersion) -> dict[str, Any]:
+        """Reduziert eine Dokumentversion auf nachvollziehbare Metadaten."""
         return {
             "version": version.version_number,
             "content_hash": version.content_hash,
@@ -113,6 +115,7 @@ class LocalDataExporter:
         export_type: str,
         content: Mapping[str, Any],
     ) -> Path:
+        """Erzeugt einen versionierten bereinigten Export und schreibt ihn atomar."""
         path = self._resolve_destination(destination)
         payload = {
             "export_type": export_type,
@@ -126,6 +129,7 @@ class LocalDataExporter:
 
     @staticmethod
     def _resolve_destination(destination: str | Path) -> Path:
+        """Löst ausschließlich ein lokales JSON-Ziel auf und legt dessen Ordner an."""
         path = Path(str(destination).strip().strip('"')).expanduser().resolve()
         if path.suffix.casefold() != ".json":
             raise ValueError("Export destination must be a JSON file.")
@@ -134,6 +138,7 @@ class LocalDataExporter:
 
     @staticmethod
     def _sanitize(value: Any) -> Any:
+        """Bereinigt Zeichenketten rekursiv in unterstützten Exportstrukturen."""
         if isinstance(value, str):
             return redact_secrets(value)
         if isinstance(value, Mapping):
@@ -144,6 +149,7 @@ class LocalDataExporter:
 
     @staticmethod
     def _atomic_write(path: Path, content: str) -> None:
+        """Ersetzt eine Exportdatei erst nach vollständigem Schreiben atomar."""
         temporary = path.with_name(f".{path.name}.tmp")
         try:
             temporary.write_text(content, encoding="utf-8")

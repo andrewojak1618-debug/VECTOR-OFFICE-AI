@@ -37,6 +37,7 @@ class EmotionalState:
     expression_cue: ExpressionCue
 
     def __post_init__(self) -> None:
+        """Validiert Intensität und Revisionsnummer des simulierten Zustands."""
         if not 0 <= self.intensity <= MAX_STANCE_INTENSITY:
             raise ValueError("Emotional-state intensity is outside its bounds.")
         if self.revision < 0:
@@ -113,6 +114,7 @@ class EmotionalStateModel:
     """Update one session-local stance through bounded deterministic rules."""
 
     def __init__(self):
+        """Initialisiert eine neutrale sitzungslokale Gesprächshaltung."""
         self._state = self._make_state(
             ConversationStance.NEUTRAL,
             intensity=0,
@@ -123,16 +125,16 @@ class EmotionalStateModel:
 
     @property
     def state(self) -> EmotionalState:
-        """Return the current immutable state snapshot."""
+        """Liefert die aktuelle unveränderliche Zustandsaufnahme."""
         return self._state
 
     @property
     def history(self) -> tuple[EmotionalTransition, ...]:
-        """Return bounded transition metadata without conversation content."""
+        """Liefert begrenzte Übergangsmetadaten ohne Gesprächsinhalte."""
         return tuple(self._history)
 
     def observe(self, user_text: str) -> EmotionalTransition:
-        """Classify one user turn and apply at most one bounded transition."""
+        """Klassifiziert einen Nutzerturn und wendet höchstens einen Übergang an."""
         if not isinstance(user_text, str) or not user_text.strip():
             raise ValueError("Emotional-state input must not be empty.")
         target, reason = self._classify(user_text.casefold())
@@ -149,7 +151,7 @@ class EmotionalStateModel:
         return transition
 
     def prompt_guidance(self) -> str:
-        """Describe the current simulated stance for any language provider."""
+        """Beschreibt die simulierte Haltung einheitlich für jeden Modellanbieter."""
         state = self._state
         return (
             "Simulierte Gesprächshaltung: "
@@ -160,6 +162,7 @@ class EmotionalStateModel:
 
     @staticmethod
     def _classify(text: str) -> tuple[ConversationStance, str]:
+        """Ordnet normalisierten Text über feste Begriffe einer Haltung zu."""
         for stance, terms in STANCE_TERMS.items():
             if any(term in text for term in terms):
                 return stance, f"keyword:{stance.value}"
@@ -172,6 +175,7 @@ class EmotionalStateModel:
         target: ConversationStance,
         reason: str,
     ) -> EmotionalState:
+        """Berechnet einen begrenzten und nachvollziehbaren Zustandsübergang."""
         if target is previous.stance:
             intensity = cls._repeated_intensity(target, previous.intensity)
             stance = target
@@ -187,6 +191,7 @@ class EmotionalStateModel:
         stance: ConversationStance,
         previous_intensity: int,
     ) -> int:
+        """Erhöht wiederholte Intensität nur bis zur festgelegten Obergrenze."""
         if stance is ConversationStance.NEUTRAL:
             return 0
         return min(MAX_STANCE_INTENSITY, max(1, previous_intensity + 1))
@@ -198,6 +203,7 @@ class EmotionalStateModel:
         revision: int,
         reason: str,
     ) -> EmotionalState:
+        """Erzeugt einen unveränderlichen Zustand samt festem Ausdruckshinweis."""
         return EmotionalState(
             stance,
             intensity,

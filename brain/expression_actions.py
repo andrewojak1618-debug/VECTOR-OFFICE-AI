@@ -31,7 +31,7 @@ class ExpressionActionSuggestion:
 
     @property
     def proposed(self) -> bool:
-        """Report whether the current registry accepts the mapped proposal."""
+        """Meldet, ob die aktuelle Registry den zugeordneten Vorschlag akzeptiert."""
         return self.review.status is ToolProposalStatus.PROPOSED
 
 
@@ -39,12 +39,13 @@ class ExpressionActionMapper:
     """Translate local cue metadata into fixed advisory proposal identifiers."""
 
     def __init__(self, reviewer: ToolProposalReviewer):
+        """Initialisiert die Zuordnung mit einer verpflichtenden Vorschlagsprüfung."""
         if not isinstance(reviewer, ToolProposalReviewer):
             raise TypeError("Expression mapper requires a ToolProposalReviewer.")
         self._reviewer = reviewer
 
     def suggest(self, state: EmotionalState) -> ExpressionActionSuggestion:
-        """Return a checked suggestion without authorization or execution."""
+        """Liefert einen geprüften Vorschlag ohne Freigabe oder Ausführung."""
         if not isinstance(state, EmotionalState):
             raise TypeError("Expression mapper requires an EmotionalState.")
         proposal_id = self._proposal_id(state)
@@ -57,6 +58,7 @@ class ExpressionActionMapper:
 
     @staticmethod
     def _proposal_id(state: EmotionalState) -> str | None:
+        """Ordnet einem aktiven Zustand eine feste Vorschlagskennung zu."""
         if state.intensity == 0:
             return None
         return EXPRESSION_PROPOSAL_IDS[state.expression_cue]

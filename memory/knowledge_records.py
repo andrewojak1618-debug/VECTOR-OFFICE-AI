@@ -17,7 +17,7 @@ def search_terms(
     query: str,
     minimum_length: int = DEFAULT_TERM_MIN_LENGTH,
 ) -> frozenset[str]:
-    """Return normalized lexical terms above one minimum length."""
+    """Liefert normalisierte lexikalische Begriffe ab einer Mindestlänge."""
     return frozenset(
         term
         for term in re.findall(r"\w+", query.casefold())
@@ -30,7 +30,7 @@ def rank_chunk_rows(
     terms: frozenset[str],
     limit: int,
 ) -> tuple[KnowledgeChunk, ...]:
-    """Rank document rows by lexical overlap and newest row identity."""
+    """Sortiert Dokumentzeilen nach Begriffsüberschneidung und jüngster Kennung."""
     scored = []
     for row in rows:
         text = f"{row['title']} {row['content']}".casefold()
@@ -42,7 +42,7 @@ def rank_chunk_rows(
 
 
 def to_document(row: sqlite3.Row) -> KnowledgeDocument:
-    """Map one SQLite row to immutable document metadata."""
+    """Überführt eine SQLite-Zeile in unveränderliche Dokumentmetadaten."""
     return KnowledgeDocument(
         id=row["id"],
         source_path=row["source_path"],
@@ -53,7 +53,7 @@ def to_document(row: sqlite3.Row) -> KnowledgeDocument:
 
 
 def to_chunk(row: sqlite3.Row) -> KnowledgeChunk:
-    """Map one joined SQLite row to a sourced knowledge chunk."""
+    """Überführt eine verbundene SQLite-Zeile in einen belegten Wissensabschnitt."""
     return KnowledgeChunk(
         id=row["id"],
         document_id=row["document_id"],
@@ -65,7 +65,7 @@ def to_chunk(row: sqlite3.Row) -> KnowledgeChunk:
 
 
 def to_document_version(row: sqlite3.Row) -> KnowledgeDocumentVersion:
-    """Map one SQLite row to immutable document-version metadata."""
+    """Überführt eine SQLite-Zeile in unveränderliche Versionsmetadaten."""
     return KnowledgeDocumentVersion(
         id=row["id"],
         document_id=row["document_id"],

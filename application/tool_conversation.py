@@ -45,7 +45,7 @@ class ToolTurnResult:
 
     @property
     def handled(self) -> bool:
-        """Report whether this turn belongs to controlled tool handling."""
+        """Meldet, ob dieser Turn zur kontrollierten Toolbehandlung gehört."""
         return self.status is not ToolTurnStatus.NOT_HANDLED
 
 
@@ -53,12 +53,13 @@ class ControlledToolConversation:
     """Keep one bounded pending proposal and execute only after authority."""
 
     def __init__(self, agent: Agent, selector: ToolIntentSelector):
+        """Initialisiert den Tooldialog mit Agent und deterministischer Auswahl."""
         self.agent = agent
         self.selector = selector
         self._pending: ToolSelection | None = None
 
     def handle(self, user_text: str) -> ToolTurnResult:
-        """Select, confirm, cancel, or execute one controlled tool request."""
+        """Wählt, bestätigt, verwirft oder führt eine kontrollierte Toolanfrage aus."""
         selection = self.selector.select(user_text)
         if self._is_emergency(selection):
             self._pending = None
@@ -79,6 +80,7 @@ class ControlledToolConversation:
         return self._confirmation_result(selection)
 
     def _handle_confirmation(self, user_text: str) -> ToolTurnResult:
+        """Verarbeitet eine separate Bestätigung oder Ablehnung des offenen Tools."""
         normalized = _normalize_confirmation(user_text)
         pending = self._pending
         if normalized in CANCELLATION_PHRASES:
@@ -100,6 +102,7 @@ class ControlledToolConversation:
         authorization: ToolAuthorization | None,
         speak: bool,
     ) -> ToolTurnResult:
+        """Führt eine geprüfte Toolauswahl aus und bereinigt das Dialogergebnis."""
         result = self.agent.execute_tool(
             selection.tool_name,
             selection.arguments,
@@ -121,6 +124,7 @@ class ControlledToolConversation:
 
     @staticmethod
     def _is_emergency(selection: ToolSelection) -> bool:
+        """Erkennt ausschließlich die feste Notfallstopp-Auswahl."""
         return (
             selection.status is ToolSelectionStatus.SELECTED
             and selection.tool_name == EMERGENCY_TOOL_NAME
@@ -128,6 +132,7 @@ class ControlledToolConversation:
 
     @staticmethod
     def _confirmation_result(selection: ToolSelection) -> ToolTurnResult:
+        """Erzeugt eine transparente Bestätigungsfrage passend zur Berechtigung."""
         if selection.permission is PermissionLevel.NETWORK:
             return ToolTurnResult(
                 ToolTurnStatus.AWAITING_CONFIRMATION,
@@ -143,10 +148,12 @@ class ControlledToolConversation:
 
 
 def _normalize_confirmation(value: str) -> str:
+    """Normalisiert eine kurze Toolbestätigung oder Ablehnung."""
     return " ".join(value.casefold().strip().rstrip(".!?").split())
 
 
 def _confirmed_authorization(permission: PermissionLevel) -> ToolAuthorization:
+    """Erzeugt eine einmalige Autorisierung exakt für die benötigte Berechtigung."""
     return ToolAuthorization(
         allow_mutation=permission in {
             PermissionLevel.MUTATING,
@@ -161,6 +168,7 @@ def _success_message(
     selection: ToolSelection,
     result: ToolExecutionResult,
 ) -> str:
+    """Wählt den begrenzten lokalen Erfolgstext für ein ausgeführtes Tool."""
     if selection.tool_name == "development.latest_change":
         return str(result.output["spoken_text"])
     if selection.tool_name == "research.python_latest_version":

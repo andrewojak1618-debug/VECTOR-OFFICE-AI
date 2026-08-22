@@ -41,7 +41,7 @@ class SpeechOutput(Protocol):
         text: str,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> bool:
-        """Speak one response and report whether playback completed."""
+        """Spricht eine Antwort und meldet den Abschluss der Wiedergabe."""
         ...
 
 
@@ -63,7 +63,7 @@ class ExpressionDeliveryResult:
 
     @property
     def speech_completed(self) -> bool:
-        """Report whether the response finished playing through Vector."""
+        """Meldet, ob Vector die Antwort vollständig wiedergegeben hat."""
         return self.status is not ExpressionDeliveryStatus.SPEECH_FAILED
 
 
@@ -71,6 +71,7 @@ class ExpressionResponseCoordinator:
     """Run one confirmed subtle animation before speech, never in parallel."""
 
     def __init__(self, registry: ToolRegistry, speech: SpeechOutput):
+        """Initialisiert die koordinierte Grenze für Ausdrucksaktion und Sprache."""
         if not isinstance(registry, ToolRegistry):
             raise TypeError("Expression delivery requires a ToolRegistry.")
         if not callable(getattr(speech, "say", None)):
@@ -80,7 +81,7 @@ class ExpressionResponseCoordinator:
 
     @property
     def speech_output(self) -> SpeechOutput:
-        """Expose the bounded speech boundary for a pre-response prelude."""
+        """Stellt die begrenzte Sprachgrenze für eine Denkphase bereit."""
         return self._speech
 
     def deliver(
@@ -90,7 +91,7 @@ class ExpressionResponseCoordinator:
         authorization: ToolAuthorization | None = None,
         animate: bool = True,
     ) -> ExpressionDeliveryResult:
-        """Deliver an answer after an optional, per-call confirmed animation."""
+        """Gibt eine Antwort nach einer optional bestätigten Animation aus."""
         if not isinstance(answer, str) or not answer.strip():
             raise ValueError("Expression response must not be empty.")
         if suggestion is not None and not isinstance(
@@ -120,6 +121,7 @@ class ExpressionResponseCoordinator:
         authorization: ToolAuthorization | None,
         animate: bool,
     ) -> tuple[ToolExecutionResult | None, str | None]:
+        """Führt ausschließlich eine festgelegte und bestätigte Ausdrucksaktion aus."""
         if not animate:
             return None, self._review_error(suggestion)
         if (
@@ -142,6 +144,7 @@ class ExpressionResponseCoordinator:
         return result, error or (None if result.succeeded else "expression_failed")
 
     def _speak(self, answer: str, style: SpeechStyle) -> bool:
+        """Spricht die Antwort im gewählten Stil und fängt Ausgabefehler ab."""
         try:
             return bool(self._speech.say(answer, style))
         except (RuntimeError, TypeError, ValueError):
@@ -151,6 +154,7 @@ class ExpressionResponseCoordinator:
     def _speech_style(
         suggestion: ExpressionActionSuggestion | None,
     ) -> SpeechStyle:
+        """Bestimmt aus einem Ausdruckshinweis ein begrenztes Sprachprofil."""
         if suggestion is None:
             return SpeechStyle.CONVERSATIONAL
         return speech_style_for_cue(suggestion.cue)
@@ -159,12 +163,14 @@ class ExpressionResponseCoordinator:
     def _review_error(
         suggestion: ExpressionActionSuggestion | None,
     ) -> str | None:
+        """Übernimmt einen datenschutzsicheren Fehlercode aus der Prüfung."""
         if suggestion is None:
             return None
         return suggestion.review.error_code
 
     @staticmethod
     def _is_confirmed(authorization: ToolAuthorization | None) -> bool:
+        """Prüft die ausdrückliche Freigabe einer verändernden Aktion."""
         return (
             isinstance(authorization, ToolAuthorization)
             and authorization.allow_mutation
@@ -173,6 +179,7 @@ class ExpressionResponseCoordinator:
 
     @staticmethod
     def _is_fixed_expression(suggestion: ExpressionActionSuggestion) -> bool:
+        """Prüft einen Vorschlag gegen die unveränderliche Ausdruckszuordnung."""
         proposal = suggestion.review.proposal
         target = EXPRESSION_TARGETS.get(suggestion.cue)
         if proposal is None or target is None:
@@ -189,13 +196,14 @@ class ExpressionResponseCoordinator:
     def _spoken_status(
         action_result: ToolExecutionResult | None,
     ) -> ExpressionDeliveryStatus:
+        """Leitet den Ausgabezustand aus dem sicheren Aktionsergebnis ab."""
         if action_result is not None and action_result.succeeded:
             return ExpressionDeliveryStatus.ANIMATED_AND_SPOKEN
         return ExpressionDeliveryStatus.SPOKEN_ONLY
 
 
 def speech_style_for_cue(cue: ExpressionCue) -> SpeechStyle:
-    """Map one bounded expression cue to a fixed local TTS profile."""
+    """Ordnet einen begrenzten Ausdruckshinweis einem lokalen TTS-Profil zu."""
     if not isinstance(cue, ExpressionCue):
         raise TypeError("Speech-style mapping requires an ExpressionCue.")
     return EXPRESSION_SPEECH_STYLES[cue]

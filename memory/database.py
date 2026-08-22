@@ -18,12 +18,14 @@ class SQLiteMemoryStore:
     """Persist only memories that the user explicitly confirms."""
 
     def __init__(self, database_path: str | Path):
+        """Initialisiert die lokale SQLite-Ablage und legt ihr Schema an."""
         self.database_path = Path(database_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
+        """Öffnet eine transaktionale SQLite-Verbindung und schließt sie zuverlässig."""
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
         try:
@@ -33,6 +35,7 @@ class SQLiteMemoryStore:
             connection.close()
 
     def _initialize(self) -> None:
+        """Legt die additive Tabelle für bestätigte Erinnerungen an."""
         with self._connect() as connection:
             connection.execute(
                 """
@@ -52,7 +55,7 @@ class SQLiteMemoryStore:
         category: str = "fact",
         source: str = "user-confirmed",
     ) -> MemoryEntry:
-        """Insert or update one explicitly confirmed memory."""
+        """Fügt eine ausdrücklich bestätigte Erinnerung ein oder aktualisiert sie."""
         normalized_content = content.strip()
         if not normalized_content:
             raise ValueError("Memory content must not be empty.")
@@ -63,6 +66,7 @@ class SQLiteMemoryStore:
 
     @staticmethod
     def _upsert(connection, content: str, category: str, source: str) -> None:
+        """Speichert eine Erinnerung anhand ihres inhaltsbezogenen Eindeutigkeitsschlüssels."""
         connection.execute(
             """
             INSERT INTO memories (content, category, source)
@@ -76,13 +80,14 @@ class SQLiteMemoryStore:
 
     @staticmethod
     def _find_by_content(connection, content: str) -> sqlite3.Row:
+        """Liest eine Erinnerung ohne Beachtung der Groß- und Kleinschreibung."""
         return connection.execute(
             "SELECT * FROM memories WHERE content = ? COLLATE NOCASE",
             (content,),
         ).fetchone()
 
     def list_memories(self, limit: int = 20) -> tuple[MemoryEntry, ...]:
-        """Return the newest confirmed memories first."""
+        """Liefert die neuesten bestätigten Erinnerungen zuerst."""
         self._validate_limit(limit)
         with self._connect() as connection:
             rows = connection.execute(
@@ -92,7 +97,7 @@ class SQLiteMemoryStore:
         return tuple(self._to_entry(row) for row in rows)
 
     def list_feedback(self, limit: int = 5) -> tuple[MemoryEntry, ...]:
-        """Return only explicitly confirmed communication feedback."""
+        """Liefert ausschließlich ausdrücklich bestätigtes Kommunikationsfeedback."""
         self._validate_limit(limit)
         with self._connect() as connection:
             rows = connection.execute(
@@ -106,7 +111,7 @@ class SQLiteMemoryStore:
         return tuple(self._to_entry(row) for row in rows)
 
     def status(self) -> MemoryStatistics:
-        """Return count-only confirmed memory statistics."""
+        """Liefert reine Zählwerte zu bestätigten Erinnerungen und Feedback."""
         with self._connect() as connection:
             row = connection.execute(
                 """
@@ -120,7 +125,7 @@ class SQLiteMemoryStore:
         return MemoryStatistics(int(row["total"]) - feedback, feedback)
 
     def search(self, query: str, limit: int = 5) -> tuple[MemoryEntry, ...]:
-        """Return memories ranked by matching significant query terms."""
+        """Liefert Erinnerungen nach passenden aussagekräftigen Suchbegriffen sortiert."""
         self._validate_limit(limit)
         terms = self._search_terms(query)
         if not terms:
@@ -129,6 +134,7 @@ class SQLiteMemoryStore:
         return self._rank(candidates, terms, limit)
 
     def _search_candidates(self) -> tuple[MemoryEntry, ...]:
+        """Lädt eine feste Höchstzahl aktueller Erinnerungen ohne Stilfeedback."""
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -142,6 +148,7 @@ class SQLiteMemoryStore:
 
     @staticmethod
     def _search_terms(query: str) -> frozenset[str]:
+        """Extrahiert eindeutige normalisierte Suchbegriffe ab der Mindestlänge."""
         return frozenset(
             term
             for term in re.findall(r"\w+", query.casefold())
@@ -150,6 +157,7 @@ class SQLiteMemoryStore:
 
     @staticmethod
     def _rank(candidates, terms: frozenset[str], limit: int):
+        """Sortiert Kandidaten nach Begriffsüberschneidung und Aktualität."""
         scored = []
         for entry in candidates:
             score = sum(term in entry.content.casefold() for term in terms)
@@ -159,7 +167,7 @@ class SQLiteMemoryStore:
         return tuple(item[2] for item in scored[:limit])
 
     def forget(self, memory_id: int) -> bool:
-        """Delete one memory by identifier and report whether it existed."""
+        """Löscht eine Erinnerung nach Kennung und meldet ihren vorherigen Bestand."""
         with self._connect() as connection:
             cursor = connection.execute(
                 "DELETE FROM memories WHERE id = ?",
@@ -168,7 +176,7 @@ class SQLiteMemoryStore:
         return cursor.rowcount > 0
 
     def export_confirmed_memories(self, destination: str | Path) -> Path:
-        """Export every confirmed memory to a separate sanitized JSON file."""
+        """Exportiert alle bestätigten Erinnerungen in eine bereinigte JSON-Datei."""
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM memories ORDER BY id"
@@ -178,11 +186,13 @@ class SQLiteMemoryStore:
 
     @staticmethod
     def _validate_limit(limit: int) -> None:
+        """Verlangt für Speicherabfragen eine positive Ergebnisgrenze."""
         if limit < 1:
             raise ValueError("Memory limit must be at least 1.")
 
     @staticmethod
     def _to_entry(row: sqlite3.Row) -> MemoryEntry:
+        """Überführt eine SQLite-Zeile in einen unveränderlichen Speichereintrag."""
         return MemoryEntry(
             id=row["id"],
             content=row["content"],

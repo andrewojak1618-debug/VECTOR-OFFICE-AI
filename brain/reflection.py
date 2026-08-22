@@ -33,7 +33,7 @@ class ReflectionPlan:
 
     @property
     def active(self) -> bool:
-        """Report whether explicit philosophical reflection is enabled."""
+        """Meldet, ob die ausdrückliche philosophische Reflexion aktiv ist."""
         return self.mode is ReflectionMode.REFLECTIVE
 
 
@@ -101,12 +101,13 @@ class ReflectionPolicy:
     """Activate philosophical guidance only for explicit matching topics."""
 
     def __init__(self, enabled: bool = True):
+        """Initialisiert die optionale Reflexionsregel mit boolescher Freigabe."""
         if type(enabled) is not bool:
             raise TypeError("Reflection enabled flag must be boolean.")
         self.enabled = enabled
 
     def prepare(self, user_text: str) -> ReflectionPlan:
-        """Create a deterministic optional plan without invoking a model."""
+        """Erzeugt einen deterministischen Reflexionsplan ohne Modellaufruf."""
         if not isinstance(user_text, str) or not user_text.strip():
             raise ValueError("Reflection input must not be empty.")
         if not self.enabled:
@@ -133,6 +134,7 @@ class ReflectionPolicy:
 
     @staticmethod
     def _max_sentences(user_text: str) -> int:
+        """Wählt die feste Satzgrenze anhand eines ausdrücklichen Detailwunsches."""
         normalized = user_text.casefold()
         if any(term in normalized for term in DETAIL_TERMS):
             return DETAILED_MAX_SENTENCES
@@ -147,7 +149,7 @@ class ResponseQualityPolicy:
         response: str,
         max_sentences: int = DEFAULT_MAX_SENTENCES,
     ) -> tuple[ResponseIssue, ...]:
-        """Return deterministic issue codes without logging response content."""
+        """Liefert feste Problemcodes, ohne Antwortinhalte zu protokollieren."""
         if not isinstance(response, str) or not response.strip():
             raise ValueError("Response assessment requires non-empty text.")
         checks = (
@@ -166,7 +168,7 @@ class ResponseQualityPolicy:
         issues: tuple[ResponseIssue, ...],
         max_sentences: int = DEFAULT_MAX_SENTENCES,
     ) -> str:
-        """Build a provider-neutral retry instruction from issue codes only."""
+        """Erzeugt nur aus Problemcodes eine anbieterneutrale Korrekturanweisung."""
         if not issues:
             raise ValueError("Correction guidance requires at least one issue.")
         codes = ", ".join(issue.value for issue in issues)
@@ -183,7 +185,7 @@ class ResponseQualityPolicy:
 
     @staticmethod
     def limit_sentences(response: str, maximum: int) -> str:
-        """Keep complete leading sentences up to a positive hard limit."""
+        """Behält vollständige Anfangssätze bis zu einer positiven Obergrenze."""
         if maximum < 1:
             raise ValueError("Sentence limit must be positive.")
         sentences = tuple(
@@ -195,5 +197,6 @@ class ResponseQualityPolicy:
 
     @staticmethod
     def _sentence_count(response: str) -> int:
+        """Zählt erkennbare Sätze und behandelt Text ohne Endzeichen als einen Satz."""
         endings = re.findall(r"[.!?]+(?:\s+|$)", response.strip())
         return max(1, len(endings))

@@ -45,7 +45,7 @@ class Float32VectorCodec:
 
     @classmethod
     def encode(cls, vector: EmbeddingVector) -> bytes:
-        """Encode one validated vector into a compact SQLite BLOB."""
+        """Kodiert einen validierten Vektor als kompaktes SQLite-BLOB."""
         try:
             return struct.pack(f"<{vector.dimension}f", *vector.values)
         except (OverflowError, struct.error) as exc:
@@ -55,7 +55,7 @@ class Float32VectorCodec:
 
     @classmethod
     def decode(cls, payload: bytes, dimension: int) -> EmbeddingVector:
-        """Decode a BLOB and verify its stored vector dimension."""
+        """Dekodiert ein BLOB und prüft die gespeicherte Vektordimension."""
         expected_bytes = dimension * cls.BYTES_PER_VALUE
         if dimension < 1 or len(payload) != expected_bytes:
             raise ValueError("Stored embedding vector has an invalid size.")

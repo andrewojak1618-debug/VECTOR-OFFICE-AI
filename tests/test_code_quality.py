@@ -20,6 +20,25 @@ PRODUCTION_PACKAGES = (
 MAX_FUNCTION_LINES = 35
 MAX_MODULE_LINES = 399
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+ENGLISH_DOCSTRING_PREFIXES = (
+    "Build ",
+    "Check ",
+    "Create ",
+    "Delete ",
+    "Execute ",
+    "Generate ",
+    "Map ",
+    "Parse ",
+    "Read ",
+    "Report ",
+    "Return ",
+    "Run ",
+    "Speak ",
+    "Start ",
+    "Store ",
+    "Validate ",
+    "Write ",
+)
 ARCHITECTURE_MODULE_DOCS = {
     Path("application/response_delivery.py"): Path("docs/architecture.md"),
     Path("application/contextual_tool_conversation.py"): Path(
@@ -88,6 +107,29 @@ class CodeQualityTests(unittest.TestCase):
                     missing.append(f"{path.name}:{node.lineno}:{node.name}")
         self.assertEqual([], missing)
 
+    def test_all_production_functions_have_docstrings(self):
+        """Prüft auch private Funktionen, Methoden, Konstruktoren und Properties."""
+        missing = []
+        for path in production_files():
+            for node in ast.walk(self._tree(path)):
+                if self._is_function(node) and ast.get_docstring(node) is None:
+                    relative = path.relative_to(PROJECT_ROOT)
+                    missing.append(f"{relative}:{node.lineno}:{node.name}")
+        self.assertEqual([], missing)
+
+    def test_function_docstrings_do_not_use_english_template_verbs(self):
+        """Blockiert die früher verwendeten englischen Standardformulierungen."""
+        affected = []
+        for path in production_files():
+            for node in ast.walk(self._tree(path)):
+                if not self._is_function(node):
+                    continue
+                docstring = ast.get_docstring(node) or ""
+                if docstring.startswith(ENGLISH_DOCSTRING_PREFIXES):
+                    relative = path.relative_to(PROJECT_ROOT)
+                    affected.append(f"{relative}:{node.lineno}:{node.name}")
+        self.assertEqual([], affected)
+
     def test_functions_stay_below_hard_size_limit(self):
         oversized = []
         for path in production_files():
@@ -145,6 +187,11 @@ class CodeQualityTests(unittest.TestCase):
             isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
             and not node.name.startswith("_")
         )
+
+    @staticmethod
+    def _is_function(node) -> bool:
+        """Erkennt synchrone und asynchrone Funktionen sowie Methoden."""
+        return isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
 
 
 if __name__ == "__main__":

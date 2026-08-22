@@ -42,6 +42,7 @@ class HostWatchdogConfig:
     owner_process_id: int | None = None
 
     def __post_init__(self) -> None:
+        """Validiert Intervalle, Wiederholungsgrenzen und optionale Besitzer-ID."""
         if not 0.25 <= self.poll_interval <= 30.0:
             raise ValueError("Watchdog poll interval must be between 0.25 and 30.")
         if not 1 <= self.startup_attempts <= 6:
@@ -63,6 +64,7 @@ class WirePodHostService:
         process_running: Callable[[], bool] | None = None,
         process_launcher: Callable[..., object] | None = None,
     ):
+        """Initialisiert die lokale WirePod-Prüfung mit austauschbaren Grenzen."""
         self.host = host.rstrip("/")
         self.executable = executable
         self.client = client or httpx.Client(timeout=1.5)
@@ -70,7 +72,7 @@ class WirePodHostService:
         self.process_launcher = process_launcher or subprocess.Popen
 
     def is_available(self) -> bool:
-        """Return whether WirePod currently answers its local log endpoint."""
+        """Prüft, ob WirePod aktuell am lokalen Log-Endpunkt antwortet."""
         try:
             response = self.client.get(f"{self.host}{WIREPOD_HEALTH_PATH}")
             response.raise_for_status()
@@ -79,7 +81,7 @@ class WirePodHostService:
             return False
 
     def ensure_started(self) -> bool:
-        """Start WirePod only when its process is absent and executable exists."""
+        """Startet WirePod nur bei fehlendem Prozess und vorhandener Programmdatei."""
         if self.is_available() or self.process_running():
             return True
         if not self.executable.is_file():
@@ -111,6 +113,7 @@ class HostWatchdog:
         owner_alive: Callable[[int], bool] | None = None,
         process_stopper: Callable[[object], None] | None = None,
     ):
+        """Initialisiert die begrenzte Überwachung lokaler Dienste und Prozesse."""
         self.config = config
         self.wirepod = wirepod
         self.diagnostics = diagnostics
@@ -123,7 +126,7 @@ class HostWatchdog:
         self._application_process = None
 
     def run(self) -> int:
-        """Run until a deliberate application exit or bounded failure."""
+        """Überwacht bis zum bewussten Anwendungsende oder begrenzten Fehler."""
         if not self.instance_lock.acquire():
             print("Vector Office AI startup is already active.")
             return 0
@@ -145,6 +148,7 @@ class HostWatchdog:
             self.instance_lock.release()
 
     def _run_locked(self) -> int:
+        """Startet WirePod und Anwendung unter gehaltener Einzelinstanzsperre."""
         if not self._ensure_wirepod():
             self._emit(DiagnosticLevel.ERROR, "watchdog.blocked", status="wirepod")
             return 1
@@ -154,6 +158,7 @@ class HostWatchdog:
         return self._monitor_application()
 
     def _ensure_wirepod(self) -> bool:
+        """Versucht WirePod mit begrenzten Wiederholungen verfügbar zu machen."""
         for attempt in range(1, self.config.startup_attempts + 1):
             available = self.wirepod.is_available()
             if not available:
@@ -166,6 +171,7 @@ class HostWatchdog:
         return False
 
     def _monitor_application(self) -> int:
+        """Überwacht Besitzer, Anwendung und WirePod bis zum definierten Ende."""
         failures = 0
         while True:
             if not self._owner_is_available():
@@ -188,12 +194,14 @@ class HostWatchdog:
                 return 1
 
     def _maintain_wirepod(self) -> None:
+        """Prüft WirePod während der Laufzeit und stößt bei Bedarf den Start an."""
         available = self.wirepod.is_available()
         self.connections.observe("wirepod", available)
         if not available:
             self.wirepod.ensure_started()
 
     def _restart_application(self, attempt: int) -> bool:
+        """Startet die Anwendung nach fester Wartezeit kontrolliert neu."""
         delay = APP_RESTART_DELAYS[attempt - 1]
         self._emit(
             DiagnosticLevel.WARNING,
@@ -208,6 +216,7 @@ class HostWatchdog:
         return self._application_process is not None
 
     def _start_application(self):
+        """Startet die Anwendung verborgen und meldet nur strukturierte Metadaten."""
         try:
             process = self.process_launcher(
                 [
@@ -227,20 +236,24 @@ class HostWatchdog:
         return process
 
     def _stop_application(self) -> None:
+        """Beendet ausschließlich den aktuell überwachten Anwendungsprozessbaum."""
         process = self._application_process
         if process is None or process.poll() is not None:
             return
         self.process_stopper(process)
 
     def _owner_is_available(self) -> bool:
+        """Prüft, ob der optionale Besitzerprozess noch vorhanden ist."""
         owner_id = self.config.owner_process_id
         return owner_id is None or self.owner_alive(owner_id)
 
     def _emit(self, level: DiagnosticLevel, code: str, **details) -> None:
+        """Schreibt ein begrenztes strukturiertes Watchdog-Ereignis."""
         self.diagnostics.emit(level, "host-watchdog", code, **details)
 
 
 def _build_config(owner_process_id: int | None = None) -> HostWatchdogConfig:
+    """Erzeugt die lokale Watchdog-Konfiguration aus geprüften Einstellungen."""
     project_root = Path(__file__).resolve().parent.parent
     return HostWatchdogConfig(
         project_root=project_root,
@@ -257,6 +270,7 @@ def _build_config(owner_process_id: int | None = None) -> HostWatchdogConfig:
 
 
 def _parse_arguments():
+    """Liest ausschließlich die optionale Besitzerprozess-ID ein."""
     parser = argparse.ArgumentParser(description="Run the local Vector watchdog.")
     parser.add_argument(
         "--parent-pid",
@@ -268,7 +282,7 @@ def _parse_arguments():
 
 
 def main() -> None:
-    """Run the configured local startup watchdog and return its exit status."""
+    """Startet den lokalen Watchdog und liefert dessen Beendigungsstatus."""
     if settings.INPUT_MODE.casefold().strip() != "wirepod":
         print("Managed Windows startup requires INPUT_MODE=wirepod.")
         raise SystemExit(2)

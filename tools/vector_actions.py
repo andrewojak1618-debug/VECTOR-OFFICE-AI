@@ -22,7 +22,7 @@ class VectorActionTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the allowlisted mutating action tool."""
+        """Beschreibt das verändernde Aktions-Tool mit fester Allowlist."""
         allowed = ", ".join(self.actions.available_actions())
         return ToolDefinition(
             name="vector.perform_action",
@@ -36,7 +36,7 @@ class VectorActionTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Run one validated action or fail safely at the registry boundary."""
+        """Führt eine validierte Aktion aus oder scheitert sicher an der Registrygrenze."""
         action = str(arguments["action"])
         if not self.actions.perform(action):
             raise RuntimeError("Vector action did not complete.")
@@ -51,7 +51,7 @@ class VectorEmergencyStopTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the emergency stop without accepting parameters."""
+        """Beschreibt den Notfallstopp ohne akzeptierte Parameter."""
         return ToolDefinition(
             name="vector.emergency_stop",
             description="Cancel active Vector behavior and stop every motor.",
@@ -59,7 +59,7 @@ class VectorEmergencyStopTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Latch the emergency stop and return a structured result."""
+        """Verriegelt den Notfallstopp und liefert ein strukturiertes Ergebnis."""
         if not self.actions.emergency_stop():
             raise RuntimeError("Vector emergency stop could not be confirmed.")
         return {"stopped": True, "latched": True}
@@ -73,7 +73,7 @@ class VectorActionListTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the read-only allowlist inspection tool."""
+        """Beschreibt das rein lesende Tool zur Anzeige der Aktions-Allowlist."""
         return ToolDefinition(
             name="vector.list_actions",
             description="List the fixed safe Vector action aliases.",
@@ -81,7 +81,7 @@ class VectorActionListTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Return safe aliases as a flat structured registry value."""
+        """Liefert sichere Aktionsnamen als flachen strukturierten Registrywert."""
         names = ", ".join(self.actions.available_actions())
         return {"actions": names, "count": len(self.actions.available_actions())}
 
@@ -90,7 +90,7 @@ def register_vector_action_tools(
     registry: ToolRegistry,
     actions: VectorActions,
 ) -> None:
-    """Register only the controlled action and emergency-stop tools."""
+    """Registriert ausschließlich kontrollierte Aktionen und den Notfallstopp."""
     registry.register(VectorActionListTool(actions))
     registry.register(VectorActionTool(actions))
     registry.register(VectorEmergencyStopTool(actions))

@@ -14,7 +14,7 @@ EXAMPLE_DIALOGUES = (
 
 
 def main() -> int:
-    """Run all fixed examples locally and print answers plus state metadata."""
+    """Prüft alle festen Beispiele lokal und gibt Antworten samt Zustandsmetadaten aus."""
     runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
     if not runtime.ensure_available():
         print("Local Ollama is unavailable. [FAIL]")

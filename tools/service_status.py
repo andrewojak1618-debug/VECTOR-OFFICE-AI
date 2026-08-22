@@ -19,7 +19,7 @@ class LocalServiceStatusTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free read-only local status request."""
+        """Beschreibt die argumentlose rein lesende lokale Statusabfrage."""
         return ToolDefinition(
             name="system.local_service_status",
             description="Return bounded availability for local runtime services.",
@@ -27,7 +27,7 @@ class LocalServiceStatusTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Check fixed services without exposing hosts or transport details."""
+        """Prüft feste Dienste, ohne Hosts oder Transportdetails offenzulegen."""
         wirepod = _safe_service_check(self.wirepod_checker)
         ollama = _safe_service_check(self.ollama_checker)
         return {
@@ -44,11 +44,12 @@ def register_local_service_status_tool(
     wirepod_checker: ServiceChecker,
     ollama_checker: ServiceChecker,
 ) -> None:
-    """Register fixed local health checks without user-controlled targets."""
+    """Registriert feste lokale Healthchecks ohne nutzergesteuerte Ziele."""
     registry.register(LocalServiceStatusTool(wirepod_checker, ollama_checker))
 
 
 def _safe_service_check(checker: ServiceChecker) -> bool:
+    """Führt einen Dienstcheck aus und reduziert Fehler auf nicht verfügbar."""
     try:
         available = checker()
     except Exception:
@@ -59,11 +60,13 @@ def _safe_service_check(checker: ServiceChecker) -> bool:
 
 
 def _spoken_status(wirepod: bool, ollama: bool) -> str:
+    """Fasst die lokalen Dienstzustände in einem deutschen Sprechtext zusammen."""
     wirepod_text = _availability_sentence("WirePod", wirepod)
     ollama_text = _availability_sentence("Ollama", ollama)
     return f"Vector Office AI ist aktiv. {wirepod_text} {ollama_text}"
 
 
 def _availability_sentence(service: str, available: bool) -> str:
+    """Formuliert die lokale Verfügbarkeit eines einzelnen Dienstes."""
     state = "ist lokal verfügbar" if available else "ist lokal nicht erreichbar"
     return f"{service} {state}."

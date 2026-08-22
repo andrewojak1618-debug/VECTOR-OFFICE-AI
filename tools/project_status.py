@@ -28,6 +28,7 @@ class ProjectGitMetadata:
     open_changes: int
 
     def __post_init__(self) -> None:
+        """Validiert Branch, Commit und Änderungszähler als sichere Metadaten."""
         if BRANCH_PATTERN.fullmatch(self.branch) is None:
             raise ValueError("Project branch contains unsupported characters.")
         if COMMIT_PATTERN.fullmatch(self.commit) is None:
@@ -51,6 +52,7 @@ class ProjectStatusTool:
     acceptance_reader: AcceptanceReader | None = None
 
     def __post_init__(self) -> None:
+        """Setzt die festen Statusleser, wenn keine Alternativen injiziert wurden."""
         if self.metadata_reader is None:
             object.__setattr__(self, "metadata_reader", _read_git_metadata)
         if self.acceptance_reader is None:
@@ -58,7 +60,7 @@ class ProjectStatusTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free read-only project status tool."""
+        """Beschreibt das argumentlose rein lesende Projektstatus-Tool."""
         return ToolDefinition(
             name="development.project_status",
             description="Return sanitized local project and acceptance metadata.",
@@ -66,7 +68,7 @@ class ProjectStatusTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Read fixed metadata without exposing paths, filenames, or content."""
+        """Liest feste Metadaten, ohne Pfade, Dateinamen oder Inhalte offenzulegen."""
         root = self.project_root.resolve()
         metadata = self.metadata_reader(root)
         if not isinstance(metadata, ProjectGitMetadata):
@@ -90,7 +92,7 @@ def register_project_status_tool(
     metadata_reader: MetadataReader | None = None,
     acceptance_reader: AcceptanceReader | None = None,
 ) -> None:
-    """Register one fixed project status tool without command parameters."""
+    """Registriert den festen Projektstatus ohne freie Befehlsparameter."""
     registry.register(ProjectStatusTool(
         project_root,
         metadata_reader,
@@ -99,6 +101,7 @@ def register_project_status_tool(
 
 
 def _read_git_metadata(project_root: Path) -> ProjectGitMetadata:
+    """Liest Branch, Commit und Änderungsanzahl über feste Git-Abfragen."""
     branch = _git_output(project_root, "branch", "--show-current").strip()
     commit = _git_output(project_root, "log", "-1", "--format=%h").strip()
     status = _git_output(project_root, "status", "--porcelain=v1")
@@ -106,6 +109,7 @@ def _read_git_metadata(project_root: Path) -> ProjectGitMetadata:
 
 
 def _git_output(project_root: Path, *arguments: str) -> str:
+    """Führt eine intern festgelegte Git-Leseabfrage mit kurzem Timeout aus."""
     completed = subprocess.run(
         ("git", *arguments),
         cwd=project_root,
@@ -122,6 +126,7 @@ def _git_output(project_root: Path, *arguments: str) -> str:
 
 
 def _read_acceptance_status(project_root: Path) -> bool | None:
+    """Liest ausschließlich den booleschen Zustand des festen Abnahmeberichts."""
     report = (project_root / ACCEPTANCE_REPORT).resolve()
     if not report.is_file():
         return None
@@ -133,6 +138,7 @@ def _read_acceptance_status(project_root: Path) -> bool | None:
 
 
 def _spoken_status(metadata: ProjectGitMetadata, acceptance: bool | None) -> str:
+    """Erzeugt eine begrenzte deutsche Zusammenfassung der Projektmetadaten."""
     changes = _spoken_changes(metadata.open_changes)
     acceptance_text = {
         True: "Die letzte Kernabnahme war erfolgreich.",
@@ -146,6 +152,7 @@ def _spoken_status(metadata: ProjectGitMetadata, acceptance: bool | None) -> str
 
 
 def _spoken_changes(count: int) -> str:
+    """Formuliert die Anzahl offener Git-Änderungen grammatikalisch korrekt."""
     if count == 0:
         return "Es gibt keine offenen Änderungen."
     if count == 1:
@@ -154,4 +161,5 @@ def _spoken_changes(count: int) -> str:
 
 
 def _acceptance_label(value: bool | None) -> str:
+    """Übersetzt den optionalen Abnahmezustand in einen festen Statuswert."""
     return {True: "passed", False: "failed", None: "unknown"}[value]

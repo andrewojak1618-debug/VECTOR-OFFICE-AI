@@ -41,12 +41,13 @@ class LocalDocumentationStatusTool:
     status_reader: DocumentationStatusReader | None = None
 
     def __post_init__(self) -> None:
+        """Setzt den festen Dokumentenprüfer, wenn keiner injiziert wurde."""
         if self.status_reader is None:
             object.__setattr__(self, "status_reader", _read_documentation_status)
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free local documentation status tool."""
+        """Beschreibt das argumentlose lokale Dokumentationsstatus-Tool."""
         return ToolDefinition(
             name="development.documentation_status",
             description="Return count-only health for fixed project documents.",
@@ -54,7 +55,7 @@ class LocalDocumentationStatusTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Return validated counts and a locally generated German summary."""
+        """Liefert geprüfte Zähler und eine lokal erzeugte deutsche Zusammenfassung."""
         status = self.status_reader(self.project_root.resolve())
         _validate_status(status)
         complete = status.valid == DOCUMENT_COUNT
@@ -73,11 +74,12 @@ def register_documentation_status_tool(
     project_root: Path = PROJECT_ROOT,
     status_reader: DocumentationStatusReader | None = None,
 ) -> None:
-    """Register the fixed argument-free documentation status reader."""
+    """Registriert den festen argumentlosen Dokumentationsstatus-Leser."""
     registry.register(LocalDocumentationStatusTool(project_root, status_reader))
 
 
 def _read_documentation_status(project_root: Path) -> DocumentationStatus:
+    """Ermittelt den Zustand aller fest freigegebenen Projektdokumente."""
     states = tuple(
         _document_state(project_root, relative_path, heading)
         for relative_path, heading in REQUIRED_DOCUMENTS
@@ -90,6 +92,7 @@ def _read_documentation_status(project_root: Path) -> DocumentationStatus:
 
 
 def _document_state(root: Path, relative_path: Path, heading: str) -> str:
+    """Prüft eine feste Datei auf Projektbezug, Größe, UTF-8 und Überschrift."""
     path = (root / relative_path).resolve()
     try:
         path.relative_to(root.resolve())
@@ -107,6 +110,7 @@ def _document_state(root: Path, relative_path: Path, heading: str) -> str:
 
 
 def _validate_status(status: DocumentationStatus) -> None:
+    """Validiert die Dokumentzähler gegen die feste Allowlist-Größe."""
     if not isinstance(status, DocumentationStatus):
         raise TypeError("Documentation status reader returned an invalid value.")
     counts = (status.valid, status.missing, status.invalid)
@@ -117,6 +121,7 @@ def _validate_status(status: DocumentationStatus) -> None:
 
 
 def _spoken_status(status: DocumentationStatus) -> str:
+    """Formuliert den Dokumentationszustand als begrenzten deutschen Sprechtext."""
     if status.valid == DOCUMENT_COUNT:
         return (
             "Die feste Projektdokumentation ist vollständig. "
@@ -131,4 +136,5 @@ def _spoken_status(status: DocumentationStatus) -> str:
 
 
 def _count(value: int, singular: str, plural: str) -> str:
+    """Formatiert einen Zähler mit grammatikalisch passender Numerusform."""
     return f"{value} {singular if value == 1 else plural}"

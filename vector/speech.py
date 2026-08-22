@@ -93,11 +93,12 @@ class PreparedSpeech:
     """Own one validated temporary WAV until it has been played or closed."""
 
     def __init__(self, workspace: tempfile.TemporaryDirectory, path: Path):
+        """Übernimmt den temporären Arbeitsbereich einer validierten WAV-Datei."""
         self.path = path
         self._workspace = workspace
 
     def close(self) -> None:
-        """Delete the temporary audio workspace exactly once."""
+        """Löscht den temporären Audioarbeitsbereich genau einmal."""
         workspace = self._workspace
         self._workspace = None
         if workspace is not None:
@@ -138,6 +139,7 @@ class VectorSpeech:
         voice: str = "Microsoft Stefan",
         volume: int = 50,
     ):
+        """Initialisiert deutsche TTS mit lokaler Stimme, Lautstärke und Synthesesperre."""
         self.vector_client = vector_client
         self.voice = voice
         self.volume = volume
@@ -148,7 +150,7 @@ class VectorSpeech:
         text: str,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> bool:
-        """Synthesize and play one non-empty German utterance."""
+        """Synthetisiert und spricht eine nicht leere deutsche Äußerung."""
         if not isinstance(text, str) or not text.strip():
             print("Speech text must not be empty.")
             return False
@@ -166,7 +168,7 @@ class VectorSpeech:
         text: str,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> PreparedSpeech:
-        """Synthesize and validate one utterance without starting playback."""
+        """Synthetisiert und validiert eine Äußerung ohne Wiedergabestart."""
         if not isinstance(text, str) or not text.strip():
             raise ValueError("Prepared speech text must not be empty.")
         if not isinstance(style, SpeechStyle):
@@ -184,10 +186,11 @@ class VectorSpeech:
         return PreparedSpeech(workspace, vector_path)
 
     def _source_filename(self) -> str:
+        """Liefert den festen Dateinamen des lokalen Syntheseformats."""
         return "source.wav"
 
     def play_prepared(self, prepared: PreparedSpeech) -> bool:
-        """Play one validated prepared utterance and always release its files."""
+        """Spielt eine vorbereitete Äußerung und gibt ihre Dateien stets frei."""
         if not isinstance(prepared, PreparedSpeech):
             raise TypeError("Prepared speech has an invalid type.")
         try:
@@ -199,7 +202,7 @@ class VectorSpeech:
             prepared.close()
 
     def say_thinking_prelude(self) -> bool:
-        """Select and play one local pre-response thinking phrase."""
+        """Wählt und spricht eine lokale Denkphase vor der Antwort."""
         try:
             prelude = secrets.choice(REFLECTIVE_PRELUDES)
             return self._prepare_ssml_and_play(self._thinking_content(prelude))
@@ -209,6 +212,7 @@ class VectorSpeech:
             return False
 
     def _prepare_ssml_and_play(self, content: str) -> bool:
+        """Synthetisiert SSML temporär, wandelt es um und spielt es über Vector."""
         with tempfile.TemporaryDirectory(prefix="vector-speech-") as temp_dir:
             source_path = Path(temp_dir) / "source.wav"
             vector_path = Path(temp_dir) / "vector.wav"
@@ -223,6 +227,7 @@ class VectorSpeech:
         output_path: Path,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> None:
+        """Erzeugt aus deutschem Text und festem Stil eine lokale WAV-Quelle."""
         content = self._speech_content(text, style)
         self._synthesize_german_ssml_wav(content, output_path)
 
@@ -231,6 +236,7 @@ class VectorSpeech:
         content: str,
         output_path: Path,
     ) -> None:
+        """Synthetisiert deutsches SSML seriell und verlangt eine Ausgabedatei."""
         with self._synthesis_lock:
             result = self._run_synthesis(content, output_path)
         self._require_output(result, output_path, "Windows TTS")
@@ -240,6 +246,7 @@ class VectorSpeech:
         content: str,
         output_path: Path,
     ) -> subprocess.CompletedProcess[str]:
+        """Führt die lokale Windows-TTS-Synthese ohne sichtbares Fenster aus."""
         powershell = self._require_executable(
             "powershell",
             "Windows PowerShell is required for German TTS.",
@@ -255,6 +262,7 @@ class VectorSpeech:
         output_path: Path,
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> str:
+        """Erzeugt ein lokales TTS-Skript aus Text und festem Sprachstil."""
         content = self._speech_content(text, style)
         return self._create_tts_script_for_content(content, output_path)
 
@@ -263,6 +271,7 @@ class VectorSpeech:
         content: str,
         output_path: Path,
     ) -> str:
+        """Setzt Base64-kodierte Werte sicher in die feste Skriptvorlage ein."""
         replacements = {
             "__TEXT__": self._encode(content),
             "__VOICE__": self._encode(self.voice),
@@ -276,10 +285,12 @@ class VectorSpeech:
 
     @staticmethod
     def _speech_content(text: str, style: SpeechStyle) -> str:
+        """Erzeugt kontrolliertes SSML für den ausgewählten Sprachstil."""
         return build_speech_content(text, style)
 
     @staticmethod
     def _thinking_content(prelude: _ReflectivePrelude) -> str:
+        """Erzeugt SSML für eine begrenzte Denkphrase samt festgelegter Pause."""
         return (
             '<speak version="1.0" '
             'xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="de-DE">'
@@ -291,10 +302,12 @@ class VectorSpeech:
 
     @staticmethod
     def _encode(value: str) -> str:
+        """Kodiert einen UTF-8-Wert für die sichere Skriptübergabe als Base64."""
         return base64.b64encode(value.encode("utf-8")).decode("ascii")
 
     @classmethod
     def _convert_for_vector(cls, source_path: Path, output_path: Path) -> None:
+        """Konvertiert Quellaudio in Vectors validiertes PCM-WAV-Format."""
         ffmpeg = cls._require_executable(
             "ffmpeg",
             "FFmpeg is required to prepare audio for Vector.",
@@ -309,6 +322,7 @@ class VectorSpeech:
         source_path: Path,
         output_path: Path,
     ) -> list[str]:
+        """Erzeugt die feste FFmpeg-Argumentliste mit Kompression und Pegelnormalisierung."""
         return [
             ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
             "-i", str(source_path), "-af", cls.VECTOR_AUDIO_FILTER,
@@ -318,6 +332,7 @@ class VectorSpeech:
 
     @staticmethod
     def _require_executable(name: str, error_message: str) -> str:
+        """Löst ein benötigtes lokales Programm auf oder bricht verständlich ab."""
         executable = shutil.which(name)
         if executable is None:
             raise RuntimeError(error_message)
@@ -325,6 +340,7 @@ class VectorSpeech:
 
     @staticmethod
     def _run_process(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+        """Führt einen lokalen Audioprozess verborgen und ohne Ausnahme bei Statuscode aus."""
         return subprocess.run(
             arguments,
             capture_output=True,
@@ -341,6 +357,7 @@ class VectorSpeech:
         output_path: Path,
         producer: str,
     ) -> None:
+        """Verlangt einen erfolgreichen Prozess und eine vorhandene Ausgabedatei."""
         if result.returncode == 0 and output_path.is_file():
             return
         reason = result.stderr.strip() or f"{producer} produced no audio file."
@@ -348,6 +365,7 @@ class VectorSpeech:
 
     @classmethod
     def _validate_vector_wav(cls, audio_path: Path) -> None:
+        """Prüft Kanalzahl, Samplebreite und Rate gegen Vectors Audioformat."""
         with wave.open(str(audio_path), "rb") as wav_file:
             is_valid = (
                 wav_file.getnchannels() == cls.CHANNELS

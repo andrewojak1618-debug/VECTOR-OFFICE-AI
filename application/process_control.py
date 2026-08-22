@@ -9,11 +9,12 @@ class SingleInstanceLock:
     """Hold one non-blocking local file lock for a process lifetime."""
 
     def __init__(self, path: Path):
+        """Initialisiert eine prozessweite Sperre an einem festen lokalen Pfad."""
         self.path = path
         self._stream = None
 
     def acquire(self) -> bool:
-        """Return whether this process acquired the single-instance lock."""
+        """Meldet, ob dieser Prozess die Einzelinstanzsperre erhalten hat."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._stream = self.path.open("a+b")
         self._prepare_stream()
@@ -26,7 +27,7 @@ class SingleInstanceLock:
         return True
 
     def release(self) -> None:
-        """Release the held lock without deleting the harmless lock file."""
+        """Gibt die Sperre frei, ohne die harmlose Sperrdatei zu löschen."""
         if self._stream is None:
             return
         try:
@@ -36,6 +37,7 @@ class SingleInstanceLock:
             self._stream = None
 
     def _prepare_stream(self) -> None:
+        """Bereitet genau ein sperrbares Byte in der lokalen Datei vor."""
         self._stream.seek(0, os.SEEK_END)
         if self._stream.tell() == 0:
             self._stream.write(b"0")
@@ -43,6 +45,7 @@ class SingleInstanceLock:
         self._stream.seek(0)
 
     def _lock_stream(self) -> None:
+        """Sperrt die Datei plattformspezifisch und ohne zu warten."""
         if os.name == "nt":
             import msvcrt
 
@@ -53,6 +56,7 @@ class SingleInstanceLock:
         fcntl.flock(self._stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def _unlock_stream(self) -> None:
+        """Löst die gehaltene Dateisperre plattformspezifisch."""
         self._stream.seek(0)
         if os.name == "nt":
             import msvcrt
@@ -65,14 +69,14 @@ class SingleInstanceLock:
 
 
 def hidden_process_flags() -> int:
-    """Return the platform flag for hidden local helper processes."""
+    """Liefert das Plattformflag für unsichtbare lokale Hilfsprozesse."""
     if os.name != "nt":
         return 0
     return getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
 def process_exists(process_id: int) -> bool:
-    """Check a process ID without sending a terminating signal."""
+    """Prüft eine Prozess-ID, ohne ein beendendes Signal zu senden."""
     if os.name == "nt":
         return _windows_process_exists(process_id)
     try:
@@ -83,7 +87,7 @@ def process_exists(process_id: int) -> bool:
 
 
 def stop_process_tree(process) -> None:
-    """Stop only the supplied application process and its descendants."""
+    """Beendet nur den angegebenen Anwendungsprozess samt Nachkommen."""
     if os.name == "nt":
         subprocess.run(
             ["taskkill", "/PID", str(process.pid), "/T", "/F"],
@@ -102,7 +106,7 @@ def stop_process_tree(process) -> None:
 
 
 def wirepod_process_running() -> bool:
-    """Return whether Windows currently exposes one chipper process."""
+    """Prüft unter Windows, ob aktuell ein Chipper-Prozess sichtbar ist."""
     if os.name != "nt":
         return False
     try:
@@ -119,6 +123,7 @@ def wirepod_process_running() -> bool:
 
 
 def _windows_process_exists(process_id: int) -> bool:
+    """Prüft eine Windows-Prozess-ID über eine minimale Handle-Berechtigung."""
     import ctypes
     from ctypes import wintypes
 

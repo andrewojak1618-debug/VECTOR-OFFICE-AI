@@ -26,12 +26,13 @@ class DocumentTextProcessor:
     MIN_CHUNK_SIZE = 100
 
     def __init__(self, max_file_bytes: int, chunk_size: int):
+        """Initialisiert validierte Grenzen für Datei und Dokumentabschnitt."""
         self._validate_limits(max_file_bytes, chunk_size)
         self.max_file_bytes = max_file_bytes
         self.chunk_size = chunk_size
 
     def prepare(self, source_path: str | Path) -> PreparedDocument:
-        """Validate and transform one selected document without persisting it."""
+        """Validiert und verarbeitet ein ausgewähltes Dokument ohne Speicherung."""
         path = self._resolve_path(source_path)
         content = self._read(path)
         normalized = content.strip()
@@ -46,7 +47,7 @@ class DocumentTextProcessor:
         )
 
     def split(self, content: str) -> tuple[str, ...]:
-        """Split normalized text into stable bounded sections."""
+        """Teilt normalisierten Text in stabile begrenzte Abschnitte."""
         chunks: list[str] = []
         current = ""
         for paragraph in re.split(r"\n\s*\n", content):
@@ -58,12 +59,14 @@ class DocumentTextProcessor:
 
     @classmethod
     def _validate_limits(cls, max_file_bytes: int, chunk_size: int) -> None:
+        """Validiert positive Datei- und sinnvolle Abschnittsgrenzen."""
         if max_file_bytes < 1:
             raise ValueError("Maximum file size must be at least 1 byte.")
         if chunk_size < cls.MIN_CHUNK_SIZE:
             raise ValueError("Chunk size must be at least 100 characters.")
 
     def _resolve_path(self, source_path: str | Path) -> Path:
+        """Löst ausschließlich vorhandene freigegebene UTF-8-Dokumenttypen auf."""
         path_text = str(source_path).strip().strip('"')
         path = Path(path_text).expanduser().resolve()
         if not path.is_file():
@@ -77,12 +80,14 @@ class DocumentTextProcessor:
 
     @staticmethod
     def _read(path: Path) -> str:
+        """Liest ein Dokument streng als UTF-8-Text."""
         try:
             return path.read_text(encoding="utf-8")
         except UnicodeDecodeError as exc:
             raise ValueError("Document must be UTF-8 encoded.") from exc
 
     def _append_part(self, chunks: list[str], current: str, part: str) -> str:
+        """Fügt einen Textteil dem aktuellen Abschnitt oder der Ergebnisliste hinzu."""
         if not part:
             return current
         candidate = f"{current}\n\n{part}" if current else part
@@ -92,6 +97,7 @@ class DocumentTextProcessor:
         return part
 
     def _split_long_paragraph(self, paragraph: str) -> tuple[str, ...]:
+        """Teilt einen überlangen Absatz deterministisch an Wortgrenzen."""
         if not paragraph or len(paragraph) <= self.chunk_size:
             return (paragraph,) if paragraph else ()
         parts: list[str] = []
@@ -106,6 +112,7 @@ class DocumentTextProcessor:
         return tuple(parts)
 
     def _append_long_word(self, parts: list[str], current: str, word: str) -> str:
+        """Zerlegt ein einzelnes überlanges Wort in begrenzte Teile."""
         if current:
             parts.append(current)
         parts.extend(
@@ -115,6 +122,7 @@ class DocumentTextProcessor:
         return ""
 
     def _append_word(self, parts: list[str], current: str, word: str) -> str:
+        """Fügt ein Wort innerhalb der Abschnittsgrenze hinzu."""
         candidate = f"{current} {word}" if current else word
         if len(candidate) <= self.chunk_size:
             return candidate

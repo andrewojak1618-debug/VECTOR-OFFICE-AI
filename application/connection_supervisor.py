@@ -40,6 +40,7 @@ class ConnectionSupervisor:
         retry_delays: tuple[float, ...] = DEFAULT_RETRY_DELAYS,
         sleeper: Callable[[float], None] = time.sleep,
     ):
+        """Initialisiert Zustände, Retryplan, Diagnose und injizierbare Wartefunktion."""
         if not retry_delays or any(delay < 0 for delay in retry_delays):
             raise ValueError("Connection retry delays must be non-negative.")
         if tuple(sorted(retry_delays)) != retry_delays:
@@ -51,7 +52,7 @@ class ConnectionSupervisor:
         self._pending_recoveries: set[str] = set()
 
     def observe(self, service: str, available: bool) -> ConnectionStatus:
-        """Record one health result and return the bounded next retry state."""
+        """Speichert einen Healthcheck und liefert den begrenzten nächsten Retryzustand."""
         self._validate_service(service)
         if type(available) is not bool:
             raise TypeError("Connection availability must be boolean.")
@@ -76,12 +77,12 @@ class ConnectionSupervisor:
         return status
 
     def status(self, service: str) -> ConnectionStatus | None:
-        """Return the last snapshot for one validated service name."""
+        """Liefert den letzten Zustand für einen validierten Dienstnamen."""
         self._validate_service(service)
         return self._statuses.get(service)
 
     def consume_recovery(self, service: str) -> bool:
-        """Return one recovered transition once without exposing service data."""
+        """Verbraucht genau einmal einen Wiederherstellungsübergang ohne Dienstdaten."""
         self._validate_service(service)
         if service not in self._pending_recoveries:
             return False
@@ -94,7 +95,7 @@ class ConnectionSupervisor:
         health_check: Callable[[], bool],
         max_attempts: int = 5,
     ) -> bool:
-        """Run a bounded recovery loop using the configured retry schedule."""
+        """Führt eine begrenzte Wiederherstellungsschleife nach festem Retryplan aus."""
         if not 1 <= max_attempts <= len(self.retry_delays):
             raise ValueError("Connection attempts exceed the bounded retry schedule.")
         for attempt in range(1, max_attempts + 1):
@@ -106,6 +107,7 @@ class ConnectionSupervisor:
         return False
 
     def _emit(self, status: ConnectionStatus) -> None:
+        """Schreibt nur geänderte Verbindungszustände in die strukturierte Diagnose."""
         if self.diagnostics is None or not status.changed:
             return
         self.diagnostics.emit(
@@ -120,10 +122,12 @@ class ConnectionSupervisor:
         )
 
     def _retry_delay(self, failure_count: int) -> float:
+        """Liefert die begrenzte Wartezeit für eine fortlaufende Fehleranzahl."""
         index = min(failure_count - 1, len(self.retry_delays) - 1)
         return self.retry_delays[index]
 
     def _update_recovery(self, previous, current: ConnectionStatus) -> None:
+        """Merkt einen Übergang von nicht verfügbar zu verfügbar genau einmal vor."""
         if current.state is ConnectionState.UNAVAILABLE:
             self._pending_recoveries.discard(current.service)
             return
@@ -132,11 +136,13 @@ class ConnectionSupervisor:
 
     @staticmethod
     def _next_failure_count(previous: ConnectionStatus | None) -> int:
+        """Berechnet den nächsten fortlaufenden Fehlerzähler eines Dienstes."""
         if previous is None or previous.state is ConnectionState.AVAILABLE:
             return 1
         return previous.consecutive_failures + 1
 
     @staticmethod
     def _validate_service(service: str) -> None:
+        """Prüft einen Dienstnamen gegen das begrenzte lokale Format."""
         if not isinstance(service, str) or not SERVICE_PATTERN.fullmatch(service):
             raise ValueError("Connection service name is invalid.")

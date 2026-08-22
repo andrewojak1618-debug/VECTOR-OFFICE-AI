@@ -17,10 +17,11 @@ class ConsoleCommandHandler:
     """Handle explicit memory, document, and session commands."""
 
     def __init__(self, agent: Agent):
+        """Initialisiert den Konsolenrouter mit dem gemeinsam verwendeten Agenten."""
         self.agent = agent
 
     def handle(self, user_text: str) -> CommandResult:
-        """Execute a recognized command and return its loop action."""
+        """Führt einen erkannten Befehl aus und liefert die Aktion für die Schleife."""
         command = user_text.casefold()
         exact_result = self._handle_exact_command(command)
         if exact_result is not CommandResult.NOT_HANDLED:
@@ -28,6 +29,7 @@ class ConsoleCommandHandler:
         return self._handle_value_command(command, user_text)
 
     def _handle_exact_command(self, command: str) -> CommandResult:
+        """Ordnet einen argumentlosen exakten Befehl seinem festen Handler zu."""
         handlers = {
             "/exit": self._exit,
             "/clear": self._clear,
@@ -44,6 +46,7 @@ class ConsoleCommandHandler:
         command: str,
         user_text: str,
     ) -> CommandResult:
+        """Ordnet einen Befehl mit Wert anhand eines festen Präfixes zu."""
         handlers = (
             ("/remember ", self._remember),
             ("/feedback ", self._feedback),
@@ -63,15 +66,18 @@ class ConsoleCommandHandler:
 
     @staticmethod
     def _exit() -> CommandResult:
+        """Beendet die aktuelle Konsolensitzung kontrolliert."""
         print("Conversation ended.")
         return CommandResult.EXIT
 
     def _clear(self) -> CommandResult:
+        """Leert ausschließlich den flüchtigen Gesprächskontext."""
         self.agent.context.clear()
         print("Conversation context cleared.")
         return CommandResult.HANDLED
 
     def _remember(self, content: str) -> None:
+        """Speichert eine ausdrücklich eingegebene Erinnerung im lokalen Gedächtnis."""
         store = self.agent.memory_store
         if store is None:
             print("Long-term memory is unavailable.")
@@ -80,6 +86,7 @@ class ConsoleCommandHandler:
         print(f"Memory {memory.id} saved.")
 
     def _feedback(self, content: str) -> None:
+        """Speichert bestätigtes Stilfeedback mit fester Kategorie und Quelle."""
         store = self.agent.memory_store
         if store is None:
             print("Long-term memory is unavailable.")
@@ -92,6 +99,7 @@ class ConsoleCommandHandler:
         print(f"Feedback {feedback.id} saved.")
 
     def _list_memories(self) -> CommandResult:
+        """Listet bestätigte lokale Erinnerungen in der Konsole auf."""
         store = self.agent.memory_store
         if store is None:
             print("Long-term memory is unavailable.")
@@ -101,6 +109,7 @@ class ConsoleCommandHandler:
 
     @staticmethod
     def _print_memories(memories) -> None:
+        """Gibt eine Folge lokaler Erinnerungen mit ihren IDs aus."""
         if not memories:
             print("No long-term memories saved.")
             return
@@ -108,6 +117,7 @@ class ConsoleCommandHandler:
             print(f"[{memory.id}] {memory.content}")
 
     def _forget_memory(self, value: str) -> None:
+        """Löscht nach valider ID genau eine lokale Erinnerung."""
         store = self.agent.memory_store
         if store is None:
             print("Long-term memory is unavailable.")
@@ -117,6 +127,7 @@ class ConsoleCommandHandler:
             self._print_delete_result(store.forget(memory_id), "Memory", memory_id)
 
     def _export_memories(self, destination: str) -> None:
+        """Exportiert bestätigte Erinnerungen an ein geprüftes lokales Ziel."""
         store = self.agent.memory_store
         if store is None:
             print("Long-term memory is unavailable.")
@@ -129,6 +140,7 @@ class ConsoleCommandHandler:
         print(f"Confirmed memories exported: {path}")
 
     def _learn_document(self, source_path: str) -> None:
+        """Importiert ein freigegebenes Dokument und meldet seinen Indexierungsstand."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -148,6 +160,7 @@ class ConsoleCommandHandler:
             self._print_indexing_result(indexing)
 
     def _reindex_document(self, value: str) -> None:
+        """Indexiert nach valider ID genau ein Bibliotheksdokument neu."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -163,6 +176,7 @@ class ConsoleCommandHandler:
         self._print_indexing_result(result)
 
     def _reindex_all(self) -> CommandResult:
+        """Startet die kontrollierte Neuindexierung der gesamten lokalen Bibliothek."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -179,6 +193,7 @@ class ConsoleCommandHandler:
 
     @staticmethod
     def _print_indexing_result(result) -> None:
+        """Gibt ein begrenztes semantisches Indexierungsergebnis aus."""
         mode = "full" if result.forced else "incremental"
         model_note = ", model change detected" if result.model_changed else ""
         print(
@@ -187,6 +202,7 @@ class ConsoleCommandHandler:
         )
 
     def _list_documents(self) -> CommandResult:
+        """Lädt und zeigt die kontrollierten Dokumentstatus der Bibliothek."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -201,6 +217,7 @@ class ConsoleCommandHandler:
 
     @staticmethod
     def _print_documents(statuses) -> None:
+        """Gibt freigegebene Dokument- und Vektormetadaten strukturiert aus."""
         if not statuses:
             print("No documents imported.")
             return
@@ -217,6 +234,7 @@ class ConsoleCommandHandler:
             )
 
     def _list_document_versions(self, value: str) -> None:
+        """Listet nach valider Dokument-ID die gespeicherten Versionen auf."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -236,6 +254,7 @@ class ConsoleCommandHandler:
             )
 
     def _list_stale_vectors(self) -> CommandResult:
+        """Zeigt ausschließlich Metadaten veralteter lokaler Vektoren an."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -257,6 +276,7 @@ class ConsoleCommandHandler:
         return CommandResult.HANDLED
 
     def _export_library(self, destination: str) -> None:
+        """Exportiert bereinigte Bibliotheksmetadaten an ein geprüftes Ziel."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -269,6 +289,7 @@ class ConsoleCommandHandler:
         print(f"Library metadata exported: {path}")
 
     def _forget_document(self, value: str) -> None:
+        """Löscht nach valider ID ein Dokument samt abhängigen lokalen Daten."""
         library = self.agent.knowledge_library
         if library is None:
             print("Document library is unavailable.")
@@ -284,6 +305,7 @@ class ConsoleCommandHandler:
 
     @staticmethod
     def _parse_id(value: str, command: str) -> int | None:
+        """Parst eine numerische Befehls-ID oder zeigt die feste Verwendungshilfe."""
         try:
             return int(value.strip())
         except ValueError:
@@ -292,6 +314,7 @@ class ConsoleCommandHandler:
 
     @staticmethod
     def _print_delete_result(deleted: bool, item: str, item_id: int) -> None:
+        """Meldet Erfolg oder Nichtfund einer kontrollierten Löschoperation."""
         if deleted:
             print(f"{item} {item_id} deleted.")
             return

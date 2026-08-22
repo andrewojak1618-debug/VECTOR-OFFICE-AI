@@ -12,7 +12,7 @@ EMERGENCY_STOP_COMMAND = "emergency_stop"
 
 
 def main() -> int:
-    """Execute exactly one named action and return a process status code."""
+    """Führt genau eine benannte Aktion aus und liefert einen Prozessstatuscode."""
     parser = argparse.ArgumentParser(
         description="Run one controlled physical Vector action.",
     )

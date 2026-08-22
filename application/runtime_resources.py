@@ -36,7 +36,7 @@ def _create_tool_registry(
     library_status_reader=None,
     memory_status_reader=None,
 ) -> ToolRegistry:
-    """Register only explicitly reviewed production tools."""
+    """Registriert ausschließlich ausdrücklich geprüfte Produktivwerkzeuge."""
     audit_sink = audit_store.record if audit_store is not None else None
     registry = ToolRegistry(audit_sink=audit_sink)
     register_vector_action_tools(registry, actions)
@@ -65,6 +65,7 @@ def _register_optional_status_tools(
     library_status_reader,
     memory_status_reader,
 ) -> None:
+    """Registriert lokale Statuswerkzeuge nur mit vollständigen Abhängigkeiten."""
     if (wirepod_checker is None) != (ollama_checker is None):
         raise ValueError("Local service checks must be configured together.")
     if wirepod_checker is not None:
@@ -80,7 +81,7 @@ def _register_optional_status_tools(
 
 
 def _create_audit_store(settings) -> SQLiteToolAuditStore | None:
-    """Create optional local persistence without blocking startup."""
+    """Erzeugt die optionale lokale Auditablage, ohne den Start zu blockieren."""
     if not settings.TOOL_AUDIT_ENABLED:
         return None
     try:
@@ -95,7 +96,7 @@ def _create_audit_store(settings) -> SQLiteToolAuditStore | None:
 
 
 def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:
-    """Compose controlled imports with automatic local semantic indexing."""
+    """Verbindet kontrollierte Importe mit automatischer lokaler Indexierung."""
     library = SQLiteKnowledgeLibrary(settings.MEMORY_DB_PATH)
     store = SQLiteEmbeddingStore(settings.MEMORY_DB_PATH)
     provider = create_embedding_provider(settings)
@@ -119,5 +120,5 @@ def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:
 
 
 def _print_index_progress(progress: IndexProgress) -> None:
-    """Report counts only, never document contents or generated vectors."""
+    """Meldet nur Zähler, niemals Dokumentinhalte oder erzeugte Vektoren."""
     print(f"Semantic indexing: {progress.completed}/{progress.total} sections")

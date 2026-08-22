@@ -25,6 +25,7 @@ class FallbackProvider:
         fallback: LanguageModel,
         diagnostics: StructuredDiagnosticReporter | None = None,
     ):
+        """Initialisiert Primärmodell, lokalen Rückfall und optionale Diagnose."""
         self.primary = primary
         self.fallback = fallback
         self.diagnostics = diagnostics
@@ -32,7 +33,7 @@ class FallbackProvider:
         self._pending_notice: ProviderNotice | None = None
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
-        """Return the primary response or deliberately use the fallback."""
+        """Liefert die Primärantwort oder nutzt bewusst das lokale Rückfallmodell."""
         content = self._try_primary(messages)
         if content:
             return content
@@ -49,6 +50,7 @@ class FallbackProvider:
         return self._generate_fallback(messages)
 
     def _try_primary(self, messages: Sequence[ChatMessage]) -> str:
+        """Versucht das Primärmodell und merkt dessen Ausfall ohne Inhaltsprotokoll."""
         try:
             content = self.primary.generate(messages).strip()
         except RuntimeError:
@@ -62,6 +64,7 @@ class FallbackProvider:
         return content
 
     def _generate_fallback(self, messages: Sequence[ChatMessage]) -> str:
+        """Erzeugt lokal eine Antwort und unterscheidet einen vollständigen Ausfall."""
         try:
             content = self.fallback.generate(messages)
         except RuntimeError:
@@ -75,12 +78,13 @@ class FallbackProvider:
         return content
 
     def consume_notice(self) -> ProviderNotice | None:
-        """Return one outage transition once and clear its pending state."""
+        """Liefert einen Ausfallhinweis einmalig und löscht seinen offenen Zustand."""
         notice = self._pending_notice
         self._pending_notice = None
         return notice
 
     def _mark_primary_unavailable(self) -> None:
+        """Markiert den ersten Primärausfall für eine einmalige Sprachausgabe."""
         if not self._primary_unavailable:
             self._pending_notice = ProviderNotice.ALL_UNAVAILABLE
         self._primary_unavailable = True

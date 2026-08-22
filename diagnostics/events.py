@@ -46,6 +46,7 @@ class StructuredDiagnosticReporter:
         enabled: bool = True,
         max_bytes: int = DEFAULT_MAX_BYTES,
     ):
+        """Initialisiert eine begrenzte lokale Diagnoseablage mit Schreibsperre."""
         if type(enabled) is not bool:
             raise TypeError("Diagnostics enabled flag must be boolean.")
         if not 1_024 <= max_bytes <= 10_000_000:
@@ -62,7 +63,7 @@ class StructuredDiagnosticReporter:
         code: str,
         **details: bool | float | int | str | None,
     ) -> bool:
-        """Write one validated event without accepting private content fields."""
+        """Schreibt ein validiertes Ereignis ohne private Inhaltsfelder anzunehmen."""
         if not self.enabled:
             return True
         payload = self._payload(level, component, code, details)
@@ -79,6 +80,7 @@ class StructuredDiagnosticReporter:
 
     @staticmethod
     def _payload(level, component, code, details) -> dict:
+        """Validiert und erzeugt ein inhaltsfreies strukturiertes Ereignis."""
         if not isinstance(level, DiagnosticLevel):
             raise TypeError("Diagnostic level must be a DiagnosticLevel value.")
         for name, value in (("component", component), ("code", code)):
@@ -99,6 +101,7 @@ class StructuredDiagnosticReporter:
         }
 
     def _rotate_if_needed(self, incoming_bytes: int) -> None:
+        """Rotiert die Diagnoseablage vor Überschreiten ihrer festen Größenbegrenzung."""
         if not self.path.exists():
             return
         if self.path.stat().st_size + incoming_bytes <= self.max_bytes:

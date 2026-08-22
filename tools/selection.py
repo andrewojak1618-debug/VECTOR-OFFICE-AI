@@ -31,6 +31,7 @@ class ToolIntentRule:
     arguments: tuple[tuple[str, ToolValue], ...] = ()
 
     def __post_init__(self) -> None:
+        """Validiert feste Phrasen, Toolziel, Bezeichnung und Argumentnamen."""
         if not self.phrases or not all(
             isinstance(phrase, str) and phrase.strip() for phrase in self.phrases
         ):
@@ -262,13 +263,14 @@ class ToolIntentSelector:
         registry: ToolRegistry,
         rules: tuple[ToolIntentRule, ...] = DEFAULT_INTENT_RULES,
     ):
+        """Initialisiert die Auswahl mit Registry und festem Intent-Regelwerk."""
         if not isinstance(registry, ToolRegistry):
             raise TypeError("Tool selector requires a ToolRegistry.")
         self.registry = registry
         self._rules = self._index_rules(rules)
 
     def select(self, user_text: str) -> ToolSelection:
-        """Return one registered safe selection for an exact user phrase."""
+        """Liefert für eine erkannte Nutzerphrase genau eine registrierte sichere Auswahl."""
         normalized = normalize_phrase(user_text)
         rule = self._resolve_rule(normalized)
         if rule is None:
@@ -288,6 +290,7 @@ class ToolIntentSelector:
         )
 
     def _resolve_rule(self, normalized: str) -> ToolIntentRule | None:
+        """Löst eine exakte oder kanonisch erkannte Phrase auf eine feste Regel auf."""
         rule = self._rules.get(normalized)
         representative = canonical_phrase(normalized) if rule is None else None
         return self._rules.get(representative) if representative else rule
@@ -296,6 +299,7 @@ class ToolIntentSelector:
     def _index_rules(
         rules: tuple[ToolIntentRule, ...],
     ) -> dict[str, ToolIntentRule]:
+        """Indiziert normalisierte eindeutige Intent-Phrasen für konstante Zugriffe."""
         indexed = {}
         for rule in rules:
             if not isinstance(rule, ToolIntentRule):
@@ -309,10 +313,12 @@ class ToolIntentSelector:
 
 
 def _blocked_selection(message: str) -> ToolSelection:
+    """Erzeugt eine blockierte Auswahl mit sicherer Nutzererklärung."""
     return ToolSelection(ToolSelectionStatus.BLOCKED, message=message)
 
 
 def _unmatched_selection(normalized: str) -> ToolSelection:
+    """Blockiert erkennbare Grenzfälle oder meldet eine echte Nichtübereinstimmung."""
     message = unmatched_message(normalized)
     if message is not None:
         return _blocked_selection(message)

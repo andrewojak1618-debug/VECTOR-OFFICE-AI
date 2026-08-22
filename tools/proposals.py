@@ -36,6 +36,7 @@ class ToolProposalOption:
     arguments: tuple[tuple[str, ToolValue], ...] = ()
 
     def __post_init__(self) -> None:
+        """Validiert Vorschlags-ID, Toolziel, Bezeichnung und Argumentnamen."""
         if TOOL_NAME_PATTERN.fullmatch(self.proposal_id) is None:
             raise ValueError("Proposal identifier must use safe characters.")
         if TOOL_NAME_PATTERN.fullmatch(self.tool_name) is None:
@@ -70,7 +71,7 @@ class ToolProposalReview:
 
     @property
     def accepted(self) -> bool:
-        """Report whether a safe local proposal was produced."""
+        """Meldet, ob ein sicherer lokaler Vorschlag erzeugt wurde."""
         return self.status is ToolProposalStatus.PROPOSED
 
 
@@ -142,13 +143,14 @@ class ToolProposalReviewer:
         registry: ToolRegistry,
         options: tuple[ToolProposalOption, ...] = SAFE_VECTOR_PROPOSAL_OPTIONS,
     ):
+        """Initialisiert den Prüfer mit Registry und festem Vorschlagskatalog."""
         if not isinstance(registry, ToolRegistry):
             raise TypeError("Tool proposal reviewer requires a ToolRegistry.")
         self.registry = registry
         self._options = self._index_options(options)
 
     def catalog(self) -> tuple[ToolProposalOption, ...]:
-        """Return only options currently safe to expose to a model."""
+        """Liefert nur Optionen, die aktuell sicher für ein Modell sichtbar sind."""
         return tuple(
             option
             for option in self._options.values()
@@ -156,7 +158,7 @@ class ToolProposalReviewer:
         )
 
     def review(self, model_output: str) -> ToolProposalReview:
-        """Parse and validate one strict JSON proposal without execution."""
+        """Parst und validiert einen strikten JSON-Vorschlag ohne Ausführung."""
         payload = _decode_payload(model_output)
         if payload is None:
             return _rejected("invalid_proposal_json")
@@ -170,7 +172,7 @@ class ToolProposalReviewer:
         return self.resolve(proposal_id)
 
     def resolve(self, proposal_id: str | None) -> ToolProposalReview:
-        """Resolve one trusted local identifier without executing its tool."""
+        """Löst eine vertrauenswürdige lokale ID auf, ohne das Tool auszuführen."""
         if proposal_id is None:
             return ToolProposalReview(ToolProposalStatus.NO_PROPOSAL)
         if not isinstance(proposal_id, str):
@@ -184,6 +186,7 @@ class ToolProposalReviewer:
         return ToolProposalReview(ToolProposalStatus.PROPOSED, proposal)
 
     def _inspect_option(self, option: ToolProposalOption) -> ToolProposal | None:
+        """Prüft eine feste Option erneut gegen Registry und Berechtigungsgrenzen."""
         arguments = MappingProxyType(dict(option.arguments))
         inspection = self.registry.inspect_call(option.tool_name, arguments)
         definition = inspection.definition
@@ -208,6 +211,7 @@ class ToolProposalReviewer:
     def _index_options(
         options: tuple[ToolProposalOption, ...],
     ) -> dict[str, ToolProposalOption]:
+        """Indiziert eindeutige und typgeprüfte Vorschlagsoptionen nach ihrer ID."""
         indexed = {}
         for option in options:
             if not isinstance(option, ToolProposalOption):
@@ -223,6 +227,7 @@ class _DuplicateKeyError(ValueError):
 
 
 def _decode_payload(model_output: str) -> dict | None:
+    """Dekodiert begrenztes Modell-JSON und verwirft ungültige Strukturen."""
     if not isinstance(model_output, str):
         return None
     if not model_output.strip() or len(model_output) > MAX_PROPOSAL_RESPONSE_CHARS:
@@ -235,6 +240,7 @@ def _decode_payload(model_output: str) -> dict | None:
 
 
 def _unique_object(pairs: list[tuple[str, object]]) -> dict:
+    """Erzeugt ein JSON-Objekt und weist doppelte Schlüssel strikt ab."""
     result = {}
     for key, value in pairs:
         if key in result:
@@ -244,4 +250,5 @@ def _unique_object(pairs: list[tuple[str, object]]) -> dict:
 
 
 def _rejected(error_code: str) -> ToolProposalReview:
+    """Erzeugt einen standardisierten abgelehnten Prüfbefund."""
     return ToolProposalReview(ToolProposalStatus.REJECTED, error_code=error_code)

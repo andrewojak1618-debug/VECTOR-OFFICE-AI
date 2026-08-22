@@ -72,6 +72,10 @@
 - ✅ kontrollierte letzte Projektänderung aus festem Changelog nennen
 - ⏳ weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln absichern
 
+## Codequalität und Dokumentation
+
+- ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklären
+
 ## Robot Personality
 
 - ✅ kontrolliertes emotionales Zustandsmodell implementieren

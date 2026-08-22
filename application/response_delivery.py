@@ -31,7 +31,7 @@ def respond_and_speak(
     speech: VectorSpeech,
     user_text: str,
 ) -> bool:
-    """Generate one answer and play it through Vector."""
+    """Erzeugt eine Antwort und gibt sie über Vector wieder."""
     print("Thinking...")
     try:
         prepared = run_with_thinking(
@@ -52,7 +52,7 @@ def speak_answer(
     answer: str,
     style: SpeechStyle | None = None,
 ) -> bool:
-    """Speak one answer and report a sanitized playback failure."""
+    """Spricht eine Antwort und meldet Wiedergabefehler ohne sensible Details."""
     completed = speech.say(answer) if style is None else speech.say(answer, style)
     if completed:
         return True
@@ -65,6 +65,7 @@ def _prepare_answer(
     speech: VectorSpeech,
     user_text: str,
 ) -> _PreparedAnswer:
+    """Erzeugt Antwort, Sprachstil und nach Möglichkeit vorbereitetes Audio."""
     answer = agent.respond(user_text)
     style = _response_speech_style(agent)
     prepare = getattr(speech, "prepare", None)
@@ -79,6 +80,7 @@ def _prepare_answer(
 
 
 def _play_answer(speech: VectorSpeech, prepared: _PreparedAnswer) -> bool:
+    """Spielt vorbereitetes Audio oder kontrolliert die direkte Sprachausgabe ab."""
     if prepared.audio is None:
         return speak_answer(speech, prepared.text, prepared.style)
     try:
@@ -92,6 +94,7 @@ def _play_answer(speech: VectorSpeech, prepared: _PreparedAnswer) -> bool:
 
 
 def _speak_provider_notice(agent: Agent, speech: VectorSpeech) -> None:
+    """Spricht einmalige Hinweise zu Cloud-Ausfall und lokalem Rückfall."""
     language_model = getattr(agent, "language_model", None)
     consume = getattr(language_model, "consume_notice", None)
     if not callable(consume):
@@ -106,6 +109,7 @@ def _speak_provider_notice(agent: Agent, speech: VectorSpeech) -> None:
 
 
 def _response_speech_style(agent: Agent) -> SpeechStyle | None:
+    """Leitet den Sprachstil aus dem aktuellen kontrollierten Ausdruckszustand ab."""
     emotional_state = getattr(agent, "emotional_state", None)
     state = getattr(emotional_state, "state", None)
     cue = getattr(state, "expression_cue", None)

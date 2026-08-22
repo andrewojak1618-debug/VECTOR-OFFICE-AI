@@ -19,7 +19,7 @@ DIAGNOSTIC_TEXTS = (
 
 
 def run_diagnostic() -> bool:
-    """Verify model availability and one real local batch embedding request."""
+    """Prüft Modellverfügbarkeit und eine echte lokale Stapeleinbettung."""
     if not _ensure_ollama():
         return False
     provider = create_embedding_provider(settings)
@@ -36,6 +36,7 @@ def run_diagnostic() -> bool:
 
 
 def _ensure_ollama() -> bool:
+    """Stellt den lokalen Ollama-Dienst für die Einbettungsprüfung bereit."""
     runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
     if runtime.ensure_available():
         return True
@@ -47,6 +48,7 @@ def _report_success(
     model_name: str,
     results: tuple[EmbeddingResult, ...],
 ) -> bool:
+    """Prüft Anzahl und einheitliche Dimension ohne Text- oder Vektorwerte auszugeben."""
     dimensions = {result.dimension for result in results}
     if len(results) != len(DIAGNOSTIC_TEXTS) or len(dimensions) != 1:
         print("Local Ollama returned inconsistent embeddings. [ERROR]")

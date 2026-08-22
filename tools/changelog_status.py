@@ -28,12 +28,13 @@ class LatestProjectChangeTool:
     reader: ChangelogReader | None = None
 
     def __post_init__(self) -> None:
+        """Setzt den sicheren Standardleser, wenn keiner injiziert wurde."""
         if self.reader is None:
             object.__setattr__(self, "reader", _read_latest_change)
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free local changelog lookup."""
+        """Beschreibt die argumentlose lokale Changelog-Abfrage."""
         return ToolDefinition(
             name="development.latest_change",
             description="Return the latest safe entry from the fixed changelog.",
@@ -41,7 +42,7 @@ class LatestProjectChangeTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Read one validated public summary without model interpretation."""
+        """Liest eine geprüfte öffentliche Zusammenfassung ohne Modellinterpretation."""
         summary = self.reader(self.project_root.resolve())
         if summary is not None:
             _validate_summary(summary)
@@ -57,11 +58,12 @@ def register_latest_project_change_tool(
     project_root: Path = PROJECT_ROOT,
     reader: ChangelogReader | None = None,
 ) -> None:
-    """Register the fixed argument-free changelog reader."""
+    """Registriert den festen argumentlosen Changelog-Leser."""
     registry.register(LatestProjectChangeTool(project_root, reader))
 
 
 def _read_latest_change(project_root: Path) -> str | None:
+    """Liest den ersten Eintrag im festen Unreleased-Abschnitt."""
     changelog = (project_root / CHANGELOG_PATH).resolve()
     _ensure_local_changelog(project_root, changelog)
     in_section = False
@@ -77,6 +79,7 @@ def _read_latest_change(project_root: Path) -> str | None:
 
 
 def _ensure_local_changelog(project_root: Path, changelog: Path) -> None:
+    """Begrenzt das Changelog auf die erwartete lokale Projektdatei und Größe."""
     try:
         changelog.relative_to(project_root.resolve())
     except ValueError as error:
@@ -86,6 +89,7 @@ def _ensure_local_changelog(project_root: Path, changelog: Path) -> None:
 
 
 def _validate_summary(summary: str) -> None:
+    """Prüft die Zusammenfassung auf Länge, Zeichen und verbotene Ziele."""
     if not isinstance(summary, str):
         raise TypeError("Changelog reader returned an invalid value.")
     forbidden = ("http://", "https://", "/", "\\")
@@ -97,6 +101,7 @@ def _validate_summary(summary: str) -> None:
 
 
 def _spoken_summary(summary: str | None) -> str:
+    """Erzeugt einen lokalen deutschen Sprechtext für den Changelog-Befund."""
     if summary is None:
         return "Im Changelog ist noch keine neue Projektänderung eingetragen."
     return f"Die zuletzt dokumentierte Projektänderung lautet: {summary.rstrip('.')}."

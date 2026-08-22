@@ -18,7 +18,7 @@ class EchoTestTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the side-effect-free diagnostic parameters."""
+        """Beschreibt die nebenwirkungsfreien Diagnoseparameter."""
         return ToolDefinition(
             name="test.echo",
             description="Return supplied test text without external effects.",
@@ -40,5 +40,5 @@ class EchoTestTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Return only the non-sensitive diagnostic text."""
+        """Liefert ausschließlich den nicht sensiblen Diagnosetext zurück."""
         return {"echo": arguments["text"]}

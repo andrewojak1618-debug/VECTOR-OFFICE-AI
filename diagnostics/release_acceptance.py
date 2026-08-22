@@ -58,7 +58,7 @@ def build_checks(
     physical_vector: bool = False,
     physical_confirmed: bool = False,
 ) -> tuple[AcceptanceCheck, ...]:
-    """Build checks without implicitly enabling network or physical actions."""
+    """Erzeugt Prüfungen ohne Netzwerk oder physische Aktionen stillschweigend freizugeben."""
     if physical_vector and not physical_confirmed:
         raise ValueError("Physical Vector checks require explicit confirmation.")
     checks = list(_core_checks(python))
@@ -75,7 +75,7 @@ def run_checks(
     checks: Sequence[AcceptanceCheck],
     executor: CheckExecutor | None = None,
 ) -> tuple[AcceptanceResult, ...]:
-    """Execute every check and retain only safe result metadata."""
+    """Führt alle Prüfungen aus und hält nur sichere Ergebnismetadaten fest."""
     run = executor or _execute_check
     results = []
     for check in checks:
@@ -99,7 +99,7 @@ def write_report(
     destination: str | Path,
     results: Sequence[AcceptanceResult],
 ) -> Path:
-    """Write an atomic JSON report containing no commands or process output."""
+    """Schreibt atomar einen JSON-Bericht ohne Befehle oder Prozessausgaben."""
     path = Path(destination).expanduser().resolve()
     if path.suffix.casefold() != ".json":
         raise ValueError("Acceptance report destination must be a JSON file.")
@@ -118,7 +118,7 @@ def write_report(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run selected acceptance layers and return a process status code."""
+    """Führt gewählte Abnahmestufen aus und liefert einen Prozessstatuscode."""
     parser = _argument_parser()
     arguments = parser.parse_args(argv)
     try:
@@ -139,6 +139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _core_checks(python: str) -> tuple[AcceptanceCheck, ...]:
+    """Definiert die verpflichtenden lokalen Kernprüfungen der Freigabe."""
     return (
         AcceptanceCheck(
             "Complete unit test suite",
@@ -160,6 +161,7 @@ def _core_checks(python: str) -> tuple[AcceptanceCheck, ...]:
 
 
 def _ollama_checks(python: str) -> tuple[AcceptanceCheck, ...]:
+    """Definiert optionale Liveprüfungen für den lokalen Ollama-Dienst."""
     return (
         _module_check("Local embeddings", "live-ollama", python, "embeddings_ollama"),
         _module_check("Hybrid knowledge search", "live-ollama", python, "hybrid_search_ollama"),
@@ -168,6 +170,7 @@ def _ollama_checks(python: str) -> tuple[AcceptanceCheck, ...]:
 
 
 def _physical_checks(python: str) -> tuple[AcceptanceCheck, ...]:
+    """Definiert nur ausdrücklich bestätigte physische Vector-Prüfungen."""
     return (
         _module_check("Knowledge to German speech", "physical-vector", python, "knowledge_vector"),
         AcceptanceCheck(
@@ -184,10 +187,12 @@ def _module_check(
     python: str,
     module: str,
 ) -> AcceptanceCheck:
+    """Erzeugt eine feste Diagnosemodulprüfung ohne freie Befehlsbestandteile."""
     return AcceptanceCheck(name, category, (python, "-m", f"diagnostics.{module}"))
 
 
 def _execute_check(check: AcceptanceCheck) -> int:
+    """Führt eine feste Prüfung mit Zeitlimit und ohne Ausgabeübernahme aus."""
     try:
         completed = subprocess.run(
             check.command,
@@ -201,6 +206,7 @@ def _execute_check(check: AcceptanceCheck) -> int:
 
 
 def _argument_parser() -> argparse.ArgumentParser:
+    """Definiert explizite Freigaben für Live-, Netzwerk- und physische Prüfungen."""
     parser = argparse.ArgumentParser(
         description="Run Vector Office AI release acceptance layers.",
     )
@@ -213,6 +219,7 @@ def _argument_parser() -> argparse.ArgumentParser:
 
 
 def _print_summary(results: Sequence[AcceptanceResult]) -> None:
+    """Gibt ausschließlich die Anzahl bestandener Abnahmeprüfungen aus."""
     passed = sum(result.passed for result in results)
     print(f"Acceptance summary: {passed}/{len(results)} checks passed.")
 

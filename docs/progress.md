@@ -864,3 +864,34 @@ Die deutsche TTS wurde schrittweise verbessert:
 - vollständige Kernabnahme mit vier von vier Prüfungen abgeschlossen
 - physischen Sprachtest erfolgreich abgeschlossen
 - argumentlosen Read-only-Aufruf als Audit-Ereignis 20 mit Status `success` bestätigt
+
+## Punkt 32 – Deutsche Funktionsdokumentation
+
+- verbindlichen Standard auf kurze deutsche Docstrings umgestellt
+- öffentliche und private Produktionsfunktionen, Methoden, Konstruktoren,
+  Properties und Protokollmethoden ausdrücklich einbezogen
+- Tests mit selbsterklärenden `test_...`-Namen bewusst von Zusatztexten ausgenommen
+- aktive deutsche Verben und konkrete Verantwortungsbeschreibungen vorgegeben
+- Sicherheits-, Datenschutz- und Fehlergrenzen als dokumentationswürdig festgelegt
+- 90 produktive Python-Dateien mit 763 Funktionen und Methoden inventarisiert
+- 294 vorhandene und 469 fehlende Funktions-Docstrings festgestellt
+- paketweise Migration vor Aktivierung der endgültigen Vollständigkeitssperre festgelegt
+- Paket `tools/` mit 168 von 168 deutschen Funktions-Docstrings abgeschlossen
+- 109 Tooltests und sieben strukturelle Qualitätstests nach dem ersten Paket bestanden
+- größtes Toolmodul mit 363 Zeilen weiterhin unter der 400-Zeilen-Grenze gehalten
+- Paket `application/` mit 174 von 174 deutschen Funktions-Docstrings abgeschlossen
+- 97 gezielte Anwendungs-, Dialog-, Runtime- und Watchdog-Tests bestanden
+- größtes Anwendungsmodul mit 348 Zeilen weiterhin unter der 400-Zeilen-Grenze gehalten
+- Paket `brain/` mit 99 von 99 deutschen Funktions-Docstrings abgeschlossen
+- Paket `memory/` mit 156 von 156 deutschen Funktions-Docstrings abgeschlossen
+- 189 gezielte Agenten-, Anbieter-, Persönlichkeits-, Speicher- und Suchtests bestanden
+- größtes Kernmodul mit 360 Zeilen weiterhin unter der 400-Zeilen-Grenze gehalten
+- Pakete `vector/`, `voice/`, `diagnostics/`, `config/` und `main.py` mit 166 von 166 deutschen Funktions-Docstrings abgeschlossen
+- 108 gezielte Hardware-, Sprach-, Eingabe-, Diagnose- und Konfigurationstests bestanden
+- größtes Modul dieser Abnahmestufe mit 376 Zeilen unter der 400-Zeilen-Grenze gehalten
+- alle 763 produktiven Funktionen und Methoden paketübergreifend dokumentiert
+- Vollständigkeitssperre für öffentliche und private Funktions-Docstrings aktiviert
+- englische Standardformulierungen als automatischen Rückfalltest ergänzt
+- neun strukturelle Qualitätsprüfungen einschließlich 35- und 400-Zeilen-Grenzen bestanden
+- 549 automatisierte Tests, Python-Kompilierung und strikter Dokumentationsbau bestanden
+- vollständige lokale Kernabnahme mit vier von vier Prüfungen abgeschlossen

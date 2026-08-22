@@ -39,7 +39,7 @@ REFLECTIVE_RATE = SPEECH_PROSODY[SpeechStyle.REFLECTIVE].rate
 
 
 def normalize_speech_text(text: str) -> str:
-    """Convert model-oriented formatting into one continuous spoken form."""
+    """Überführt modellorientierte Formatierung in eine zusammenhängende Sprechform."""
     normalized = re.sub(r"(?m)^\s*(?:[-*+]|\d+[.)])\s+", "", text)
     normalized = normalized.replace("—", ", ").replace("–", ", ")
     normalized = re.sub(r"[*_`#]+", "", normalized)
@@ -47,7 +47,7 @@ def normalize_speech_text(text: str) -> str:
 
 
 def build_speech_content(text: str, style: SpeechStyle) -> str:
-    """Return escaped SSML using only the selected fixed style profile."""
+    """Erzeugt maskiertes SSML ausschließlich aus dem gewählten festen Sprachprofil."""
     profile = SPEECH_PROSODY[style]
     sentences = re.split(r"(?<=[.!?])\s+", normalize_speech_text(text))
     pause = f'<break time="{profile.sentence_break_ms}ms"/>'

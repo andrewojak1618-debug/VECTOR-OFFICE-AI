@@ -46,6 +46,7 @@ class WirePodTranscriptListener:
         duplicate_window: float = DUPLICATE_TRANSCRIPT_WINDOW_SECONDS,
         client: httpx.Client | None = None,
     ):
+        """Initialisiert die lokale Abfrage mit begrenzter Duplikaterkennung."""
         if not math.isfinite(duplicate_window) or not 0 <= duplicate_window <= 30:
             raise ValueError("Duplicate transcript window must be between 0 and 30.")
         self.poll_interval = poll_interval
@@ -60,7 +61,7 @@ class WirePodTranscriptListener:
 
     @staticmethod
     def parse_logs(log_text: str) -> tuple[TranscriptEvent, ...]:
-        """Parse supported transcript events from a WirePod log response."""
+        """Liest unterstützte Transkriptionsereignisse aus einer WirePod-Logantwort."""
         events = (
             WirePodTranscriptListener._parse_line(line)
             for line in log_text.splitlines()
@@ -69,6 +70,7 @@ class WirePodTranscriptListener:
 
     @staticmethod
     def _parse_line(line: str) -> TranscriptEvent | None:
+        """Validiert eine Logzeile und überführt sie in ein Transkriptionsereignis."""
         normalized_line = line.strip()
         match = TRANSCRIPT_PATTERN.match(normalized_line)
         if match is None:
@@ -87,7 +89,7 @@ class WirePodTranscriptListener:
         )
 
     def prime(self) -> None:
-        """Mark current log entries as seen before accepting new speech."""
+        """Markiert vorhandene Logeinträge vor Annahme neuer Sprache als gesehen."""
         events = self._fetch_events()
         self._seen_line_fingerprints = {
             self._line_fingerprint(event) for event in events
@@ -95,7 +97,7 @@ class WirePodTranscriptListener:
         self._primed = True
 
     def poll(self) -> tuple[TranscriptEvent, ...]:
-        """Return only events not emitted by an earlier poll."""
+        """Liefert nur Ereignisse, die keine frühere Abfrage ausgegeben hat."""
         events = self._fetch_events()
         new_events = tuple(
             event
@@ -119,7 +121,7 @@ class WirePodTranscriptListener:
         self,
         timeout: float = 60.0,
     ) -> TranscriptEvent | None:
-        """Wait for one meaningful transcript until the timeout expires."""
+        """Wartet bis zum Fristende auf genau ein aussagekräftiges Transkript."""
         if not self._primed:
             self.prime()
 
@@ -137,6 +139,7 @@ class WirePodTranscriptListener:
 
     @staticmethod
     def _spoken_events(events) -> tuple[TranscriptEvent, ...]:
+        """Entfernt leere Ereignisse und reine Kein-Audio-Systemmeldungen."""
         return tuple(
             event
             for event in events
@@ -147,12 +150,14 @@ class WirePodTranscriptListener:
         self,
         events: tuple[TranscriptEvent, ...],
     ) -> TranscriptEvent | None:
+        """Wählt rückwärts das jüngste noch nicht duplizierte Sprachereignis."""
         for event in reversed(self._spoken_events(events)):
             if self._accept_transcript(event):
                 return event
         return None
 
     def _accept_transcript(self, event: TranscriptEvent) -> bool:
+        """Unterdrückt gleiche Transkripte innerhalb des festgelegten Zeitfensters."""
         fingerprint = self._transcript_fingerprint(event)
         event_time = datetime.strptime(
             event.timestamp,
@@ -168,6 +173,7 @@ class WirePodTranscriptListener:
         return True
 
     def _limit_recent_transcripts(self) -> None:
+        """Begrenzt die sitzungslokale Duplikathistorie auf die jüngsten Einträge."""
         if len(self._recent_transcripts) <= MAX_RECENT_TRANSCRIPTS:
             return
         newest = sorted(
@@ -179,6 +185,7 @@ class WirePodTranscriptListener:
 
     @staticmethod
     def _transcript_fingerprint(event: TranscriptEvent) -> str:
+        """Hasht Gerät und normalisierten Text ohne Speicherung des Klartexts."""
         normalized_text = " ".join(
             event.text.casefold().strip().rstrip(".!?").split()
         )
@@ -187,9 +194,11 @@ class WirePodTranscriptListener:
 
     @staticmethod
     def _line_fingerprint(event: TranscriptEvent) -> str:
+        """Hasht eine vollständige Logzeile für die einmalige Ausgabe."""
         return hashlib.sha256(event.raw_line.encode("utf-8")).hexdigest()
 
     def _fetch_events(self) -> tuple[TranscriptEvent, ...]:
+        """Ruft lokale WirePod-Logs ab und bereinigt Transportfehler."""
         try:
             response = self.client.get("/api/get_logs")
             response.raise_for_status()
@@ -202,7 +211,7 @@ class WirePodTranscriptListener:
 
 
 def main() -> None:
-    """Wait for and print one new local WirePod transcript."""
+    """Wartet auf ein neues lokales WirePod-Transkript und gibt es aus."""
     parser = argparse.ArgumentParser(
         description="Wait for one new transcript from the local WirePod.",
     )

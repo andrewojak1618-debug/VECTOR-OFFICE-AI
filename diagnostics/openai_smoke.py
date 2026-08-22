@@ -15,7 +15,7 @@ SMOKE_MESSAGES = (
 
 
 def run_diagnostic(provider: OpenAIProvider | None = None) -> bool:
-    """Return whether the configured OpenAI model produced non-empty text."""
+    """Meldet, ob das konfigurierte OpenAI-Modell nicht leeren Text erzeugt."""
     if provider is None and not settings.OPENAI_API_KEY.strip():
         print("OPENAI_API_KEY is not configured. [FAIL]")
         return False

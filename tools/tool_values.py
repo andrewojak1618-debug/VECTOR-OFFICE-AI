@@ -24,20 +24,20 @@ class ToolParameterType(Enum):
 
 
 def validate_identifier(value: str, label: str) -> None:
-    """Require one lowercase identifier that is safe for local lookup."""
+    """Verlangt einen kleingeschriebenen Bezeichner für sichere lokale Zugriffe."""
     if not isinstance(value, str) or TOOL_NAME_PATTERN.fullmatch(value) is None:
         raise ValueError(f"{label} name must use lowercase safe characters.")
 
 
 def safe_requested_name(value: object) -> str | None:
-    """Return a syntactically safe requested name or no name."""
+    """Liefert einen syntaktisch sicheren angeforderten Namen oder keinen Wert."""
     if isinstance(value, str) and TOOL_NAME_PATTERN.fullmatch(value) is not None:
         return value
     return None
 
 
 def normalize_output(output: ToolOutput) -> ToolOutput:
-    """Freeze one finite, flat tool output mapping."""
+    """Validiert und fixiert eine endliche flache Toolausgabe."""
     if not isinstance(output, Mapping):
         raise TypeError("Tool output must be a mapping.")
     if not all(
@@ -49,14 +49,14 @@ def normalize_output(output: ToolOutput) -> ToolOutput:
 
 
 def is_tool_value(value: object) -> bool:
-    """Report whether a value is flat and safe for structured tool data."""
+    """Prüft, ob ein Wert flach und sicher für strukturierte Tooldaten ist."""
     if type(value) is float:
         return math.isfinite(value)
     return value is None or type(value) in (str, int, bool)
 
 
 def matches_type(value: ToolValue, parameter_type: ToolParameterType) -> bool:
-    """Match one flat value against its declared parameter type."""
+    """Vergleicht einen flachen Wert mit seinem deklarierten Parametertyp."""
     if parameter_type is ToolParameterType.STRING:
         return type(value) is str
     if parameter_type is ToolParameterType.INTEGER:

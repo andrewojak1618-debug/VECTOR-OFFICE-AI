@@ -21,6 +21,7 @@ DEFAULT_OLLAMA_KEEP_ALIVE = "30m"
 
 
 def _message_payload(messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
+    """Überführt normalisierte Nachrichten in das gemeinsame Anbieterformat."""
     return [
         {"role": message.role, "content": message.content}
         for message in messages
@@ -39,6 +40,7 @@ class OpenAIProvider:
         max_attempts: int = 2,
         diagnostics: StructuredDiagnosticReporter | None = None,
     ):
+        """Initialisiert den OpenAI-Client mit validierten Anfragegrenzen."""
         if not api_key.strip():
             raise ValueError("OPENAI_API_KEY is required for the OpenAI provider.")
         if not model.strip():
@@ -53,7 +55,7 @@ class OpenAIProvider:
         )
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
-        """Return one model response without exposing provider exceptions."""
+        """Liefert eine Modellantwort, ohne Anbieterfehler offenzulegen."""
         try:
             response = self.client.responses.create(
                 model=self.model,
@@ -98,6 +100,7 @@ class OllamaProvider:
         sleeper: Callable[[float], None] = time.sleep,
         diagnostics: StructuredDiagnosticReporter | None = None,
     ):
+        """Initialisiert den lokalen Ollama-Adapter mit begrenzten Erzeugungswerten."""
         if not base_url.strip():
             raise ValueError("OLLAMA_HOST must not be empty.")
         if not model.strip():
@@ -110,8 +113,7 @@ class OllamaProvider:
         self.max_output_tokens = max_output_tokens
         self.context_window = context_window
         self.keep_alive = keep_alive.strip()
-        self.max_attempts = max_attempts
-        self.retry_delay = retry_delay
+        self.max_attempts, self.retry_delay = max_attempts, retry_delay
         self.sleeper = sleeper
         self.diagnostics = diagnostics
         self.client = client or httpx.Client(
@@ -120,11 +122,12 @@ class OllamaProvider:
         )
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
-        """Return one local response and sanitize transport failures."""
+        """Liefert eine lokale Antwort und bereinigt Transportfehler."""
         response = self._request(messages)
         return self._response_content(response)
 
     def _request(self, messages: Sequence[ChatMessage]) -> httpx.Response:
+        """Sendet eine Ollama-Anfrage mit begrenzten Wiederholungen."""
         for attempt in range(1, self.max_attempts + 1):
             try:
                 response = self._send(messages)
@@ -149,6 +152,7 @@ class OllamaProvider:
         ) from None
 
     def _send(self, messages: Sequence[ChatMessage]) -> httpx.Response:
+        """Sendet genau eine lokale Chatanfrage mit festem Nutzdatenformat."""
         response = self.client.post(
             "/api/chat",
             json=self._request_payload(messages),
@@ -157,6 +161,7 @@ class OllamaProvider:
         return response
 
     def _report_retry(self, attempt: int) -> None:
+        """Meldet einen Wiederholungsversuch ohne Nachrichteninhalte."""
         emit_provider(
             self.diagnostics,
             DiagnosticLevel.WARNING,
@@ -168,6 +173,7 @@ class OllamaProvider:
         )
 
     def _report_success(self, attempt: int) -> None:
+        """Meldet einen erfolgreichen lokalen Modellaufruf ohne Inhalte."""
         emit_provider(
             self.diagnostics,
             DiagnosticLevel.INFO,
@@ -179,6 +185,7 @@ class OllamaProvider:
         )
 
     def _may_retry(self, error: httpx.HTTPError, attempt: int) -> bool:
+        """Erlaubt Wiederholungen nur für vorübergehende Transport- und Statusfehler."""
         if attempt >= self.max_attempts:
             return False
         if isinstance(error, httpx.RequestError):
@@ -189,6 +196,7 @@ class OllamaProvider:
         return False
 
     def _request_payload(self, messages: Sequence[ChatMessage]) -> dict:
+        """Erzeugt die begrenzte lokale Ollama-Anfrage ohne Denkmodus."""
         payload = {
             "model": self.model,
             "messages": _message_payload(messages),
@@ -205,6 +213,7 @@ class OllamaProvider:
 
     @staticmethod
     def _response_content(response: httpx.Response) -> str:
+        """Entnimmt ausschließlich gültigen Text aus der lokalen Modellantwort."""
         content = response.json().get("message", {}).get("content", "")
         if not isinstance(content, str):
             raise RuntimeError("Ollama returned an invalid response.")
@@ -215,7 +224,7 @@ def create_language_model(
     settings,
     diagnostics: StructuredDiagnosticReporter | None = None,
 ) -> LanguageModel:
-    """Build the configured language model and optional local fallback."""
+    """Erzeugt das konfigurierte Sprachmodell samt optionalem lokalem Rückfall."""
     provider = settings.LLM_PROVIDER.casefold().strip()
     if provider == "openai":
         return _create_openai_model(settings, diagnostics)
@@ -225,6 +234,7 @@ def create_language_model(
 
 
 def _create_openai_model(settings, diagnostics=None) -> LanguageModel:
+    """Erzeugt OpenAI und verbindet bei Freigabe den lokalen Ollama-Rückfall."""
     primary = OpenAIProvider(
         settings.OPENAI_API_KEY,
         settings.OPENAI_MODEL,
@@ -245,6 +255,7 @@ def _create_openai_model(settings, diagnostics=None) -> LanguageModel:
 
 
 def _create_ollama_model(settings, diagnostics=None) -> OllamaProvider:
+    """Erzeugt den lokalen Ollama-Adapter aus begrenzten Einstellungen."""
     return OllamaProvider(
         settings.OLLAMA_HOST,
         settings.OLLAMA_MODEL,
@@ -271,10 +282,12 @@ def _create_ollama_model(settings, diagnostics=None) -> OllamaProvider:
 
 
 def _request_timeout(settings) -> float:
+    """Liest die begrenzte Anfragefrist mit sicherem Standardwert."""
     return getattr(settings, "LLM_REQUEST_TIMEOUT", 120.0)
 
 
 def _max_attempts(settings) -> int:
+    """Liest die begrenzte Zahl der Modellversuche mit sicherem Standardwert."""
     return getattr(settings, "LLM_MAX_ATTEMPTS", 2)
 
 
@@ -283,6 +296,7 @@ def _validate_request_policy(
     max_attempts: int,
     retry_delay: float,
 ) -> None:
+    """Validiert Frist, Versuchsanzahl und Wiederholungsverzögerung."""
     if not 1.0 <= timeout <= 600.0:
         raise ValueError("LLM request timeout must be between 1 and 600 seconds.")
     if type(max_attempts) is not int or not 1 <= max_attempts <= 5:
@@ -297,6 +311,7 @@ def _validate_ollama_generation_policy(
     context_window: int,
     keep_alive: str,
 ) -> None:
+    """Validiert lokale Temperatur-, Ausgabe-, Kontext- und Haltezeitgrenzen."""
     if not 0.0 <= temperature <= 2.0:
         raise ValueError("Ollama temperature must be between 0 and 2.")
     if type(max_output_tokens) is not int or not 16 <= max_output_tokens <= 512:

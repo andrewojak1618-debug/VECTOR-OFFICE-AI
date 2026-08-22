@@ -26,5 +26,5 @@ CREATE INDEX IF NOT EXISTS idx_knowledge_embeddings_chunk
 
 
 def initialize_embedding_schema(connection: sqlite3.Connection) -> None:
-    """Extend an existing knowledge database without destructive migration."""
+    """Erweitert eine Wissensdatenbank ohne zerstörende Migration."""
     connection.executescript(EMBEDDING_SCHEMA)

@@ -44,6 +44,7 @@ GERMAN_MONTHS = (
 
 
 def _local_now() -> datetime:
+    """Liefert den aktuellen Zeitpunkt in der lokalen Systemzeitzone."""
     return datetime.now().astimezone()
 
 
@@ -55,7 +56,7 @@ class LocalDateTimeTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the fixed read-only date and time request."""
+        """Beschreibt die feste rein lesende Datums- und Uhrzeitabfrage."""
         return ToolDefinition(
             name="office.local_datetime",
             description="Return the local date or time in spoken German.",
@@ -68,7 +69,7 @@ class LocalDateTimeTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Create deterministic local metadata and one German spoken answer."""
+        """Erzeugt lokale Zeitmetadaten und eine deterministische deutsche Antwort."""
         mode = str(arguments["mode"])
         if mode not in ALLOWED_DATETIME_MODES:
             raise ValueError("Unsupported local date and time mode.")
@@ -90,17 +91,19 @@ def register_office_tools(
     registry: ToolRegistry,
     clock: Callable[[], datetime] | None = None,
 ) -> None:
-    """Register fixed local office tools without network capabilities."""
+    """Registriert feste lokale Bürotools ohne Netzwerkfähigkeit."""
     registry.register(LocalDateTimeTool(clock or _local_now))
 
 
 def _spoken_date(value: datetime) -> str:
+    """Formuliert ein lokales Datum mit deutschen Wochen- und Monatsnamen."""
     weekday = GERMAN_WEEKDAYS[value.weekday()]
     month = GERMAN_MONTHS[value.month - 1]
     return f"Heute ist {weekday}, der {value.day}. {month} {value.year}."
 
 
 def _spoken_time(value: datetime) -> str:
+    """Formuliert eine lokale Uhrzeit als kurzen deutschen Sprechtext."""
     if value.minute == 0:
         return f"Es ist {value.hour} Uhr."
     return f"Es ist {value.hour} Uhr {value.minute}."

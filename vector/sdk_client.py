@@ -32,11 +32,12 @@ class VectorSDKClient:
         serial: str,
         behavior_control: BehaviorControl | None = None,
     ):
+        """Initialisiert die SDK-Grenze für einen Vector mit zentraler Verhaltenskontrolle."""
         self.serial = serial
         self.behavior_control = behavior_control or BehaviorControl()
 
     def test_connection(self) -> bool:
-        """Verify SDK access and report the current battery voltage."""
+        """Prüft den SDK-Zugriff und meldet die aktuelle Batteriespannung."""
         print("Connecting directly to Vector SDK...")
         try:
             with self._robot() as robot:
@@ -47,7 +48,7 @@ class VectorSDKClient:
             return self._report_sdk_failure("Vector SDK connection", exc)
 
     def play_wav(self, path: str | Path, volume: int = 50) -> bool:
-        """Stream one validated local WAV file through Vector's speaker."""
+        """Überträgt eine validierte lokale WAV-Datei an Vectors Lautsprecher."""
         audio_path = Path(path)
         if not self._valid_audio_request(audio_path, volume):
             return False
@@ -62,7 +63,7 @@ class VectorSDKClient:
             return self._report_sdk_failure("Audio playback", exc)
 
     def say(self, text: str) -> bool:
-        """Use Vector's native speech command for non-German fallback cases."""
+        """Nutzt Vectors native Sprachausgabe nur für nicht deutsche Rückfallfälle."""
         print(f"Sending speech to Vector: {text}")
         try:
             with self.behavior_control.operation("speech"):
@@ -74,7 +75,7 @@ class VectorSDKClient:
             return self._report_sdk_failure("Speech command", exc)
 
     def set_head_angle(self, angle_degrees: float, timeout: float = 8.0) -> bool:
-        """Move the head to one validated angle without moving the wheels."""
+        """Bewegt den Kopf in einen validierten Winkel, ohne die Räder anzusteuern."""
         if not self._valid_range(
             angle_degrees,
             MIN_HEAD_DEGREES,
@@ -88,7 +89,7 @@ class VectorSDKClient:
         )
 
     def set_lift_height(self, height: float, timeout: float = 8.0) -> bool:
-        """Move the lift to one normalized safe height without wheel motion."""
+        """Bewegt den Lift auf eine sichere normierte Höhe ohne Radbewegung."""
         if not self._valid_range(height, MIN_LIFT_HEIGHT, MAX_LIFT_HEIGHT):
             return self._report_invalid_action("Lift height is outside the safe range.")
         return self._run_action(
@@ -98,7 +99,7 @@ class VectorSDKClient:
         )
 
     def play_animation_trigger(self, trigger: str, timeout: float = 8.0) -> bool:
-        """Play one fixed trigger once while always disabling its body track."""
+        """Spielt einen festen Auslöser einmalig und deaktiviert stets dessen Körperspur."""
         if not isinstance(trigger, str) or not trigger.strip():
             return self._report_invalid_action("Animation trigger must not be empty.")
         return self._run_action(
@@ -112,7 +113,7 @@ class VectorSDKClient:
         )
 
     def emergency_stop(self) -> bool:
-        """Cancel active SDK work, stop every motor, and keep behavior latched."""
+        """Bricht SDK-Arbeit ab, stoppt alle Motoren und hält Verhalten verriegelt."""
         active = self.behavior_control.request_emergency_stop()
         print(f"Emergency stop requested for: {active or 'idle Vector'}")
         try:
@@ -129,6 +130,7 @@ class VectorSDKClient:
         timeout: float,
         operation: Callable[[object], Future],
     ) -> bool:
+        """Führt eine SDK-Aktion unter Verhaltenskontrolle und fester Frist aus."""
         if not self._valid_action_timeout(timeout):
             return self._report_invalid_action("Action timeout is outside the safe range.")
         print(f"Starting Vector {label}...")
@@ -151,6 +153,7 @@ class VectorSDKClient:
         operation: Callable[[object], Future],
         timeout: float,
     ) -> None:
+        """Verknüpft eine asynchrone SDK-Aktion mit Notstopp und Zeitüberschreitung."""
         with self._action_robot(timeout) as robot:
             future = operation(robot)
             self.behavior_control.attach_future(future)
@@ -165,6 +168,7 @@ class VectorSDKClient:
 
     @contextmanager
     def _action_robot(self, timeout: float) -> Iterator[object]:
+        """Verbindet einen asynchronen Robot ausschließlich für eine begrenzte Aktion."""
         activation_timeout = max(1, math.ceil(timeout))
         robot = anki_vector.AsyncRobot(
             serial=self.serial,
@@ -180,6 +184,7 @@ class VectorSDKClient:
 
     @staticmethod
     def _stop_connected_robot(robot: object, timeout: float) -> None:
+        """Versucht bei Zeitüberschreitung alle Motoren des verbundenen Robots zu stoppen."""
         try:
             stop_future = robot.motors.stop_all_motors()
             stop_future.result(timeout=min(timeout, 2.0))
@@ -187,6 +192,7 @@ class VectorSDKClient:
             pass
 
     def _robot(self):
+        """Erzeugt einen synchronen SDK-Robot mit fester Kontrollpriorität."""
         return anki_vector.Robot(
             serial=self.serial,
             cache_animation_lists=False,
@@ -195,6 +201,7 @@ class VectorSDKClient:
 
     @staticmethod
     def _valid_range(value: object, minimum: float, maximum: float) -> bool:
+        """Prüft eine endliche Zahl gegen einen geschlossenen sicheren Bereich."""
         return (
             type(value) in (int, float)
             and math.isfinite(value)
@@ -203,15 +210,18 @@ class VectorSDKClient:
 
     @staticmethod
     def _valid_action_timeout(timeout: object) -> bool:
+        """Prüft eine Aktionsfrist gegen die feste sichere Obergrenze."""
         return VectorSDKClient._valid_range(timeout, 0.1, MAX_ACTION_TIMEOUT)
 
     @staticmethod
     def _report_invalid_action(message: str) -> bool:
+        """Meldet eine ungültige Aktion und liefert ein negatives Ergebnis."""
         print(message)
         return False
 
     @staticmethod
     def _valid_audio_request(audio_path: Path, volume: int) -> bool:
+        """Prüft lokale Audiodatei und Lautstärke vor dem SDK-Zugriff."""
         if not audio_path.is_file():
             print(f"Audio file not found: {audio_path}")
             return False
@@ -222,11 +232,13 @@ class VectorSDKClient:
 
     @staticmethod
     def _report_connection(battery_volts: float) -> None:
+        """Meldet erfolgreiche Verbindung und gerundete Batteriespannung."""
         print("Vector SDK connection established. [OK]")
         print(f"Battery voltage: {battery_volts:.2f} V")
 
     @staticmethod
     def _report_sdk_failure(operation: str, error: Exception) -> bool:
+        """Meldet heterogene SDK-Fehler an der gemeinsamen Hardwaregrenze."""
         # The third-party SDK exposes heterogeneous exception types at this boundary.
         print(f"{operation} failed. [ERROR]")
         print(f"Reason: {error}")

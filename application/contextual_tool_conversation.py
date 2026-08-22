@@ -55,7 +55,7 @@ class ContextualToolTurnResult:
 
     @property
     def handled(self) -> bool:
-        """Report whether the turn belongs to contextual proposal handling."""
+        """Meldet, ob der Turn zur kontextabhängigen Vorschlagsbehandlung gehört."""
         return self.status is not ContextualToolTurnStatus.NOT_HANDLED
 
 
@@ -76,6 +76,7 @@ class ControlledContextualToolConversation:
         ttl_seconds: float = DEFAULT_PROPOSAL_TTL_SECONDS,
         clock: Callable[[], float] = time.monotonic,
     ):
+        """Initialisiert den kontrollierten Kontextdialog und seine Zeitgrenzen."""
         if not isinstance(agent, Agent):
             raise TypeError("Contextual tool conversation requires an Agent.")
         if not isinstance(service, ModelToolProposalService):
@@ -93,7 +94,7 @@ class ControlledContextualToolConversation:
 
     @property
     def awaiting_context(self) -> bool:
-        """Report whether the next utterance supplies requested context."""
+        """Meldet, ob die nächste Äußerung angeforderten Kontext liefert."""
         return (
             self._context_expires_at is not None
             and self._clock() < self._context_expires_at
@@ -101,18 +102,18 @@ class ControlledContextualToolConversation:
 
     @property
     def awaiting_confirmation(self) -> bool:
-        """Report whether one unexpired decision may still be confirmed."""
+        """Meldet, ob eine nicht abgelaufene Entscheidung bestätigt werden kann."""
         return self._pending is not None and not self._has_expired()
 
     def cancel_pending(self) -> bool:
-        """Discard one proposal without creating authority or execution."""
+        """Verwirft einen Vorschlag ohne Berechtigung oder Ausführung."""
         existed = self._pending is not None or self._context_expires_at is not None
         self._pending = None
         self._context_expires_at = None
         return existed
 
     def handle(self, user_text: str) -> ContextualToolTurnResult:
-        """Propose, confirm, cancel, expire, or reject one safe expression."""
+        """Schlägt einen sicheren Ausdruck vor oder bestätigt, verwirft und beendet ihn."""
         if not isinstance(user_text, str) or not user_text.strip():
             raise ValueError("Contextual tool input must not be empty.")
         if self._pending is not None:
@@ -131,6 +132,7 @@ class ControlledContextualToolConversation:
         return self._prepare(request)
 
     def _handle_context(self, user_text: str) -> ContextualToolTurnResult:
+        """Verarbeitet die separat aufgenommene Kontextäußerung innerhalb des Zeitfensters."""
         if self._clock() >= self._context_expires_at:
             self._context_expires_at = None
             return self._result(
@@ -148,6 +150,7 @@ class ControlledContextualToolConversation:
         return self._prepare(user_text.strip())
 
     def _prepare(self, request: str) -> ContextualToolTurnResult:
+        """Bereitet aus einem expliziten Wunsch einen lokal geprüften Vorschlag vor."""
         try:
             review = self._service.propose(
                 request,
@@ -171,6 +174,7 @@ class ControlledContextualToolConversation:
         return self._confirmation_result(self._pending)
 
     def _handle_confirmation(self, user_text: str) -> ContextualToolTurnResult:
+        """Verarbeitet eine Ja-Nein-Entscheidung für den offenen Vorschlag."""
         if self._has_expired():
             self._pending = None
             return self._result(
@@ -189,6 +193,7 @@ class ControlledContextualToolConversation:
         return self._execute_pending()
 
     def _execute_pending(self) -> ContextualToolTurnResult:
+        """Führt den erneut geprüften offenen Vorschlag mit Einmalautorisierung aus."""
         pending = self._pending
         self._pending = None
         review = self._service.reviewer.resolve(pending.proposal_id)
@@ -214,10 +219,12 @@ class ControlledContextualToolConversation:
         )
 
     def _has_expired(self) -> bool:
+        """Prüft, ob das offene Kontext- oder Bestätigungsfenster abgelaufen ist."""
         return self._pending is not None and self._clock() >= self._pending.expires_at
 
     @staticmethod
     def _is_allowed_expression(proposal: ToolProposal | None) -> bool:
+        """Begrenzt produktive Vorschläge auf das feste Ausdrucksprofil."""
         if proposal is None:
             return False
         expected_action = CONTEXTUAL_EXPRESSION_TARGETS.get(proposal.proposal_id)
@@ -232,6 +239,7 @@ class ControlledContextualToolConversation:
     def _confirmation_result(
         pending: _PendingProposal,
     ) -> ContextualToolTurnResult:
+        """Erzeugt die transparente Bestätigungsfrage für einen sicheren Vorschlag."""
         return ControlledContextualToolConversation._result(
             ContextualToolTurnStatus.AWAITING_CONFIRMATION,
             f"Ich könnte passend dazu '{pending.label}' ausführen. "
@@ -240,6 +248,7 @@ class ControlledContextualToolConversation:
 
     @staticmethod
     def _blocked_result() -> ContextualToolTurnResult:
+        """Erzeugt einen festen blockierten Dialogbefund ohne Modelldetails."""
         return ControlledContextualToolConversation._result(
             ContextualToolTurnStatus.BLOCKED,
             "Ich kann daraus keinen sicheren Aktionsvorschlag ableiten.",
@@ -251,10 +260,12 @@ class ControlledContextualToolConversation:
         message: str,
         execution: ToolExecutionResult | None = None,
     ) -> ContextualToolTurnResult:
+        """Baut ein begrenztes Dialogergebnis aus Status, Nachricht und Vorschlag."""
         return ContextualToolTurnResult(status, message, True, execution)
 
 
 def _extract_proposal_request(user_text: str) -> str | None:
+    """Extrahiert nur nach einer festen Einleitung den eigentlichen Vorschlagswunsch."""
     stripped = user_text.strip()
     normalized = stripped.casefold()
     for prefix in PROPOSAL_REQUEST_PREFIXES:
@@ -270,4 +281,5 @@ def _extract_proposal_request(user_text: str) -> str | None:
 
 
 def _normalize_choice(value: str) -> str:
+    """Normalisiert eine kurze Bestätigungs- oder Abbruchantwort."""
     return " ".join(value.casefold().strip().rstrip(".!?").split())

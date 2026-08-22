@@ -20,6 +20,7 @@ class EmbeddingText:
     value: str
 
     def __post_init__(self) -> None:
+        """Normalisiert und validiert einen nicht leeren Einbettungstext."""
         if not isinstance(self.value, str):
             raise TypeError("Embedding text must be a string.")
         normalized = self.value.strip()
@@ -35,6 +36,7 @@ class EmbeddingVector:
     values: tuple[float, ...]
 
     def __post_init__(self) -> None:
+        """Normalisiert einen nicht leeren Vektor auf endliche Fließkommazahlen."""
         raw_values = tuple(self.values)
         if not raw_values:
             raise ValueError("Embedding vector must not be empty.")
@@ -50,7 +52,7 @@ class EmbeddingVector:
 
     @property
     def dimension(self) -> int:
-        """Return the number of numeric vector components."""
+        """Liefert die Anzahl numerischer Vektorkomponenten."""
         return len(self.values)
 
 
@@ -63,6 +65,7 @@ class EmbeddingResult:
     model_name: str
 
     def __post_init__(self) -> None:
+        """Normalisiert und validiert den Modellnamen eines Ergebnisses."""
         if not isinstance(self.model_name, str):
             raise TypeError("Embedding model name must be a string.")
         normalized_model = self.model_name.strip()
@@ -72,7 +75,7 @@ class EmbeddingResult:
 
     @property
     def dimension(self) -> int:
-        """Return the actual vector dimension reported by its values."""
+        """Liefert die tatsächliche Dimension aus den Vektorwerten."""
         return self.vector.dimension
 
 
@@ -91,30 +94,30 @@ class EmbeddingProvider(Protocol):
 
     @property
     def model_name(self) -> str:
-        """Return the configured embedding model identifier."""
+        """Liefert die konfigurierte Kennung des Einbettungsmodells."""
         ...
 
     @property
     def dimension(self) -> int | None:
-        """Return the expected or observed vector dimension."""
+        """Liefert die erwartete oder beobachtete Vektordimension."""
         ...
 
     @property
     def model_version(self) -> str | None:
-        """Return the installed model digest after availability checking."""
+        """Liefert nach der Prüfung den Hash des installierten Modells."""
         ...
 
     def ensure_model_available(self) -> EmbeddingModelInfo:
-        """Validate that the configured local model is installed."""
+        """Prüft, ob das konfigurierte lokale Modell installiert ist."""
         ...
 
     def embed(self, text: EmbeddingText) -> EmbeddingResult:
-        """Generate one embedding for a normalized text input."""
+        """Erzeugt eine Einbettung für einen normalisierten Text."""
         ...
 
     def embed_many(
         self,
         texts: Sequence[EmbeddingText],
     ) -> tuple[EmbeddingResult, ...]:
-        """Generate embeddings for multiple texts in one provider request."""
+        """Erzeugt Einbettungen für mehrere Texte in einer Anbieteranfrage."""
         ...

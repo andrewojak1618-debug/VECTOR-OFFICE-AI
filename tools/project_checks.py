@@ -29,6 +29,7 @@ class CoreTestSummary:
     duration_seconds: float
 
     def __post_init__(self) -> None:
+        """Validiert Ergebniszustand, Testanzahl und Laufzeit gegen feste Grenzen."""
         if type(self.passed) is not bool:
             raise TypeError("Core test pass state must be boolean.")
         if type(self.test_count) is not int:
@@ -53,12 +54,13 @@ class CoreProjectTestTool:
     runner: TestRunner | None = None
 
     def __post_init__(self) -> None:
+        """Setzt den festen Testläufer, wenn keiner injiziert wurde."""
         if self.runner is None:
             object.__setattr__(self, "runner", _run_core_tests)
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free confirmed project test action."""
+        """Beschreibt die argumentlose bestätigungspflichtige Projektprüfung."""
         return ToolDefinition(
             name="development.run_core_tests",
             description="Run the fixed local Python unit test suite.",
@@ -66,7 +68,7 @@ class CoreProjectTestTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Return only bounded result metadata and discard raw test output."""
+        """Liefert nur begrenzte Ergebnisdaten und verwirft rohe Testausgaben."""
         summary = self.runner(
             self.project_root.resolve(),
             self.python_executable.resolve(),
@@ -87,7 +89,7 @@ def register_core_project_test_tool(
     python_executable: Path = PYTHON_EXECUTABLE,
     runner: TestRunner | None = None,
 ) -> None:
-    """Register one fixed local test action without user parameters."""
+    """Registriert die feste lokale Testaktion ohne Nutzerparameter."""
     registry.register(CoreProjectTestTool(
         project_root,
         python_executable,
@@ -96,6 +98,7 @@ def register_core_project_test_tool(
 
 
 def _run_core_tests(project_root: Path, python_executable: Path) -> CoreTestSummary:
+    """Startet ausschließlich die feste Unittest-Suite mit Zeitlimit."""
     started = perf_counter()
     completed = subprocess.run(
         (
@@ -120,6 +123,7 @@ def _run_core_tests(project_root: Path, python_executable: Path) -> CoreTestSumm
 
 
 def _extract_test_count(stdout: str, stderr: str) -> int:
+    """Extrahiert eine begrenzte Testanzahl aus verworfenen Prozessausgaben."""
     matches = TEST_COUNT_PATTERN.findall(f"{stdout}\n{stderr}")
     if not matches:
         return 0
@@ -127,6 +131,7 @@ def _extract_test_count(stdout: str, stderr: str) -> int:
 
 
 def _spoken_summary(summary: CoreTestSummary) -> str:
+    """Formuliert Testergebnis und Anzahl ohne Rohprotokoll als Sprache."""
     count = _spoken_test_count(summary.test_count)
     if summary.passed:
         return f"Die Projektprüfung war erfolgreich. {count}"
@@ -134,6 +139,7 @@ def _spoken_summary(summary: CoreTestSummary) -> str:
 
 
 def _spoken_test_count(count: int) -> str:
+    """Formuliert die Testanzahl in einer für TTS verständlichen Form."""
     if count == 0:
         return "Die Testanzahl konnte nicht sicher bestimmt werden."
     if count == 1:

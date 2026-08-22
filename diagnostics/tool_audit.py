@@ -13,7 +13,7 @@ CLEAR_CONFIRMATION = "DELETE"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run one local audit maintenance command and return a status code."""
+    """Führt einen lokalen Auditwartungsbefehl aus und liefert einen Statuscode."""
     arguments = _argument_parser().parse_args(argv)
     try:
         store = SQLiteToolAuditStore(
@@ -28,6 +28,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _run_command(store: SQLiteToolAuditStore, arguments) -> int:
+    """Führt ausschließlich Auflisten, Bereinigen oder ausdrücklich bestätigtes Löschen aus."""
     if arguments.command == "list":
         _print_records(store.list_events(arguments.limit))
         return 0
@@ -42,6 +43,7 @@ def _run_command(store: SQLiteToolAuditStore, arguments) -> int:
 
 
 def _print_records(records: Sequence[ToolAuditRecord]) -> None:
+    """Gibt bereinigte lokale Auditmetadaten ohne sensible Parameter aus."""
     if not records:
         print("No local tool audit records.")
         return
@@ -61,6 +63,7 @@ def _print_records(records: Sequence[ToolAuditRecord]) -> None:
 
 
 def _argument_parser() -> argparse.ArgumentParser:
+    """Definiert die begrenzten lokalen Auditwartungsbefehle."""
     parser = argparse.ArgumentParser(description="Maintain local tool audit data.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     list_parser = subparsers.add_parser("list", help="List newest records.")

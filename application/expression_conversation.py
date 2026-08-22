@@ -58,7 +58,7 @@ class ExpressionTurnResult:
 
     @property
     def handled(self) -> bool:
-        """Report whether the input belongs to expression handling."""
+        """Meldet, ob die Eingabe zur kontrollierten Ausdrucksbehandlung gehört."""
         return self.status is not ExpressionTurnStatus.NOT_HANDLED
 
 
@@ -78,6 +78,7 @@ class ControlledExpressionConversation:
         mapper: ExpressionActionMapper,
         coordinator: ExpressionResponseCoordinator,
     ):
+        """Initialisiert den Ausdrucksdialog mit Agent, Koordinator und lokaler Policy."""
         if not isinstance(agent, Agent):
             raise TypeError("Expression conversation requires an Agent.")
         if not isinstance(mapper, ExpressionActionMapper):
@@ -91,11 +92,11 @@ class ControlledExpressionConversation:
 
     @property
     def awaiting_confirmation(self) -> bool:
-        """Report whether one prepared response awaits a separate decision."""
+        """Meldet, ob eine vorbereitete Antwort auf eine separate Entscheidung wartet."""
         return self._pending is not None
 
     def cancel_pending(self) -> bool:
-        """Forget a prepared response without executing or speaking it."""
+        """Verwirft eine vorbereitete Antwort ohne Ausführung oder Sprachausgabe."""
         pending = self._pending
         self._pending = None
         if pending is None:
@@ -104,7 +105,7 @@ class ControlledExpressionConversation:
         return True
 
     def handle(self, user_text: str) -> ExpressionTurnResult:
-        """Prepare, confirm, decline, or cancel one expressive response."""
+        """Bereitet eine Ausdrucksantwort vor oder bestätigt, verneint und verwirft sie."""
         if not isinstance(user_text, str) or not user_text.strip():
             raise ValueError("Expression conversation input must not be empty.")
         if self._pending is not None:
@@ -121,6 +122,7 @@ class ControlledExpressionConversation:
         return self._prepare(request)
 
     def _prepare(self, request: str) -> ExpressionTurnResult:
+        """Erzeugt Antwort und sicheren Ausdrucksvorschlag ohne sofortige Ausführung."""
         checkpoint = self._agent.context.checkpoint()
         try:
             answer = generate_with_thinking(
@@ -142,6 +144,7 @@ class ControlledExpressionConversation:
         return self._confirmation_result()
 
     def _handle_confirmation(self, user_text: str) -> ExpressionTurnResult:
+        """Verarbeitet die separate Entscheidung über den vorbereiteten Ausdruck."""
         normalized = _normalize_choice(user_text)
         if normalized in CANCELLATION_PHRASES:
             self.cancel_pending()
@@ -176,6 +179,7 @@ class ControlledExpressionConversation:
         authorization: ToolAuthorization | None = None,
         animate: bool = True,
     ) -> ExpressionTurnResult:
+        """Liefert die vorbereitete Antwort optional mit einmalig bestätigter Bewegung aus."""
         delivery = self._coordinator.deliver(
             answer,
             suggestion,
@@ -189,6 +193,7 @@ class ControlledExpressionConversation:
 
     @staticmethod
     def _confirmation_result() -> ExpressionTurnResult:
+        """Erzeugt die feste Ja-Nein-Frage für eine Ausdrucksbewegung."""
         return ExpressionTurnResult(
             ExpressionTurnStatus.AWAITING_CONFIRMATION,
             CONFIRMATION_MESSAGE,
@@ -197,6 +202,7 @@ class ControlledExpressionConversation:
 
 
 def _extract_expression_request(user_text: str) -> str | None:
+    """Extrahiert nur nach der festen Ausdruckseinleitung den Gesprächsinhalt."""
     stripped = user_text.strip()
     normalized = stripped.casefold()
     for prefix in EXPRESSION_REQUEST_PREFIXES:
@@ -208,4 +214,5 @@ def _extract_expression_request(user_text: str) -> str | None:
 
 
 def _normalize_choice(value: str) -> str:
+    """Normalisiert eine kurze Ja-Nein- oder Abbruchantwort."""
     return " ".join(value.casefold().strip().rstrip(".!?").split())

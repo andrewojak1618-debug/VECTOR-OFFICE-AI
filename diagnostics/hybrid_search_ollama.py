@@ -18,7 +18,7 @@ SEMANTIC_QUERY = "Wer übernimmt die Sprachausgabe?"
 
 
 def run_diagnostic() -> bool:
-    """Run one isolated semantic retrieval without logging document contents."""
+    """Prüft eine isolierte semantische Suche ohne Dokumentinhalte zu protokollieren."""
     runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
     if not runtime.ensure_available():
         print("Local Ollama service is unavailable. [ERROR]")
@@ -32,6 +32,7 @@ def run_diagnostic() -> bool:
 
 
 def _run_in_directory(root: Path) -> bool:
+    """Baut eine isolierte hybride Suche auf und prüft ihren ersten Treffer."""
     database_path = root / "diagnostic.db"
     raw_library = SQLiteKnowledgeLibrary(database_path, chunk_size=100)
     store = SQLiteEmbeddingStore(database_path)
@@ -50,6 +51,7 @@ def _run_in_directory(root: Path) -> bool:
 
 
 def _import_documents(root: Path, library: IndexedKnowledgeLibrary) -> None:
+    """Importiert ein festes Zieldokument und einen festen Ablenkungstext."""
     target = root / "speech.md"
     distractor = root / "memory.md"
     target.write_text(TARGET_TEXT, encoding="utf-8")
@@ -59,6 +61,7 @@ def _import_documents(root: Path, library: IndexedKnowledgeLibrary) -> None:
 
 
 def _report_result(results) -> bool:
+    """Meldet ausschließlich Quellmetadaten und bewertet die erwartete Rangfolge."""
     if not results or results[0].title != "speech":
         print("Expected semantic document was not ranked first. [ERROR]")
         return False

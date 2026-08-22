@@ -24,7 +24,7 @@ class FixedResearchSourceStatusTool:
 
     @property
     def definition(self) -> ToolDefinition:
-        """Describe the argument-free network-authorized source check."""
+        """Beschreibt die argumentlose netzwerkberechtigte Quellenprüfung."""
         return ToolDefinition(
             name="research.python_source_status",
             description="Check availability of the fixed official Python source.",
@@ -32,7 +32,7 @@ class FixedResearchSourceStatusTool:
         )
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Return one boolean source state without remote body content."""
+        """Liefert einen booleschen Quellenzustand ohne entfernten Seiteninhalt."""
         available = self.checker()
         if type(available) is not bool:
             raise TypeError("Research source checker must return a boolean.")
@@ -48,13 +48,14 @@ def register_fixed_research_source_tool(
     registry: ToolRegistry,
     checker: SourceChecker | None = None,
 ) -> None:
-    """Register the fixed external source without user-controlled targets."""
+    """Registriert die feste externe Quelle ohne nutzergesteuerte Ziele."""
     registry.register(FixedResearchSourceStatusTool(
         checker or _python_source_available,
     ))
 
 
 def _python_source_available() -> bool:
+    """Prüft die feste Python.org-Adresse per HEAD ohne Weiterleitung."""
     try:
         response = httpx.head(
             PYTHON_SOURCE_URL,
@@ -68,6 +69,7 @@ def _python_source_available() -> bool:
 
 
 def _spoken_status(available: bool) -> str:
+    """Formuliert die Erreichbarkeit der festen Quelle auf Deutsch."""
     if available:
         return "Die fest freigegebene Python-Quelle ist erreichbar."
     return "Die fest freigegebene Python-Quelle ist derzeit nicht erreichbar."

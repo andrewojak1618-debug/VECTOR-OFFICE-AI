@@ -38,6 +38,7 @@ class SQLiteKnowledgeLibrary:
         max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
     ):
+        """Initialisiert die lokale Bibliothek mit validierter Textverarbeitung."""
         self.database_path = Path(database_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self.max_file_bytes = max_file_bytes
@@ -47,6 +48,7 @@ class SQLiteKnowledgeLibrary:
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
+        """Öffnet eine transaktionale SQLite-Verbindung mit Fremdschlüsseln."""
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
@@ -57,11 +59,12 @@ class SQLiteKnowledgeLibrary:
             connection.close()
 
     def _initialize(self) -> None:
+        """Legt das aktuelle additive Wissens- und Einbettungsschema an."""
         with self._connect() as connection:
             initialize_knowledge_schema(connection)
 
     def import_document(self, source_path: str | Path) -> DocumentImportResult:
-        """Import or atomically refresh one approved UTF-8 document."""
+        """Importiert oder aktualisiert ein freigegebenes UTF-8-Dokument atomar."""
         prepared = self.text_processor.prepare(source_path)
         with self._connect() as connection:
             existing = self._find_document(connection, prepared.source)
@@ -87,6 +90,7 @@ class SQLiteKnowledgeLibrary:
         connection: sqlite3.Connection,
         source: str,
     ) -> sqlite3.Row | None:
+        """Sucht ein importiertes Dokument anhand seines festen Quellpfads."""
         return connection.execute(
             "SELECT * FROM knowledge_documents WHERE source_path = ?",
             (source,),
@@ -97,6 +101,7 @@ class SQLiteKnowledgeLibrary:
         connection: sqlite3.Connection,
         document_id: int,
     ) -> sqlite3.Row:
+        """Liest Dokumentmetadaten anhand ihrer Datenbankkennung."""
         return connection.execute(
             "SELECT * FROM knowledge_documents WHERE id = ?",
             (document_id,),
@@ -104,6 +109,7 @@ class SQLiteKnowledgeLibrary:
 
     @staticmethod
     def _is_current(row: sqlite3.Row | None, content_hash: str) -> bool:
+        """Vergleicht eine vorhandene Dokumentversion über ihre SHA-256-Prüfsumme."""
         return row is not None and row["content_hash"] == content_hash
 
     def _current_result(
@@ -111,6 +117,7 @@ class SQLiteKnowledgeLibrary:
         connection: sqlite3.Connection,
         row: sqlite3.Row,
     ) -> DocumentImportResult:
+        """Erzeugt das unveränderte Importergebnis aus aktueller Datenbanklage."""
         chunk_count = connection.execute(
             "SELECT COUNT(*) FROM knowledge_chunks WHERE document_id = ?",
             (row["id"],),
@@ -123,6 +130,7 @@ class SQLiteKnowledgeLibrary:
         existing: sqlite3.Row | None,
         document: PreparedDocument,
     ) -> int:
+        """Fügt Dokumentmetadaten ein oder aktualisiert deren bestehende Zeile."""
         if existing is None:
             return self._insert_document(connection, document)
         self._update_document(connection, existing["id"], document)
@@ -133,6 +141,7 @@ class SQLiteKnowledgeLibrary:
         connection: sqlite3.Connection,
         document: PreparedDocument,
     ) -> int:
+        """Fügt neue Dokumentmetadaten ein und liefert ihre Kennung."""
         cursor = connection.execute(
             """
             INSERT INTO knowledge_documents (source_path, title, content_hash)
@@ -148,6 +157,7 @@ class SQLiteKnowledgeLibrary:
         document_id: int,
         document: PreparedDocument,
     ) -> None:
+        """Aktualisiert Titel, Prüfsumme und Importzeit eines Dokuments."""
         connection.execute(
             """
             UPDATE knowledge_documents
@@ -163,6 +173,7 @@ class SQLiteKnowledgeLibrary:
         document_id: int,
         chunks: tuple[str, ...],
     ) -> None:
+        """Synchronisiert Abschnitte und entfernt nicht mehr vorhandene Teile."""
         existing = SQLiteKnowledgeLibrary._load_chunk_rows(
             connection,
             document_id,
@@ -186,6 +197,7 @@ class SQLiteKnowledgeLibrary:
         connection: sqlite3.Connection,
         document_id: int,
     ) -> tuple[sqlite3.Row, ...]:
+        """Lädt bestehende Abschnittszeilen eines Dokuments in stabiler Reihenfolge."""
         return tuple(connection.execute(
             """
             SELECT id, chunk_index, content FROM knowledge_chunks
@@ -202,6 +214,7 @@ class SQLiteKnowledgeLibrary:
         content: str,
         existing: sqlite3.Row | None,
     ) -> None:
+        """Erhält unveränderte Abschnitte oder ersetzt geänderte samt Vektorkaskade."""
         if existing is not None and existing["content"] == content:
             return
         if existing is not None:
@@ -224,6 +237,7 @@ class SQLiteKnowledgeLibrary:
         content_hash: str,
         chunk_count: int,
     ) -> None:
+        """Schreibt eine fortlaufende unveränderliche Dokumentversion."""
         connection.execute(
             """
             INSERT INTO knowledge_document_versions (
@@ -237,7 +251,7 @@ class SQLiteKnowledgeLibrary:
         )
 
     def list_documents(self, limit: int = 50) -> tuple[KnowledgeDocument, ...]:
-        """Return the newest imported document records."""
+        """Liefert die neuesten importierten Dokumenteinträge."""
         if limit < 1:
             raise ValueError("Document limit must be at least 1.")
         with self._connect() as connection:
@@ -248,7 +262,7 @@ class SQLiteKnowledgeLibrary:
         return tuple(to_document(row) for row in rows)
 
     def list_all_documents(self) -> tuple[KnowledgeDocument, ...]:
-        """Return the complete imported document inventory."""
+        """Liefert das vollständige Inventar importierter Dokumente."""
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM knowledge_documents ORDER BY id"
@@ -256,7 +270,7 @@ class SQLiteKnowledgeLibrary:
         return tuple(to_document(row) for row in rows)
 
     def list_chunks(self, document_id: int) -> tuple[KnowledgeChunk, ...]:
-        """Return all sections belonging to one imported document."""
+        """Liefert alle Abschnitte eines importierten Dokuments."""
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -275,7 +289,7 @@ class SQLiteKnowledgeLibrary:
         self,
         document_id: int,
     ) -> tuple[KnowledgeDocumentVersion, ...]:
-        """Return recorded metadata revisions for one document."""
+        """Liefert gespeicherte Metadatenrevisionen eines Dokuments."""
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -287,13 +301,13 @@ class SQLiteKnowledgeLibrary:
         return tuple(to_document_version(row) for row in rows)
 
     def document_exists(self, document_id: int) -> bool:
-        """Report whether one document identifier is still present."""
+        """Meldet, ob eine Dokumentkennung noch vorhanden ist."""
         with self._connect() as connection:
             row = self._find_document_by_id(connection, document_id)
         return row is not None
 
     def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
-        """Return lexically relevant document chunks for a query."""
+        """Liefert lexikalisch relevante Dokumentabschnitte zu einer Anfrage."""
         if limit < 1:
             raise ValueError("Knowledge limit must be at least 1.")
         terms = search_terms(query, self.TERM_MIN_LENGTH)
@@ -303,6 +317,7 @@ class SQLiteKnowledgeLibrary:
         return rank_chunk_rows(rows, terms, limit)
 
     def _load_chunks(self) -> tuple[sqlite3.Row, ...]:
+        """Lädt alle belegten Dokumentabschnitte für die lokale Suche."""
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -316,7 +331,7 @@ class SQLiteKnowledgeLibrary:
         return tuple(rows)
 
     def forget_document(self, document_id: int) -> bool:
-        """Delete one document and its chunks through cascade semantics."""
+        """Löscht ein Dokument und seine Abschnitte über Kaskadenregeln."""
         with self._connect() as connection:
             cursor = connection.execute(
                 "DELETE FROM knowledge_documents WHERE id = ?",

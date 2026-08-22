@@ -50,6 +50,7 @@ class ToolParameter:
     sensitive: bool = False
 
     def __post_init__(self) -> None:
+        """Validiert Namen, Beschreibung, Parametertyp und Datenschutzmerkmale."""
         _validate_identifier(self.name, "Tool parameter")
         if not isinstance(self.description, str) or not self.description.strip():
             raise ValueError("Tool parameter description must not be empty.")
@@ -69,6 +70,7 @@ class ToolDefinition:
     parameters: tuple[ToolParameter, ...] = ()
 
     def __post_init__(self) -> None:
+        """Validiert Toolname, Berechtigung und eindeutige Parameterdefinitionen."""
         _validate_identifier(self.name, "Tool")
         if not isinstance(self.description, str) or not self.description.strip():
             raise ValueError("Tool description must not be empty.")
@@ -94,7 +96,7 @@ class ToolExecutionResult:
 
     @property
     def succeeded(self) -> bool:
-        """Report whether the tool completed successfully."""
+        """Meldet, ob das Tool erfolgreich abgeschlossen wurde."""
         return self.status is ToolResultStatus.SUCCESS
 
 
@@ -114,11 +116,11 @@ class Tool(Protocol):
 
     @property
     def definition(self) -> ToolDefinition:
-        """Return immutable metadata used for validation and authorization."""
+        """Liefert unveränderliche Metadaten für Validierung und Autorisierung."""
         ...
 
     def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Execute validated arguments and return structured output fields."""
+        """Führt validierte Argumente aus und liefert strukturierte Ausgabefelder."""
         ...
 
 
@@ -136,12 +138,13 @@ class ToolRegistry:
         policy: ToolPermissionPolicy | None = None,
         audit_sink: AuditSink | None = None,
     ):
+        """Initialisiert eine leere Registry mit Berechtigungs- und optionalem Auditsink."""
         self.policy = policy or ToolPermissionPolicy()
         self.audit_sink = audit_sink
         self._tools: dict[str, _RegisteredTool] = {}
 
     def register(self, tool: Tool) -> None:
-        """Register one unique, fully described tool."""
+        """Registriert ein eindeutig benanntes und vollständig beschriebenes Tool."""
         definition = tool.definition
         if not isinstance(definition, ToolDefinition):
             raise TypeError("Tool definition must be a ToolDefinition.")
@@ -151,7 +154,7 @@ class ToolRegistry:
         self._tools[name] = _RegisteredTool(definition, tool)
 
     def definitions(self) -> tuple[ToolDefinition, ...]:
-        """Return registered definitions in deterministic name order."""
+        """Liefert registrierte Definitionen in deterministischer Namensreihenfolge."""
         return tuple(
             self._tools[name].definition
             for name in sorted(self._tools)
@@ -162,7 +165,7 @@ class ToolRegistry:
         tool_name: str,
         arguments: ToolArguments,
     ) -> ToolCallInspection:
-        """Validate a proposed call without permission checks or execution."""
+        """Validiert einen vorgeschlagenen Aufruf ohne Berechtigungsprüfung oder Ausführung."""
         safe_name = _safe_requested_name(tool_name)
         if safe_name is None:
             return ToolCallInspection(
@@ -197,7 +200,7 @@ class ToolRegistry:
         arguments: ToolArguments,
         authorization: ToolAuthorization | None = None,
     ) -> ToolExecutionResult:
-        """Validate, authorize, execute, and audit one requested tool."""
+        """Validiert, autorisiert, führt aus und auditiert ein angefordertes Tool."""
         safe_name = _safe_requested_name(tool_name)
         if safe_name is None:
             result = self._blocked("invalid-tool-name", "tool_not_registered")
@@ -231,6 +234,7 @@ class ToolRegistry:
         definition: ToolDefinition,
         arguments: ToolArguments,
     ) -> dict[str, ToolValue] | ToolExecutionResult:
+        """Prüft Argumentnamen, Pflichtwerte und Typen gegen die Tooldefinition."""
         expected = {parameter.name: parameter for parameter in definition.parameters}
         unknown = set(arguments) - set(expected)
         if unknown:
@@ -254,6 +258,7 @@ class ToolRegistry:
         registered: _RegisteredTool,
         arguments: ToolArguments,
     ) -> ToolExecutionResult:
+        """Führt die Implementierung aus und bereinigt Fehler sowie Ausgaben."""
         try:
             output = _normalize_output(registered.implementation.execute(arguments))
         except Exception:
@@ -274,6 +279,7 @@ class ToolRegistry:
         arguments: ToolArguments,
         result: ToolExecutionResult,
     ) -> None:
+        """Übermittelt ein redigiertes Ereignis für einen bekannten Toolaufruf."""
         if self.audit_sink is None:
             return
         parameters = {item.name: item for item in definition.parameters}
@@ -296,6 +302,7 @@ class ToolRegistry:
         tool_name: str,
         result: ToolExecutionResult,
     ) -> None:
+        """Auditiert einen unbekannten Toolnamen ohne übernommene Argumente."""
         if self.audit_sink is not None:
             self._emit_audit(ToolAuditEvent(
                 tool_name,
@@ -306,6 +313,7 @@ class ToolRegistry:
             ))
 
     def _emit_audit(self, event: ToolAuditEvent) -> None:
+        """Sendet ein Audit-Ereignis, ohne Auditsink-Fehler weiterzugeben."""
         try:
             self.audit_sink(event)
         except Exception:
@@ -313,6 +321,7 @@ class ToolRegistry:
 
     @staticmethod
     def _blocked(tool_name: str, code: str) -> ToolExecutionResult:
+        """Erzeugt ein strukturiertes blockiertes Toolergebnis."""
         return ToolExecutionResult(
             tool_name,
             ToolResultStatus.BLOCKED,
@@ -325,6 +334,7 @@ class ToolRegistry:
         tool_name: str,
         decision: PermissionDecision,
     ) -> ToolExecutionResult:
+        """Überführt eine abgelehnte Berechtigungsentscheidung in ein Ergebnis."""
         return ToolExecutionResult(
             tool_name,
             ToolResultStatus.BLOCKED,
@@ -334,6 +344,7 @@ class ToolRegistry:
 
     @staticmethod
     def _invalid(tool_name: str, code: str) -> ToolExecutionResult:
+        """Erzeugt ein strukturiertes Ergebnis für ungültige Argumente."""
         return ToolExecutionResult(
             tool_name,
             ToolResultStatus.INVALID,
@@ -343,6 +354,7 @@ class ToolRegistry:
 
     @staticmethod
     def _failed(tool_name: str, code: str) -> ToolExecutionResult:
+        """Erzeugt ein bereinigtes strukturiertes Ausführungsergebnis mit Fehler."""
         return ToolExecutionResult(
             tool_name,
             ToolResultStatus.FAILED,

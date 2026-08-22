@@ -47,7 +47,7 @@ class KnowledgeSearch(Protocol):
     """Provide ranked document sections for a normalized query."""
 
     def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
-        """Return at most ``limit`` ranked document sections."""
+        """Liefert höchstens die begrenzte Zahl sortierter Dokumentabschnitte."""
         ...
 
 
@@ -61,6 +61,7 @@ class DocumentEmbeddingIndexer:
         provider: EmbeddingProvider,
         batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
     ):
+        """Initialisiert die lokale Stapelindexierung mit positiver Abschnittsgrenze."""
         if batch_size < 1:
             raise ValueError("Embedding batch size must be at least 1.")
         self.library = library
@@ -75,7 +76,7 @@ class DocumentEmbeddingIndexer:
         force: bool = False,
         progress: ProgressCallback | None = None,
     ) -> IndexingResult:
-        """Index missing or stale chunks, optionally forcing a full refresh."""
+        """Indexiert fehlende oder veraltete Abschnitte, optional vollständig neu."""
         chunks = self.library.list_chunks(document_id)
         if not chunks:
             raise ValueError("Document has no indexable chunks.")
@@ -94,6 +95,7 @@ class DocumentEmbeddingIndexer:
         model: EmbeddingModelInfo,
         force: bool,
     ) -> tuple[KnowledgeChunk, ...]:
+        """Wählt bei Bedarf nur Abschnitte ohne aktuelle Modelleingebettung aus."""
         if force:
             return chunks
         pending = set(self.store.pending_chunk_ids(document_id, model))
@@ -104,6 +106,7 @@ class DocumentEmbeddingIndexer:
         targets: tuple[KnowledgeChunk, ...],
         progress: ProgressCallback | None,
     ) -> tuple[ChunkEmbedding, ...]:
+        """Erzeugt alle Vektoren stapelweise und meldet ausschließlich Fortschrittszahlen."""
         generated: list[ChunkEmbedding] = []
         for offset in range(0, len(targets), self.batch_size):
             batch = targets[offset:offset + self.batch_size]
@@ -116,6 +119,7 @@ class DocumentEmbeddingIndexer:
         self,
         chunks: tuple[KnowledgeChunk, ...],
     ) -> tuple[ChunkEmbedding, ...]:
+        """Ordnet einen vollständig erzeugten Einbettungsstapel seinen Abschnitten zu."""
         texts = tuple(EmbeddingText(chunk.content) for chunk in chunks)
         results = self.provider.embed_many(texts)
         if len(results) != len(chunks):
@@ -133,6 +137,7 @@ class DocumentEmbeddingIndexer:
         model_changed: bool,
         force: bool,
     ) -> IndexingResult:
+        """Erzeugt nachvollziehbare Zähler für einen abgeschlossenen Indexierungslauf."""
         indexed = len(targets)
         return IndexingResult(
             document_id=document_id,
@@ -154,6 +159,7 @@ class IndexedKnowledgeLibrary:
         progress: ProgressCallback | None = None,
         search_engine: KnowledgeSearch | None = None,
     ):
+        """Initialisiert die kontrollierte Bibliothek mit Indexierung und optionaler Suche."""
         self.library = library
         self.indexer = indexer
         self.progress = progress
@@ -162,7 +168,7 @@ class IndexedKnowledgeLibrary:
         self.last_reindex_results: tuple[IndexingResult, ...] = ()
 
     def import_document(self, source_path: str) -> DocumentImportResult:
-        """Import a document and incrementally index its current sections."""
+        """Importiert ein Dokument und indexiert seine aktuellen Abschnitte schrittweise."""
         result = self.library.import_document(source_path)
         self.last_indexing_result = self.indexer.index_document(
             result.document.id,
@@ -171,7 +177,7 @@ class IndexedKnowledgeLibrary:
         return result
 
     def reindex_document(self, document_id: int) -> IndexingResult:
-        """Force generation of every current vector for one document."""
+        """Erzwingt die Erzeugung aller aktuellen Vektoren eines Dokuments."""
         result = self.indexer.index_document(
             document_id,
             force=True,
@@ -181,7 +187,7 @@ class IndexedKnowledgeLibrary:
         return result
 
     def reindex_all(self) -> tuple[IndexingResult, ...]:
-        """Force a local semantic rebuild for every imported document."""
+        """Erzwingt den lokalen semantischen Neuaufbau aller importierten Dokumente."""
         results = tuple(
             self.indexer.index_document(
                 document.id,
@@ -195,24 +201,24 @@ class IndexedKnowledgeLibrary:
         return results
 
     def search(self, query: str, limit: int = 5) -> tuple[KnowledgeChunk, ...]:
-        """Use hybrid retrieval when configured, otherwise lexical retrieval."""
+        """Nutzt bei Konfiguration hybride, andernfalls lexikalische Suche."""
         if self.search_engine is None:
             return self.library.search(query, limit)
         return self.search_engine.search(query, limit)
 
     def list_documents(self, limit: int = 50) -> tuple[KnowledgeDocument, ...]:
-        """Return imported document metadata."""
+        """Liefert Metadaten importierter Dokumente."""
         return self.library.list_documents(limit)
 
     def list_document_versions(
         self,
         document_id: int,
     ) -> tuple[KnowledgeDocumentVersion, ...]:
-        """Return the immutable metadata history for one document."""
+        """Liefert den unveränderlichen Metadatenverlauf eines Dokuments."""
         return self.library.list_document_versions(document_id)
 
     def list_document_statuses(self) -> tuple[DocumentIndexStatus, ...]:
-        """Return a complete inventory with active-model vector status."""
+        """Liefert ein vollständiges Inventar mit dem Vektorstatus des aktiven Modells."""
         try:
             model = self.indexer.provider.ensure_model_available()
         except EmbeddingError:
@@ -226,7 +232,7 @@ class IndexedKnowledgeLibrary:
         )
 
     def list_stale_vectors(self) -> tuple[StaleEmbeddingStatus, ...]:
-        """Return stale vector metadata for the active embedding model."""
+        """Liefert veraltete Vektormetadaten für das aktive Einbettungsmodell."""
         model = self.indexer.provider.ensure_model_available()
         return tuple(
             self._stale_status(document.id, embedding)
@@ -238,7 +244,7 @@ class IndexedKnowledgeLibrary:
         )
 
     def export_library_metadata(self, destination: str | Path) -> Path:
-        """Export sanitized document, version, and vector metadata."""
+        """Exportiert bereinigte Dokument-, Versions- und Vektormetadaten."""
         statuses = self.list_document_statuses()
         versions = {
             status.document.id: self.list_document_versions(status.document.id)
@@ -247,7 +253,7 @@ class IndexedKnowledgeLibrary:
         return LocalDataExporter().export_library(destination, statuses, versions)
 
     def forget_document(self, document_id: int) -> bool:
-        """Delete a document, its chunks, and cascaded embeddings."""
+        """Löscht ein Dokument samt Abschnitten und kaskadierten Einbettungen."""
         deleted = self.library.forget_document(document_id)
         if deleted:
             self._verify_deleted(document_id)
@@ -258,6 +264,7 @@ class IndexedKnowledgeLibrary:
         document: KnowledgeDocument,
         model: EmbeddingModelInfo,
     ) -> DocumentIndexStatus:
+        """Berechnet den aktuellen Versions-, Abschnitts- und Vektorstatus."""
         embeddings = self.indexer.store.list_for_document(document.id)
         stale = self.indexer.store.list_stale_for_document(document.id, model)
         return DocumentIndexStatus(
@@ -276,6 +283,7 @@ class IndexedKnowledgeLibrary:
         document_id: int,
         embedding: StoredEmbedding,
     ) -> StaleEmbeddingStatus:
+        """Reduziert eine veraltete Einbettung auf sichere Statusmetadaten."""
         return StaleEmbeddingStatus(
             document_id=document_id,
             chunk_id=embedding.chunk_id,
@@ -289,6 +297,7 @@ class IndexedKnowledgeLibrary:
         self,
         document: KnowledgeDocument,
     ) -> DocumentIndexStatus:
+        """Ermittelt den bestmöglichen Dokumentstatus bei fehlendem Einbettungsdienst."""
         embeddings = self.indexer.store.list_for_document(document.id)
         if embeddings:
             latest = max(embeddings, key=lambda item: item.id)
@@ -310,6 +319,7 @@ class IndexedKnowledgeLibrary:
         )
 
     def _verify_deleted(self, document_id: int) -> None:
+        """Bestätigt die vollständige kaskadierte Löschung aller Dokumentdaten."""
         remains = (
             self.library.document_exists(document_id)
             or bool(self.library.list_document_versions(document_id))

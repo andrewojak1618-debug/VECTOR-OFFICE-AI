@@ -19,7 +19,7 @@ DIAGNOSTIC_DOCUMENT = (
 
 
 def run_diagnostic() -> bool:
-    """Import, embed, store, and reload one safe temporary document."""
+    """Importiert, vektorisiert, speichert und lädt ein sicheres temporäres Dokument."""
     if not _ensure_ollama():
         return False
     try:
@@ -31,6 +31,7 @@ def run_diagnostic() -> bool:
 
 
 def _run_in_directory(root: Path) -> bool:
+    """Prüft den vollständigen Speicherpfad in einem isolierten temporären Verzeichnis."""
     document_path = root / "diagnostic.md"
     document_path.write_text(DIAGNOSTIC_DOCUMENT, encoding="utf-8")
     database_path = root / "diagnostic.db"
@@ -48,6 +49,7 @@ def _run_in_directory(root: Path) -> bool:
 
 
 def _ensure_ollama() -> bool:
+    """Stellt den lokalen Ollama-Dienst für die Diagnose bereit."""
     runtime = OllamaRuntime(settings.OLLAMA_HOST, settings.OLLAMA_EXECUTABLE)
     if runtime.ensure_available():
         return True
@@ -59,6 +61,7 @@ def _report_success(
     stored: tuple[StoredEmbedding, ...],
     model_version: str | None,
 ) -> bool:
+    """Validiert Anzahl, Version und einheitliche Dimension gespeicherter Vektoren."""
     if not stored or model_version is None:
         print("No versioned embeddings were stored. [ERROR]")
         return False

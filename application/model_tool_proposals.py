@@ -33,6 +33,7 @@ class ModelToolProposalService:
         language_model: LanguageModel,
         reviewer: ToolProposalReviewer,
     ):
+        """Initialisiert den Modellvorschlagsdienst mit lokaler Prüfgrenze."""
         self.language_model = language_model
         self.reviewer = reviewer
 
@@ -42,7 +43,7 @@ class ModelToolProposalService:
         *,
         explicit_action_request: bool = False,
     ) -> ToolProposalReview:
-        """Return one reviewed suggestion without execution or authorization."""
+        """Liefert einen lokal geprüften Vorschlag ohne Ausführung oder Autorisierung."""
         if type(explicit_action_request) is not bool:
             raise TypeError("Explicit action request flag must be boolean.")
         normalized = user_text.strip()
@@ -65,6 +66,7 @@ class ModelToolProposalService:
         user_text: str,
         explicit_action_request: bool,
     ) -> Sequence[ChatMessage]:
+        """Erzeugt isolierte System- und Datennachrichten für die Vorschlagsklassifikation."""
         catalog = tuple(
             {"proposal_id": option.proposal_id, "label": option.label}
             for option in self.reviewer.catalog()

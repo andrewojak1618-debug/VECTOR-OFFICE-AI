@@ -58,6 +58,7 @@ class SQLiteToolAuditStore:
         retention_days: int = DEFAULT_AUDIT_RETENTION_DAYS,
         max_entries: int = DEFAULT_AUDIT_MAX_ENTRIES,
     ):
+        """Initialisiert den begrenzten lokalen Audit-Speicher und sein Schema."""
         _validate_positive_int(retention_days, "Audit retention days")
         _validate_positive_int(max_entries, "Audit maximum entries")
         self.database_path = Path(database_path)
@@ -67,7 +68,7 @@ class SQLiteToolAuditStore:
         self._initialize()
 
     def record(self, event: ToolAuditEvent) -> None:
-        """Persist one sanitized registry event and apply retention."""
+        """Speichert ein bereinigtes Registry-Ereignis und wendet Aufbewahrungsgrenzen an."""
         if not isinstance(event, ToolAuditEvent):
             raise TypeError("Audit store accepts only ToolAuditEvent values.")
         permission = event.permission.value if event.permission else None
@@ -90,7 +91,7 @@ class SQLiteToolAuditStore:
             self._prune_connection(connection)
 
     def list_events(self, limit: int = 50) -> tuple[ToolAuditRecord, ...]:
-        """Return the newest sanitized audit records first."""
+        """Liefert die neuesten bereinigten Audit-Einträge zuerst."""
         _validate_positive_int(limit, "Audit list limit")
         with self._connect() as connection:
             rows = connection.execute(
@@ -103,18 +104,19 @@ class SQLiteToolAuditStore:
         return tuple(_to_record(row) for row in rows)
 
     def prune(self) -> int:
-        """Apply configured retention and return the deleted row count."""
+        """Wendet die Aufbewahrungsregeln an und liefert die Löschanzahl."""
         with self._connect() as connection:
             return self._prune_connection(connection)
 
     def clear(self) -> int:
-        """Delete all local tool audit records and return the row count."""
+        """Löscht alle lokalen Tool-Audits und liefert deren Anzahl."""
         with self._connect() as connection:
             cursor = connection.execute("DELETE FROM tool_audit_events")
         return max(cursor.rowcount, 0)
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
+        """Öffnet eine transaktionale SQLite-Verbindung und schließt sie zuverlässig."""
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
         try:
@@ -124,10 +126,12 @@ class SQLiteToolAuditStore:
             connection.close()
 
     def _initialize(self) -> None:
+        """Legt das Audit-Schema bei Bedarf idempotent an."""
         with self._connect() as connection:
             connection.executescript(AUDIT_SCHEMA)
 
     def _prune_connection(self, connection: sqlite3.Connection) -> int:
+        """Entfernt innerhalb einer Verbindung alte und überzählige Audit-Einträge."""
         age_cursor = connection.execute(
             """
             DELETE FROM tool_audit_events
@@ -149,6 +153,7 @@ class SQLiteToolAuditStore:
 
 
 def _encode_arguments(arguments: ToolArguments) -> str:
+    """Serialisiert bereits bereinigte Argumente deterministisch als JSON."""
     return json.dumps(
         dict(arguments),
         ensure_ascii=False,
@@ -158,6 +163,7 @@ def _encode_arguments(arguments: ToolArguments) -> str:
 
 
 def _to_record(row: sqlite3.Row) -> ToolAuditRecord:
+    """Wandelt eine SQLite-Zeile in einen unveränderlichen Audit-Eintrag um."""
     permission = (
         PermissionLevel(row["permission"])
         if row["permission"] is not None
@@ -176,5 +182,6 @@ def _to_record(row: sqlite3.Row) -> ToolAuditRecord:
 
 
 def _validate_positive_int(value: int, label: str) -> None:
+    """Prüft einen Konfigurationswert auf eine strikt positive Ganzzahl."""
     if type(value) is not int or value < 1:
         raise ValueError(f"{label} must be a positive integer.")
