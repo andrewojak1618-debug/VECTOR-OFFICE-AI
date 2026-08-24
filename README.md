@@ -385,6 +385,7 @@ VECTOR OFFICE AI CORE/
 ├── docs/
 │   ├── api/
 │   ├── architecture.md
+│   ├── deployment.md
 │   ├── progress.md
 │   └── roadmap.md
 ├── memory/
@@ -447,6 +448,29 @@ Der ausdrücklich aktivierte Vorschlagspfad akzeptiert von beiden Modellen nur
 feste JSON-IDs. Toolname und Parameter werden ausschließlich lokal ergänzt;
 ein akzeptierter Vorschlag führt erst nach einem separaten `Ja`, erneuter
 Registry-Prüfung und einmaliger lokaler Autorisierung eine Aktion aus.
+
+## 🏠 Homeserver- und Docker-Grenzen
+
+Eine spätere Homeservermigration ist vorbereitet, verändert den heutigen
+Windows-Betrieb aber noch nicht. Die geplante Grenze lautet:
+
+| Bleibt zunächst auf Windows | Kann später auf einen privaten Homeserver |
+|---|---|
+| OneCore-TTS, FFmpeg-Ausgabe und physische Vector-Audioübertragung | providerunabhängiger Brain- und Application-Core |
+| Vector SDK, `%USERPROFILE%\.anki_vector`, `sdk_config.ini` und Robot-Aktionen | Memory, Dokumentbibliothek, Embeddings und Diagnosen |
+| WirePod-Prozess, Wakeword und Windows-Host-Watchdog | Ollama sowie die kontrollierte Provider-Orchestrierung |
+
+SQLite liegt standardmäßig unter `data/vector_memory.db` und benötigt später
+ein persistentes Volume mit genau einem schreibenden Core. Der aktuelle
+Ollama-Modellspeicher ist über `OLLAMA_MODELS=F:\Ollama\models` an den
+Ollama-Hostprozess gebunden. `.env`, API-Schlüssel, Vector-Zertifikate,
+Datenbanken und lokale Inhalte dürfen niemals in ein zukünftiges Image gelangen.
+
+Docker wird in dieser Phase ausdrücklich noch nicht produktiv eingeführt. Eine
+spätere Core-API bindet sicherheitshalber standardmäßig nur an `127.0.0.1`;
+Fernzugriff benötigt eine gesonderte authentisierte Netzgrenze. Komponenten,
+Volumes, Backup und Wiederherstellung sind vollständig unter
+[`docs/deployment.md`](docs/deployment.md) dokumentiert.
 
 ## ⚙️ Installation
 

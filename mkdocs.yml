@@ -35,6 +35,7 @@ nav:
   - Start: index.md
   - Entwicklung: progress.md
   - Architektur: architecture.md
+  - Homeserver & Docker: deployment.md
   - Provider-Zuverlässigkeit: provider-reliability.md
   - Datenschutz: privacy.md
   - Codequalität: quality.md
