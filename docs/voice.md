@@ -103,6 +103,11 @@ Die Sprachpipeline besteht aus:
 3. Umwandlung in 16-kHz-, 16-Bit-, Mono-PCM-WAV
 4. Wiedergabe über `robot.audio.stream_wav_file`
 
+Die unveränderliche OneCore-PowerShell-Vorlage liegt getrennt in
+`vector/onecore_tts.py`. Synthese, SSML-Auswahl, FFmpeg-Aufbereitung und
+WAV-Prüfung bleiben in `vector/speech.py`; der bisherige Import der Vorlage
+über dieses Modul bleibt kompatibel.
+
 Der physische Vector wurde mit `TTS_VOLUME=90` und hohem Master-Volume getestet.
 Neutrale Antworten werden um acht Prozent beschleunigt. Jeder Satz beginnt bei
 unverändertem Tempo mit leicht erhöhter Lautstärke und Tonhöhe und endet mit

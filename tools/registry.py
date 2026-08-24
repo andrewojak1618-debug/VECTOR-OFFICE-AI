@@ -1,10 +1,8 @@
 """Central registration, validation, auditing, and execution of safe tools."""
 
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
-from enum import Enum
+from collections.abc import Mapping
+from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Protocol, TypeAlias
 
 from tools.inspection import ToolCallInspection
 from tools.permissions import (
@@ -13,8 +11,16 @@ from tools.permissions import (
     ToolAuthorization,
     ToolPermissionPolicy,
 )
+from tools.registry_types import (
+    AuditSink,
+    Tool,
+    ToolAuditEvent,
+    ToolDefinition,
+    ToolExecutionResult,
+    ToolParameter,
+    ToolResultStatus,
+)
 from tools.tool_values import (
-    TOOL_NAME_PATTERN,
     ToolArguments,
     ToolOutput,
     ToolParameterType,
@@ -22,106 +28,10 @@ from tools.tool_values import (
     matches_type as _matches_type,
     normalize_output as _normalize_output,
     safe_requested_name as _safe_requested_name,
-    validate_identifier as _validate_identifier,
 )
 
 
-AuditSink: TypeAlias = Callable[["ToolAuditEvent"], None]
 REDACTED_ARGUMENT = "[REDACTED]"
-
-
-class ToolResultStatus(Enum):
-    """Classify a structured registry execution result."""
-
-    SUCCESS = "success"
-    BLOCKED = "blocked"
-    INVALID = "invalid"
-    FAILED = "failed"
-
-
-@dataclass(frozen=True)
-class ToolParameter:
-    """Describe one accepted tool argument and its privacy treatment."""
-
-    name: str
-    description: str
-    parameter_type: ToolParameterType
-    required: bool = True
-    sensitive: bool = False
-
-    def __post_init__(self) -> None:
-        """Validiert Namen, Beschreibung, Parametertyp und Datenschutzmerkmale."""
-        _validate_identifier(self.name, "Tool parameter")
-        if not isinstance(self.description, str) or not self.description.strip():
-            raise ValueError("Tool parameter description must not be empty.")
-        if not isinstance(self.parameter_type, ToolParameterType):
-            raise TypeError("Tool parameter type must be a ToolParameterType.")
-        if type(self.required) is not bool or type(self.sensitive) is not bool:
-            raise TypeError("Tool parameter flags must be boolean.")
-
-
-@dataclass(frozen=True)
-class ToolDefinition:
-    """Declare one registered tool without embedding executable behavior."""
-
-    name: str
-    description: str
-    permission: PermissionLevel
-    parameters: tuple[ToolParameter, ...] = ()
-
-    def __post_init__(self) -> None:
-        """Validiert Toolname, Berechtigung und eindeutige Parameterdefinitionen."""
-        _validate_identifier(self.name, "Tool")
-        if not isinstance(self.description, str) or not self.description.strip():
-            raise ValueError("Tool description must not be empty.")
-        if not isinstance(self.permission, PermissionLevel):
-            raise TypeError("Tool permission must be a PermissionLevel.")
-        object.__setattr__(self, "parameters", tuple(self.parameters))
-        names = tuple(parameter.name for parameter in self.parameters)
-        if not all(isinstance(item, ToolParameter) for item in self.parameters):
-            raise TypeError("Tool parameters must be ToolParameter values.")
-        if len(names) != len(set(names)):
-            raise ValueError("Tool parameter names must be unique.")
-
-
-@dataclass(frozen=True)
-class ToolExecutionResult:
-    """Return a structured success or safe failure to the agent layer."""
-
-    tool_name: str
-    status: ToolResultStatus
-    message: str
-    output: ToolOutput = field(default_factory=lambda: MappingProxyType({}))
-    error_code: str | None = None
-
-    @property
-    def succeeded(self) -> bool:
-        """Meldet, ob das Tool erfolgreich abgeschlossen wurde."""
-        return self.status is ToolResultStatus.SUCCESS
-
-
-@dataclass(frozen=True)
-class ToolAuditEvent:
-    """Expose a sanitized execution event for optional local auditing."""
-
-    tool_name: str
-    permission: PermissionLevel | None
-    arguments: ToolArguments
-    status: ToolResultStatus
-    error_code: str | None
-
-
-class Tool(Protocol):
-    """Provide metadata and side-effect behavior behind one uniform boundary."""
-
-    @property
-    def definition(self) -> ToolDefinition:
-        """Liefert unveränderliche Metadaten für Validierung und Autorisierung."""
-        ...
-
-    def execute(self, arguments: ToolArguments) -> ToolOutput:
-        """Führt validierte Argumente aus und liefert strukturierte Ausgabefelder."""
-        ...
 
 
 @dataclass(frozen=True)

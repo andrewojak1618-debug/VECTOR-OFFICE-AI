@@ -33,7 +33,11 @@ bereit:
 - Kennzeichen für sensible Parameter.
 
 Die erste Version unterstützt bewusst nur flache Werte vom Typ String, Integer,
-Number und Boolean. Ergebnisse werden als `ToolExecutionResult` mit Status,
+Number und Boolean. Die unveränderlichen Registry-Verträge und Ergebniswerte
+liegen in `tools/registry_types.py`. `tools/registry.py` behält ihre bisherigen
+Importnamen bei und konzentriert sich auf Registrierung, Validierung,
+Autorisierung, Ausführung und Auditweitergabe.
+Ergebnisse werden als `ToolExecutionResult` mit Status,
 sicherer Meldung, Fehlercode und flachen strukturierten Ausgabefeldern
 zurückgegeben. Beliebige Objekte oder ungeprüfte Exceptions gelangen nicht an
 den Agenten.

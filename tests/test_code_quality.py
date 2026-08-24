@@ -40,6 +40,7 @@ ENGLISH_DOCSTRING_PREFIXES = (
     "Write ",
 )
 ARCHITECTURE_MODULE_DOCS = {
+    Path("application/runtime_startup.py"): Path("docs/architecture.md"),
     Path("application/response_delivery.py"): Path("docs/architecture.md"),
     Path("application/contextual_tool_conversation.py"): Path(
         "docs/tools-security.md"
@@ -52,6 +53,7 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("application/model_tool_proposals.py"): Path("docs/tools-security.md"),
     Path("application/tool_conversation.py"): Path("docs/tools-security.md"),
     Path("brain/emotions.py"): Path("docs/personality.md"),
+    Path("brain/contracts.py"): Path("docs/architecture.md"),
     Path("brain/expression_actions.py"): Path("docs/personality.md"),
     Path("brain/reflection.py"): Path("docs/personality.md"),
     Path("brain/fallback_provider.py"): Path("docs/architecture.md"),
@@ -69,6 +71,7 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("tools/changelog_status.py"): Path("docs/tools-security.md"),
     Path("tools/code_quality_status.py"): Path("docs/tools-security.md"),
     Path("tools/registry.py"): Path("docs/progress.md"),
+    Path("tools/registry_types.py"): Path("docs/tools-security.md"),
     Path("tools/inspection.py"): Path("docs/tools-security.md"),
     Path("tools/proposals.py"): Path("docs/tools-security.md"),
     Path("tools/python_release.py"): Path("docs/tools-security.md"),
@@ -79,6 +82,7 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("vector/behavior_control.py"): Path("docs/robot-actions.md"),
     Path("vector/speech_prosody.py"): Path("docs/personality.md"),
     Path("vector/elevenlabs_speech.py"): Path("docs/voice.md"),
+    Path("vector/onecore_tts.py"): Path("docs/voice.md"),
     Path("vector/speech_factory.py"): Path("docs/voice.md"),
 }
 

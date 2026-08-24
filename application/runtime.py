@@ -2,8 +2,11 @@
 
 from dataclasses import dataclass
 
+from application.runtime_startup import (
+    connect_vector as _connect_vector,
+    ensure_ollama as _ensure_ollama,
+)
 from brain.agent import Agent
-from brain.ollama_runtime import OllamaRuntime
 from brain.providers import OllamaProvider, create_language_model
 from brain.reflection import ReflectionPolicy
 from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
@@ -11,7 +14,6 @@ from memory.database import SQLiteMemoryStore
 from tools.registry import ToolRegistry
 from vector.actions import VectorActions
 from vector.behavior_control import BehaviorControl
-from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
 from vector.speech_factory import create_speech_output
@@ -187,84 +189,6 @@ def _print_header(settings) -> None:
     print("=" * 50)
     print(f"Robot:   {settings.VECTOR_NAME}")
     print(f"WirePod: {settings.WIREPOD_HOST}")
-
-
-def _ensure_ollama(settings, mode: RuntimeMode, diagnostics, connections) -> bool:
-    """Stellt Ollama nur dann bereit, wenn der gewählte Modus es benötigt."""
-    if not mode.needs_ollama:
-        return True
-    print("\nChecking local Ollama service...")
-    runtime = OllamaRuntime(
-        base_url=settings.OLLAMA_HOST,
-        executable=settings.OLLAMA_EXECUTABLE,
-    )
-    ready = runtime.ensure_available()
-    if ready and mode.local_voice_required:
-        ready = runtime.preload_model(
-            settings.OLLAMA_MODEL,
-            settings.OLLAMA_REQUEST_TIMEOUT,
-        )
-    connections.observe("ollama", ready)
-    if ready:
-        diagnostics.emit(
-            DiagnosticLevel.INFO,
-            "ollama",
-            "service.ready",
-            local=True,
-            status="available",
-        )
-        return True
-    allowed = _handle_unavailable_ollama(mode)
-    diagnostics.emit(
-        DiagnosticLevel.WARNING if allowed else DiagnosticLevel.ERROR,
-        "ollama",
-        "service.unavailable",
-        local=True,
-        status="fallback-allowed" if allowed else "required",
-    )
-    return allowed
-
-
-def _handle_unavailable_ollama(mode: RuntimeMode) -> bool:
-    """Entscheidet, ob ein Start ohne das nicht erreichbare Ollama zulässig ist."""
-    if mode.provider == "ollama" or mode.local_voice_required:
-        print("Ollama is required as the active LLM provider. [ERROR]")
-        return False
-    print("Continuing with OpenAI without local fallback.")
-    return True
-
-
-def _connect_vector(
-    settings,
-    behavior_control: BehaviorControl | None = None,
-    connections: ConnectionSupervisor | None = None,
-) -> VectorSDKClient | None:
-    """Prüft WirePod und baut anschließend die kontrollierte SDK-Verbindung auf."""
-    print("\nChecking WirePod connection...")
-    client = VectorClient(
-        settings.WIREPOD_HOST,
-        settings.WIREPOD_REQUEST_TIMEOUT,
-    )
-    ready = _wait_for_connection(connections, "wirepod", client.check_wirepod)
-    if not ready:
-        print("WirePod is not reachable. [ERROR]")
-        return None
-    print("WirePod is online. [OK]\n")
-    print("Starting Vector SDK test...")
-    vector = VectorSDKClient(settings.VECTOR_SERIAL, behavior_control)
-    connected = _wait_for_connection(
-        connections,
-        "vector-sdk",
-        vector.test_connection,
-    )
-    return vector if connected else None
-
-
-def _wait_for_connection(connections, service, health_check) -> bool:
-    """Führt eine direkte oder überwachte Verfügbarkeitsprüfung aus."""
-    if connections is None:
-        return health_check()
-    return connections.wait_until_available(service, health_check, max_attempts=3)
 
 
 def _create_agent(

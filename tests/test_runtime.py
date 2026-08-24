@@ -117,7 +117,7 @@ class RuntimeModeTests(unittest.TestCase):
         self.assertEqual("disabled", overview["openai"])
         self.assertEqual("disabled", overview["elevenlabs"])
 
-    @patch("application.runtime.OllamaRuntime")
+    @patch("application.runtime_startup.OllamaRuntime")
     def test_private_wirepod_voice_preloads_local_chat_model(self, runtime_type):
         settings = make_settings(
             INPUT_MODE="wirepod",
@@ -142,7 +142,7 @@ class RuntimeModeTests(unittest.TestCase):
         )
         runtime.preload_model.assert_called_once_with("llama3.2:3b", 90.0)
 
-    @patch("application.runtime.OllamaRuntime")
+    @patch("application.runtime_startup.OllamaRuntime")
     def test_private_voice_blocks_when_model_preload_fails(self, runtime_type):
         settings = make_settings(
             INPUT_MODE="wirepod",

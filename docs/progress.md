@@ -913,3 +913,17 @@ Die deutsche TTS wurde schrittweise verbessert:
 - vollständige lokale Kernabnahme mit vier von vier Prüfungen abgeschlossen
 - von WirePod beobachtete Kurzform `qualität status` gezielt freigegeben
 - Qualitätszähler als deutsche Zahlwörter mit getrennten Satzpausen ausgegeben
+
+## VECTOR-PY-CLEANUP nach den Providerkarten
+
+- vier produktive Module nahe der 400-Zeilen-Grenze verhaltensneutral aufgeteilt
+- OneCore-Skriptvorlage aus `vector/speech.py` in `vector/onecore_tts.py` verschoben
+- Agent-Verträge aus `brain/agent.py` in `brain/contracts.py` ausgelagert
+- Registry-Datentypen aus `tools/registry.py` in `tools/registry_types.py` getrennt
+- Startverbindungen aus `application/runtime.py` in
+  `application/runtime_startup.py` gekapselt
+- bestehende öffentliche und getestete Importpfade als Re-Exporte und Aliase erhalten
+- erhaltene Importpfade mit eigenen Architektur-Regressionsprüfungen abgesichert
+- neue Architekturpfade in der automatischen Dokumentationssperre verankert
+- größte produktive Module von 384–363 auf höchstens 324 Zeilen reduziert
+- 635 automatisierte Tests, Python-Kompilierung und strikten MkDocs-Build bestanden

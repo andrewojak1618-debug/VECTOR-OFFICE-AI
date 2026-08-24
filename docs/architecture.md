@@ -37,6 +37,9 @@ Verwaltungsbefehle in `application/commands.py`. Die Vorbereitung und Ausgabe
 von Modellantworten liegt getrennt in `application/response_delivery.py`.
 `application/runtime_resources.py` kapselt die lokale Storage-, Bibliotheks-
 und Tool-Komposition, damit der Einstiegspunkt klein und überprüfbar bleibt.
+`application/runtime_startup.py` bündelt ausschließlich die unveränderten
+Startprüfungen für Ollama, WirePod und Vector; `application/runtime.py` behält
+die bisherigen privaten Importpfade als kompatible Aliase bei.
 
 `config/environment.py` validiert ausschließlich skalare Umgebungswerte;
 `config/settings.py` setzt daraus die Anwendungskonfiguration zusammen und
@@ -44,6 +47,10 @@ behält die bisherigen öffentlichen Importpfade bei. `brain/providers.py`
 enthält die OpenAI-/Ollama-Adapter und ihre Fabrik. Der Zustandsübergang zum
 lokalen Ersatzmodell ist in `brain/fallback_provider.py` gekapselt, während
 `brain/provider_diagnostics.py` nur inhaltsfreie Provider-Metadaten ausgibt.
+Die neutralen Agent-Verträge für Sprachmodell, Memory und Wissensbibliothek
+liegen in `brain/contracts.py`. `brain/agent.py` importiert und re-exportiert
+diese Namen weiterhin, damit bestehende Provider- und Testimporte stabil
+bleiben.
 
 ## Providerfluss
 
