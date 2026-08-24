@@ -6,6 +6,11 @@ from application.expression_delivery import speech_style_for_cue
 from application.thinking import run_with_thinking
 from brain.agent import Agent
 from brain.providers import ProviderNotice
+from brain.response_quality import (
+    SAFE_PROVIDER_REPLACEMENT,
+    ProviderResponseValidationError,
+    safe_spoken_response,
+)
 from vector.speech import (
     PreparedSpeech,
     SpeechProviderNotice,
@@ -51,6 +56,10 @@ def respond_and_speak(
             lambda: _prepare_answer(agent, speech, user_text),
             speech,
         )
+    except ProviderResponseValidationError:
+        _speak_provider_notice(agent, speech)
+        print(f"Vector: {SAFE_PROVIDER_REPLACEMENT}")
+        return speak_answer(speech, SAFE_PROVIDER_REPLACEMENT)
     except (RuntimeError, ValueError) as exc:
         _speak_provider_notice(agent, speech)
         print(f"Brain request failed: {exc}")
@@ -66,8 +75,13 @@ def speak_answer(
     style: SpeechStyle | None = None,
 ) -> bool:
     """Spricht eine Antwort und meldet Wiedergabefehler ohne sensible Details."""
+    spoken_text = safe_spoken_response(answer)
     try:
-        completed = speech.say(answer) if style is None else speech.say(answer, style)
+        completed = (
+            speech.say(spoken_text)
+            if style is None
+            else speech.say(spoken_text, style)
+        )
     except (OSError, RuntimeError, TypeError, ValueError):
         completed = False
     if completed:

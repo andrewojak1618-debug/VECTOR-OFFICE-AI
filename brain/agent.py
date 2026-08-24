@@ -7,6 +7,10 @@ from typing import Protocol, Sequence
 from brain.context import ChatMessage, ConversationContext
 from brain.emotions import EmotionalStateModel
 from brain.personality import build_runtime_personality
+from brain.response_quality import (
+    ProviderResponsePolicy,
+    ValidatedProviderResponse,
+)
 from brain.reflection import (
     ReflectionPlan,
     ReflectionPolicy,
@@ -135,6 +139,7 @@ class Agent:
         emotional_state: EmotionalStateModel | None = None,
         reflection_policy: ReflectionPolicy | None = None,
         response_policy: ResponseQualityPolicy | None = None,
+        provider_response_policy: ProviderResponsePolicy | None = None,
     ):
         """Initialisiert Gespräch, lokales Wissen, Persönlichkeit und kontrollierte Tools."""
         self.language_model = language_model
@@ -148,6 +153,10 @@ class Agent:
         self.emotional_state = emotional_state or EmotionalStateModel()
         self.reflection_policy = reflection_policy or ReflectionPolicy()
         self.response_policy = response_policy or ResponseQualityPolicy()
+        self.provider_response_policy = (
+            provider_response_policy or ProviderResponsePolicy()
+        )
+        self.last_provider_response: ValidatedProviderResponse | None = None
 
     def respond(self, user_text: str) -> str:
         """Erzeugt und speichert eine anhand der Persönlichkeitsregeln validierte Antwort."""
@@ -327,11 +336,12 @@ class Agent:
         return compacted
 
     def _request_model(self, messages: tuple[ChatMessage, ...]) -> str:
-        """Fordert eine nicht leere Modellantwort an und entfernt Randabstände."""
-        response = self.language_model.generate(messages).strip()
-        if not response:
-            raise RuntimeError("Language model returned an empty response.")
-        return response
+        """Validiert Providerdaten vor Persönlichkeitsprüfung und Speicherung."""
+        result = self.language_model.generate(messages)
+        source = getattr(self.language_model, "response_source", "unspecified")
+        response = self.provider_response_policy.validate(result, source)
+        self.last_provider_response = response
+        return response.text
 
     def _correction_messages(
         self,

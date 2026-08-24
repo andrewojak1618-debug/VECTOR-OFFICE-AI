@@ -36,6 +36,12 @@ class FallbackProvider:
         self.diagnostics = diagnostics
         self._primary_unavailable = False
         self._pending_notice: ProviderNotice | None = None
+        self._response_source = "unspecified"
+
+    @property
+    def response_source(self) -> str:
+        """Liefert die Herkunft der zuletzt erfolgreichen Modellantwort."""
+        return self._response_source
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
         """Liefert die Primärantwort oder nutzt bewusst das lokale Rückfallmodell."""
@@ -59,10 +65,14 @@ class FallbackProvider:
         """Versucht das Primärmodell und merkt dessen Ausfall ohne Inhaltsprotokoll."""
         was_unavailable = self._primary_unavailable
         try:
-            content = self.primary.generate(messages).strip()
+            result = self.primary.generate(messages)
         except RuntimeError:
             self._mark_primary_unavailable()
             return ""
+        if not isinstance(result, str):
+            self._mark_primary_unavailable()
+            return ""
+        content = result.strip()
         if not content:
             self._mark_primary_unavailable()
             return ""
@@ -72,6 +82,11 @@ class FallbackProvider:
             self._report_primary_recovery()
         else:
             self._pending_notice = None
+        self._response_source = getattr(
+            self.primary,
+            "response_source",
+            "primary",
+        )
         return content
 
     def _generate_fallback(self, messages: Sequence[ChatMessage]) -> str:
@@ -86,6 +101,11 @@ class FallbackProvider:
             ) from None
         if self._pending_notice is not None:
             self._pending_notice = ProviderNotice.LOCAL_FALLBACK
+        self._response_source = getattr(
+            self.fallback,
+            "response_source",
+            "fallback",
+        )
         return content
 
     def consume_notice(self) -> ProviderNotice | None:

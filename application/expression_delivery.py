@@ -7,6 +7,7 @@ from typing import Protocol
 
 from brain.emotions import ExpressionCue
 from brain.expression_actions import ExpressionActionSuggestion
+from brain.response_quality import safe_spoken_response
 from tools.permissions import PermissionLevel, ToolAuthorization
 from tools.registry import ToolExecutionResult, ToolRegistry
 from vector.speech import SpeechStyle
@@ -144,9 +145,9 @@ class ExpressionResponseCoordinator:
         return result, error or (None if result.succeeded else "expression_failed")
 
     def _speak(self, answer: str, style: SpeechStyle) -> bool:
-        """Spricht die Antwort im gewählten Stil und fängt Ausgabefehler ab."""
+        """Spricht ausschließlich validierten Text und fängt Ausgabefehler ab."""
         try:
-            return bool(self._speech.say(answer, style))
+            return bool(self._speech.say(safe_spoken_response(answer), style))
         except (RuntimeError, TypeError, ValueError):
             return False
 

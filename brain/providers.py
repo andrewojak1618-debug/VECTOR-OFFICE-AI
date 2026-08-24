@@ -35,6 +35,8 @@ def _message_payload(messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
 class OpenAIProvider:
     """Generate responses through the OpenAI Responses API."""
 
+    response_source = "openai"
+
     def __init__(
         self,
         api_key: str,
@@ -81,6 +83,8 @@ class OpenAIProvider:
 
 class OllamaProvider:
     """Generate responses through a local Ollama chat endpoint."""
+
+    response_source = "ollama"
 
     def __init__(
         self,

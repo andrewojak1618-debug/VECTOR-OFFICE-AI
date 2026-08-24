@@ -14,6 +14,7 @@ from application.response_delivery import (
 )
 from brain.agent import Agent
 from brain.providers import FallbackProvider
+from brain.response_quality import SAFE_PROVIDER_REPLACEMENT
 from vector.speech import SpeechProviderNotice, SpeechStyle
 
 
@@ -94,6 +95,20 @@ class RaisingSpeech:
 
 
 class OfflineNoticeTests(unittest.TestCase):
+    def test_unreliable_provider_text_is_replaced_before_tts(self):
+        unsafe = "Error: private provider response"
+        speech = RecordingSpeech()
+
+        completed = respond_and_speak(
+            Agent(ScriptedProvider(unsafe)),
+            speech,
+            "Welche Information liegt vor?",
+        )
+
+        self.assertTrue(completed)
+        self.assertEqual([SAFE_PROVIDER_REPLACEMENT], speech.messages)
+        self.assertNotIn(unsafe, speech.messages)
+
     def test_cloud_outage_speaks_notice_before_local_answer(self):
         model = FallbackProvider(
             ScriptedProvider(RuntimeError("offline")),

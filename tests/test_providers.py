@@ -64,6 +64,17 @@ class ProviderTests(unittest.TestCase):
 
         self.assertEqual("Lokal-Antwort", provider.generate(MESSAGES))
 
+    def test_fallback_rejects_invalid_primary_structure_and_keeps_origin(self):
+        primary = SimpleNamespace(generate=lambda messages: {"text": "invalid"})
+        fallback = SimpleNamespace(
+            generate=lambda messages: "Lokal-Antwort",
+            response_source="ollama",
+        )
+        provider = FallbackProvider(primary, fallback)
+
+        self.assertEqual("Lokal-Antwort", provider.generate(MESSAGES))
+        self.assertEqual("ollama", provider.response_source)
+
     def test_openai_provider_maps_messages(self):
         client = FakeOpenAIClient()
         provider = OpenAIProvider(

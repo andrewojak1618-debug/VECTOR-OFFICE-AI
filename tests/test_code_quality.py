@@ -56,6 +56,7 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("brain/reflection.py"): Path("docs/personality.md"),
     Path("brain/fallback_provider.py"): Path("docs/architecture.md"),
     Path("brain/provider_diagnostics.py"): Path("docs/architecture.md"),
+    Path("brain/response_quality.py"): Path("docs/provider-reliability.md"),
     Path("config/environment.py"): Path("docs/architecture.md"),
     Path("memory/document_text.py"): Path("docs/architecture.md"),
     Path("memory/embedding_records.py"): Path("docs/architecture.md"),

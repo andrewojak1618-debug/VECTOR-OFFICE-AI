@@ -93,6 +93,29 @@ und erkennbare Widersprüche werden vor der TTS-Ausgabe abgefangen. Inhalte eine
 Providers oder Dokuments dürfen niemals als verborgene System- oder
 Toolanweisung ausgeführt werden.
 
+`brain/response_quality.py` bildet dafür eine providerunabhängige Grenze. Das
+Modul bewahrt die interne Herkunft einer akzeptierten Antwort, markiert sie als
+externe Daten und gibt ausschließlich normalisierten Text weiter. Strukturierte
+künftige Providerresultate benötigen exakt `text`, `source` und den Status
+`success`; Fehlerstatus, zusätzliche Anweisungsfelder und abweichende Herkunft
+werden verworfen. Bestehende reine Textprovider bleiben kompatibel und erhalten
+ihre Herkunft über den lokalen Adapter.
+
+Die Prüfung erkennt konservativ leere Werte, falsche Datentypen, interne
+Fehlerseiten, deutliche Prompt-Injection-Muster und gleichzeitig gegensätzliche
+Tatsachenbehauptungen. Der verworfene Inhalt wird weder in eine
+Korrekturanweisung noch in eine Fehlermeldung übernommen. Die bestehende
+Persönlichkeits- und Reflexionsprüfung läuft erst nach dieser Datenprüfung
+unverändert weiter.
+
+Kann eine Antwort nicht zuverlässig freigegeben werden, spricht Vector nur:
+
+> Ich konnte diese Information gerade nicht zuverlässig abrufen.
+
+`application/response_delivery.py` und die Ausdrucksausgabe prüfen zusätzlich
+direkt an ihren TTS-Grenzen. Damit können auch ungültige direkte Ausgabetexte
+nicht versehentlich an eine lokale oder externe Stimme gelangen.
+
 ## Sicherheitsgrenze der Tool Registry
 
 `tools/registry.py` bleibt die einzige vorgesehene Ausführungsgrenze für

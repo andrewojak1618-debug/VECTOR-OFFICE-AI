@@ -11,6 +11,7 @@ from brain.expression_actions import (
     ExpressionActionMapper,
     ExpressionActionSuggestion,
 )
+from brain.response_quality import SAFE_PROVIDER_REPLACEMENT
 from tools.permissions import ToolAuthorization
 from tools.proposals import ToolProposalReviewer
 from tools.registry import ToolRegistry
@@ -169,6 +170,12 @@ class ExpressionResponseCoordinatorTests(unittest.TestCase):
 
         self.assertEqual(ExpressionDeliveryStatus.SPEECH_FAILED, result.status)
         self.assertNotIn(secret, repr(result))
+
+    def test_unreliable_text_is_replaced_at_expression_speech_boundary(self):
+        result = self.coordinator.deliver("Internal Server Error")
+
+        self.assertEqual(ExpressionDeliveryStatus.SPOKEN_ONLY, result.status)
+        self.assertEqual([f"speech:{SAFE_PROVIDER_REPLACEMENT}"], self.events)
 
     def _suggest(self, cue: ExpressionCue) -> ExpressionActionSuggestion:
         stance = {

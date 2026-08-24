@@ -39,3 +39,7 @@
 ## Reflexion und Antwortprüfung
 
 ::: brain.reflection
+
+## Provider-Antwortqualität
+
+::: brain.response_quality
