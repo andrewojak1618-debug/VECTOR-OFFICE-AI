@@ -1,5 +1,19 @@
 # Roadmap
 
+## Aktueller Stand – RC2-Vorbereitung
+
+- ✅ historischen Tag `v0.2.0-rc.1` unverändert erhalten
+- ✅ 35 einzeln geprüfte Commits seit `v0.2.0-rc.1` integriert
+- ✅ README und kanonische Roadmap auf den tatsächlichen Stand synchronisiert
+- ✅ Windows-Autostart nach Neustart technisch geprüft
+- ✅ lokale Sprachfrage nach Kaltstart korrekt und verständlich beantwortet
+- ✅ letzter vollständiger Qualitätslauf mit 635 automatisierten Tests bestanden
+- ⏳ vollständige RC2-Kernabnahme auf einem unveränderten Commit ausführen
+- ⏳ tatsächlich eingesetzte Provider für RC2 kontrolliert live prüfen
+- ⏳ physischen Vector-Pfad für RC2 abschließend bestätigen
+- ⏳ Changelog und Versionsstand für `0.2.0-rc.2` festlegen
+- ⏳ geprüften annotierten Tag `v0.2.0-rc.2` erst danach setzen
+
 ## Release-Stabilisierung
 
 - ✅ zentrale mehrstufige Systemabnahme implementieren
@@ -21,6 +35,19 @@
 - ✅ lokalen Windows-Autostart und Host-Watchdog implementieren
 - ✅ vollständigen Windows-Kaltstart und Bereitschaftsstatus praktisch abnehmen
 - ✅ lokale Ollama-Antwortlatenz für den Voice-Modus begrenzen und praktisch messen
+
+## Provider-Zuverlässigkeit
+
+- ✅ Architekturprinzipien und bewusst ausgeschlossene Großumbauten dokumentieren
+- ✅ zentrale Zustandsübersicht für Vector SDK, WirePod, Ollama, OpenAI und ElevenLabs ergänzen
+- ✅ ungefährlichen Provider-Statusbefehl ohne kostenpflichtige Cloud-Anfrage bereitstellen
+- ✅ providerbezogene Timeouts zentral benennen und validieren
+- ✅ OpenAI-/Ollama- und ElevenLabs-/lokale-TTS-Fallbacks absichern
+- ✅ Ausfall, begrenzte Wiederholung und einmalige Wiederherstellung behandeln
+- ✅ strukturierte Providerereignisse ohne Fragen, Antworten, Dokumente oder Secrets ergänzen
+- ✅ externe Ergebnisse vor der Sprachausgabe validieren
+- ✅ verbindlichen Regressionstest-Ablauf in die Qualitätsregeln aufnehmen
+- ✅ Windows-, Homeserver- und spätere Docker-Grenzen dokumentieren
 
 ## Voice Input
 

@@ -8,7 +8,7 @@
 
 **VECTOR OFFICE AI CORE** verbindet einen physischen Vector 2.0 mit einem
 eigenen Python-Core, modernen Sprachmodellen, lokalem Kontext, deutscher
-Sprachausgabe und später einem kontrollierten Tool- und Memory-System.
+Sprachausgabe sowie einem kontrollierten Tool- und Memory-System.
 
 Vector soll nicht nur vorgefertigte Kommandos ausführen. Er soll als greifbare
 Schnittstelle zu einem persönlichen Assistenten dienen, Fragen verstehen,
@@ -43,7 +43,7 @@ der:
 - bei Programmierung, Recherche und Büroarbeit unterstützt
 - Tools nur innerhalb klarer Berechtigungsregeln verwendet
 - Bewegungen, Animationen und weitere Robot-Aktionen ausführt
-- langfristig auch Spracheingaben über Vector entgegennimmt
+- Spracheingaben direkt über Vector und WirePod entgegennimmt
 
 ## ✨ Aktuell umgesetzt
 
@@ -64,7 +64,14 @@ Der aktuelle Prototyp unterstützt bereits:
   vorsichtige und reflektierende Antworten
 - providerunabhängigen Agent- und Conversation-Core
 - OpenAI-Adapter über die Responses API
-- lokal getesteten Ollama-Adapter mit automatischem Offline-Fallback
+- lokal eingesetzten Ollama-Adapter mit `qwen3:4b-instruct` und automatischem
+  Offline-Fallback
+- zentrale, inhaltsfreie Zustandsübersicht für Vector SDK, WirePod, Ollama,
+  OpenAI und ElevenLabs
+- ungefährlichen Provider-Statusbefehl ohne kostenpflichtige Cloud-Anfrage
+- providerbezogene, validierte Timeouts und begrenzte Fallback-Ketten
+- sichere Provider-Diagnoseereignisse ohne Fragen, Antworten oder Secrets
+- Ergebnisvalidierung vor jeder Sprachausgabe mit verständlicher Ersatzantwort
 - mehrere Gesprächsrunden mit erhaltenem Kontext
 - kontrolliertes SQLite-Langzeitgedächtnis für beide Provider
 - `/remember`, `/feedback`, `/memories` und `/forget` zur Memory-Verwaltung
@@ -90,9 +97,13 @@ Der aktuelle Prototyp unterstützt bereits:
 - aktuelle stabile Python-Version als streng gefilterte Python.org-Abfrage
 - letzte dokumentierte Projektänderung aus dem festen lokalen Changelog
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
+- lokalen Windows-Autostart mit Einzelinstanz-Host-Watchdog
+- nach Windows-Neustart praktisch bestätigte Kaltstart- und Sprachabnahme
+- verbindlichen Regressionstest-Ablauf und deutsche Funktions-Docstrings
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
-- automatisierte Tests für Agent, Kontext, Provider und Gesprächsschleife
+- zuletzt 635 erfolgreich ausgeführte automatisierte Tests einschließlich
+  Architektur-, Datenschutz- und Qualitätsregeln
 
 ## 🗣️ Deutsche Sprachausgabe
 
@@ -155,10 +166,11 @@ aktuellen Rechner weiterhin überschreiten.
 Der Brain-Core ist bewusst unabhängig von einem einzelnen Anbieter aufgebaut.
 Alle Provider implementieren dieselbe `LanguageModel`-Schnittstelle.
 
-Aktuell vorgesehen:
+Aktiv unterstützt:
 
 - **OpenAI:** Cloud-Modell über die Responses API; live getestet
-- **Ollama:** lokales `llama3.2:3b` über `/api/chat`; live mit Vector getestet
+- **Ollama:** lokal konfiguriertes `qwen3:4b-instruct` über `/api/chat`; der
+  lokale Gesprächspfad ist live mit Vector getestet
 
 Ollamas optionaler interner Denkmodus bleibt deaktiviert. Die Anwendung nutzt
 stattdessen ihre eigene hörbare und zeitlich begrenzte Überlegungsphase, damit
@@ -877,17 +889,23 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | Personality Architecture | `ea63def` | Emotions- und Reflexionspfade reserviert |
 | Clean Core & Embedding Architecture | `eb055d9` | Clean-Code-Audit und lokaler Embedding-Vertrag |
 | Local Embedding Model | `1254524` | Reales `embeddinggemma`-Modell und Batch-Verarbeitung |
+| Erster Release-Kandidat | `v0.2.0-rc.1` | Historisch geprüfter Release-Stand vom 17. August 2026 |
+| Provider Reliability | `5224315` | Providerstatus, Timeouts, Fallbacks, Diagnosen und Ergebnisvalidierung |
+| Deployment-Grenzen | `ea970c3` | Windows-, Homeserver- und spätere Docker-Grenzen dokumentiert |
+| Aktueller Qualitätsstand | `33a195e` | Grenznahe Kernmodule aufgeteilt und 635 Tests abgenommen |
 
-Die Anwendung befindet sich nach vollständiger Systemabnahme im ersten
-Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
-[`CHANGELOG.md`](CHANGELOG.md) zusammengefasst. Der annotierte Git-Tag
-`v0.2.0-rc.1` verweist historisch auf den geprüften Release-Commit.
+Der annotierte Git-Tag `v0.2.0-rc.1` bleibt der historisch geprüfte erste
+Release-Kandidat. Seitdem enthält `main` 35 weitere, einzeln geprüfte Commits.
+Der aktuelle Stand befindet sich in der **RC2-Vorbereitung**; eine neue
+Versionsnummer oder ein neuer Tag wird erst nach der vollständigen RC2-Abnahme
+gesetzt. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
 
 ## 🚧 Aktueller Projektstatus
 
 ### Aktuelle Phase
 
-**Release-Kandidat 0.2.0-rc.1 mit physischem Vector 2.0**
+**Stabilisierter Stand nach `v0.2.0-rc.1`, Vorbereitung auf RC2 mit physischem
+Vector 2.0**
 
 - ✅ WirePod-Verbindung
 - ✅ direkte Vector-SDK-Verbindung
@@ -895,7 +913,7 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ Lautheitsnormalisierung und Sprachkompression
 - ✅ providerunabhängiger Brain-Core
 - ✅ OpenAI-Live-Integration
-- ✅ lokal getestetes Ollama-Modell `llama3.2:3b`
+- ✅ lokal eingesetztes Ollama-Modell `qwen3:4b-instruct`
 - ✅ automatischer Ollama-Fallback bei OpenAI-Ausfall
 - ✅ mehrturniger Gesprächskontext
 - ✅ kontrolliertes SQLite-Langzeitgedächtnis
@@ -929,76 +947,32 @@ Release-Kandidaten **0.2.0-rc.1**. Die Änderungen sind im
 - ✅ bestätigte Ausdrucksanimation vor TTS sequenziell und ausfallsicher koordiniert
 - ✅ expliziter Ausdrucksdialog in Konsole und WirePod mit separatem Ja
 - ✅ kontrollierte produktive Freigabe kontextabhängiger Ausdrucksvorschläge
+- ✅ einheitliche Providerzustände für Vector SDK, WirePod, Ollama, OpenAI und ElevenLabs
+- ✅ sicherer Provider-Statusbefehl ohne Cloud-Kosten oder Robot-Aktion
+- ✅ providerbezogene Timeouts, isolierte Fallbacks und Wiederherstellungserkennung
+- ✅ datensparsame Providerereignisse und geprüfte Ergebnisse vor der TTS
+- ✅ verbindlicher Regressionstest-Ablauf für spätere Fehlerkorrekturen
+- ✅ Windows-Autostart, Host-Watchdog und vollständige Kaltstart-Abnahme
+- ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
+- ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
+- ✅ 635 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 
-### Version 0.2 – Conversation Foundation
+Die ausführliche, verbindliche Aufgabenübersicht steht in
+[`docs/roadmap.md`](docs/roadmap.md). Der aktuelle nächste Meilenstein ist RC2:
 
-- interaktive Gesprächsschleife weiter stabilisieren
-- ✅ Timeout-, Retry- und Provider-Fallback-Verhalten vereinheitlichen
-- Ollama lokal installieren und mit geeignetem Modell testen
-- ✅ Providerwechsel und gemeinsame Kontexterhaltung über mehrere Runden prüfen
-- ✅ strukturierte lokale Logs und Diagnoseausgaben einführen
+1. ✅ README und Roadmap mit dem realen Projektstand synchronisieren.
+2. ⏳ vollständige RC2-Kernabnahme auf dem unveränderten Commit ausführen.
+3. ⏳ tatsächlich eingesetzte Provider kontrolliert live prüfen.
+4. ⏳ den physischen Vector-Pfad für RC2 abschließend bestätigen.
+5. ⏳ erst danach Changelog, Versionsstand und Tag `v0.2.0-rc.2` festlegen.
 
-### Version 0.3 – Voice Input
-
-- Spracheingaben von Vector beziehungsweise WirePod empfangen
-- Speech-to-Text-Ergebnisse an den Brain-Core übergeben
-- Aktivierungs- und Abbruchlogik entwickeln
-- vollständige sprachgesteuerte Unterhaltung ermöglichen
-
-### Version 0.4 – Memory
-
-- ✅ SQLite-basiertes Langzeitgedächtnis als Grundlage entwickelt
-- ✅ bestätigte Benutzerpräferenzen und Erinnerungen speicherbar
-- ✅ relevante Erinnerungen kontextbezogen abrufbar
-- ✅ Erinnerungen können angezeigt und einzeln gelöscht werden
-- ✅ kontrollierten Dokumentimport mit Quellen und Prüfsummen ergänzen
-- ✅ lokale providerunabhängige Embedding-Schnittstelle ergänzen
-- ✅ lokales Embedding-Modell prüfen und real über Ollama testen
-- ✅ mehrere Dokumentabschnitte in einem Batch vektorisieren
-- ✅ Embedding-Vektoren nachvollziehbar in SQLite speichern
-- ✅ hybride semantische und lexikalische Suche ergänzen
-
-### Version 0.5 – Tools und Sicherheit
-
-- ✅ Tool Registry implementieren
-- ✅ Berechtigungsstufen und Bestätigungen definieren
-- ⏳ Büro-, Datei-, Recherche- und Entwicklungswerkzeuge schrittweise anbinden
-- ✅ erstes lokales Read-only-Bürotool für Datum und Uhrzeit anbinden
-- ✅ lokale Read-only-Projektstatus-Abfrage als erstes Entwicklungswerkzeug
-- ✅ bestätigten lokalen Projekt-Testlauf ohne freie Befehle oder Rohlogs ergänzen
-- ✅ lokalen Read-only-Systemstatus für WirePod und Ollama ergänzen
-- ✅ lokalen count-only Bibliotheksstatus ohne Dokumentmetadaten ergänzen
-- ✅ lokalen count-only Gedächtnisstatus ohne Erinnerungsinhalte ergänzen
-- ✅ lokalen Read-only-Roadmapstatus ohne freie Pfade ergänzen
-- ✅ kontrollierten lokalen Dokumentationsstatus ohne freie Pfade ergänzen
-- ✅ kontrollierten lokalen Codequalitätsstatus ohne freie Pfade ergänzen
-- ✅ kontrollierte Recherchequelle mit explizitem Netzwerkrecht vorbereiten
-- ✅ erste inhaltlich begrenzte Python-Versionsabfrage absichern
-- ✅ kontrollierte letzte Projektänderung aus festem Changelog nennen
-- ✅ alle Toolaufrufe lokal und datensparsam protokollieren
-
-### Version 0.6 – Robot Personality
-
-- ✅ `brain/emotions.py` als kontrolliertes Zustandsmodell ausarbeiten
-- ✅ `brain/reflection.py` für philosophische Antworten ausarbeiten
-- ✅ natürliches Deutsch auf C1-Niveau mit kompakter Ausgabe verbinden
-- ✅ bestätigtes Feedback für beide Provider gemeinsam nutzbar machen
-- ✅ Ausdruckshinweise auf eine sichere, nicht ausführbare Animation abbilden
-- ✅ bestätigte Ausdrucksanimation und Sprachausgabe sequenziell koordinieren
-- Bewegungen und Animationen produktiv nach separater Bestätigung auswählen
-- Blickrichtung, Kopf, Lift und Fahrverhalten koordinieren
-- emotionale Reaktionen kontrolliert einsetzen
-
-### Version 1.0 – Personal Office Assistant
-
-- stabile sprachbasierte Kommunikation
-- austauschbare Cloud- und lokale Modelle
-- langfristiges Memory
-- kontrollierte Tool-Nutzung
-- ausgereifte Vector-Persönlichkeit
-- dokumentierter, testbarer und sicherer Betrieb
+Nach RC2 werden weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln
+über die bestehende Tool Registry abgesichert. Ein Vergleich von ElevenLabs
+Multilingual v2 mit Flash v2.5 bleibt optional und erfolgt nur bei erkennbarem
+Qualitätsbedarf. Homeserver, FastAPI und Docker bleiben dokumentierte spätere
+Optionen und sind für den aktuellen Windows-Betrieb nicht vorgesehen.
 
 ## 🚀 Langfristige Vision
 
