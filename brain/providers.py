@@ -10,8 +10,8 @@ from openai import APITimeoutError, OpenAI, OpenAIError
 from brain.agent import LanguageModel
 from brain.context import ChatMessage
 from brain.fallback_provider import FallbackProvider, ProviderNotice
-from brain.provider_diagnostics import emit_provider
-from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
+from brain.provider_diagnostics import ProviderErrorCode, ProviderOperation
+from diagnostics.events import StructuredDiagnosticReporter
 
 
 DEFAULT_OLLAMA_TEMPERATURE = 0.25
@@ -60,40 +60,24 @@ class OpenAIProvider:
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
         """Liefert eine Modellantwort, ohne Anbieterfehler offenzulegen."""
+        operation = ProviderOperation(self.diagnostics, "openai")
         try:
             response = self.client.responses.create(
                 model=self.model,
                 input=_message_payload(messages),
             )
         except APITimeoutError:
-            self._report_failure("timeout")
+            operation.timeout()
             raise ProviderTimeoutError(
                 "OpenAI request timed out. The local fallback may be used."
             ) from None
         except OpenAIError:
-            self._report_failure("provider-error")
+            operation.error(ProviderErrorCode.PROVIDER_UNAVAILABLE)
             raise RuntimeError(
                 "OpenAI request failed. Check API key, model access, and billing."
             ) from None
-        emit_provider(
-            self.diagnostics,
-            DiagnosticLevel.INFO,
-            "openai",
-            "request.completed",
-            status="success",
-        )
+        operation.finished()
         return response.output_text
-
-    def _report_failure(self, reason_code: str) -> None:
-        """Meldet einen OpenAI-Fehler ausschließlich mit festem Ursachencode."""
-        emit_provider(
-            self.diagnostics,
-            DiagnosticLevel.ERROR,
-            "openai",
-            "request.failed",
-            reason_code=reason_code,
-        )
-
 
 class OllamaProvider:
     """Generate responses through a local Ollama chat endpoint."""
@@ -136,8 +120,21 @@ class OllamaProvider:
 
     def generate(self, messages: Sequence[ChatMessage]) -> str:
         """Liefert eine lokale Antwort und bereinigt Transportfehler."""
-        response = self._request(messages)
-        return self._response_content(response)
+        operation = ProviderOperation(self.diagnostics, "ollama")
+        try:
+            response = self._request(messages)
+            content = self._response_content(response)
+        except ProviderTimeoutError:
+            operation.timeout()
+            raise
+        except RuntimeError:
+            operation.error(ProviderErrorCode.PROVIDER_UNAVAILABLE)
+            raise
+        except (KeyError, ValueError):
+            operation.error(ProviderErrorCode.INVALID_RESPONSE)
+            raise RuntimeError("Ollama returned an invalid response.") from None
+        operation.finished()
+        return content
 
     def _request(self, messages: Sequence[ChatMessage]) -> httpx.Response:
         """Sendet eine Ollama-Anfrage mit begrenzten Wiederholungen."""
@@ -149,20 +146,10 @@ class OllamaProvider:
                 last_error = exc
                 if not self._may_retry(exc, attempt):
                     break
-                self._report_retry(attempt)
                 self.sleeper(self.retry_delay)
                 continue
-            self._report_success(attempt)
             return response
         timed_out = isinstance(last_error, httpx.TimeoutException)
-        emit_provider(
-            self.diagnostics,
-            DiagnosticLevel.ERROR,
-            "ollama",
-            "request.failed",
-            max_attempts=self.max_attempts,
-            reason_code="timeout" if timed_out else "provider-error",
-        )
         if timed_out:
             raise ProviderTimeoutError(
                 "Ollama request timed out. Check the local service and model."
@@ -179,30 +166,6 @@ class OllamaProvider:
         )
         response.raise_for_status()
         return response
-
-    def _report_retry(self, attempt: int) -> None:
-        """Meldet einen Wiederholungsversuch ohne Nachrichteninhalte."""
-        emit_provider(
-            self.diagnostics,
-            DiagnosticLevel.WARNING,
-            "ollama",
-            "request.retrying",
-            attempt=attempt,
-            max_attempts=self.max_attempts,
-            reason_code="transient-provider-error",
-        )
-
-    def _report_success(self, attempt: int) -> None:
-        """Meldet einen erfolgreichen lokalen Modellaufruf ohne Inhalte."""
-        emit_provider(
-            self.diagnostics,
-            DiagnosticLevel.INFO,
-            "ollama",
-            "request.completed",
-            attempt=attempt,
-            max_attempts=self.max_attempts,
-            status="success",
-        )
 
     def _may_retry(self, error: httpx.HTTPError, attempt: int) -> bool:
         """Erlaubt Wiederholungen nur für vorübergehende Transport- und Statusfehler."""

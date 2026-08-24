@@ -4,6 +4,11 @@ from typing import Any, Sequence
 
 import httpx
 
+from diagnostics.events import (
+    ProviderErrorCode,
+    ProviderOperation,
+    StructuredDiagnosticReporter,
+)
 from memory.embedding_types import (
     EmbeddingError,
     EmbeddingModelInfo,
@@ -31,6 +36,7 @@ class OllamaEmbeddingProvider:
         expected_dimension: int | None = None,
         timeout: float = 60.0,
         client: httpx.Client | None = None,
+        diagnostics: StructuredDiagnosticReporter | None = None,
     ):
         """Initialisiert den lokalen Ollama-Adapter mit Modell- und Zeitgrenzen."""
         self._model_name = self._require_text(model_name, "model name")
@@ -43,6 +49,7 @@ class OllamaEmbeddingProvider:
         ):
             raise ValueError("Embedding timeout must be between 1 and 600 seconds.")
         self.timeout = timeout
+        self.diagnostics = diagnostics
         self.client = client or httpx.Client(
             base_url=self._require_text(base_url, "Ollama host").rstrip("/"),
             timeout=timeout,
@@ -64,7 +71,21 @@ class OllamaEmbeddingProvider:
         return self._model_version
 
     def ensure_model_available(self) -> EmbeddingModelInfo:
-        """Prüft Ollama-Modellmetadaten, ohne Dokumentinhalte zu senden."""
+        """Prüft Ollama-Modellmetadaten mit inhaltsfreier Lebenszyklusdiagnose."""
+        operation = ProviderOperation(self.diagnostics, "ollama-embeddings")
+        try:
+            info = self._model_info()
+        except EmbeddingTimeoutError:
+            operation.timeout()
+            raise
+        except EmbeddingError:
+            operation.error(ProviderErrorCode.PROVIDER_UNAVAILABLE)
+            raise
+        operation.finished()
+        return info
+
+    def _model_info(self) -> EmbeddingModelInfo:
+        """Liest lokale Modellinformationen hinter einer bereinigten Fehlergrenze."""
         try:
             response = self.client.post(
                 OLLAMA_SHOW_ENDPOINT,
@@ -76,9 +97,7 @@ class OllamaEmbeddingProvider:
                 "Local Ollama model check timed out."
             ) from None
         except httpx.HTTPError:
-            raise EmbeddingError(
-                "Local Ollama is unavailable. Check service and timeout."
-            ) from None
+            raise EmbeddingError("Local Ollama is unavailable.") from None
         metadata_dimension = self._metadata_dimension(response)
         if metadata_dimension is not None:
             self._register_dimension(metadata_dimension)
@@ -97,11 +116,28 @@ class OllamaEmbeddingProvider:
         self,
         texts: Sequence[EmbeddingText],
     ) -> tuple[EmbeddingResult, ...]:
-        """Erzeugt geordnete Vektoren für mehrere Abschnitte in einer Anfrage."""
+        """Erzeugt geordnete Vektoren mit inhaltsfreier Lebenszyklusdiagnose."""
         normalized_texts = tuple(texts)
         self._validate_texts(normalized_texts)
-        response = self._request_embeddings(normalized_texts)
-        results = self._parse_results(normalized_texts, response)
+        operation = ProviderOperation(self.diagnostics, "ollama-embeddings")
+        try:
+            results = self._embed_many(normalized_texts)
+        except EmbeddingTimeoutError:
+            operation.timeout()
+            raise
+        except EmbeddingError:
+            operation.error(ProviderErrorCode.PROVIDER_UNAVAILABLE)
+            raise
+        operation.finished()
+        return results
+
+    def _embed_many(
+        self,
+        texts: tuple[EmbeddingText, ...],
+    ) -> tuple[EmbeddingResult, ...]:
+        """Erzeugt und validiert einen lokalen Vektorstapel ohne Inhaltsprotokoll."""
+        response = self._request_embeddings(texts)
+        results = self._parse_results(texts, response)
         self._register_batch_dimension(results)
         return results
 
@@ -277,7 +313,10 @@ class OllamaEmbeddingProvider:
         return normalized
 
 
-def create_embedding_provider(settings) -> EmbeddingProvider:
+def create_embedding_provider(
+    settings,
+    diagnostics: StructuredDiagnosticReporter | None = None,
+) -> EmbeddingProvider:
     """Erzeugt ausschließlich den konfigurierten lokalen Einbettungsanbieter."""
     provider_name = settings.EMBEDDING_PROVIDER.casefold().strip()
     if provider_name != "ollama":
@@ -289,4 +328,5 @@ def create_embedding_provider(settings) -> EmbeddingProvider:
         model_name=settings.OLLAMA_EMBEDDING_MODEL,
         expected_dimension=expected_dimension,
         timeout=settings.OLLAMA_EMBEDDING_TIMEOUT,
+        diagnostics=diagnostics,
     )

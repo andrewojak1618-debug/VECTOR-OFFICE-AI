@@ -6,7 +6,14 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
-from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
+from diagnostics.events import (
+    DiagnosticLevel,
+    ProviderErrorCode,
+    ProviderEvent,
+    ProviderOperation,
+    StructuredDiagnosticReporter,
+    emit_provider_event,
+)
 
 
 DEFAULT_RETRY_DELAYS = (1.0, 2.0, 5.0, 10.0, 30.0)
@@ -177,12 +184,34 @@ class ConnectionSupervisor:
         if not 1 <= max_attempts <= len(self.retry_delays):
             raise ValueError("Connection attempts exceed the bounded retry schedule.")
         for attempt in range(1, max_attempts + 1):
-            status = self.observe(service, bool(health_check()))
+            available = self._run_health_check(service, health_check)
+            status = self.observe(service, available)
             if status.state is ConnectionState.AVAILABLE:
                 return True
             if attempt < max_attempts:
                 self.sleeper(status.retry_after_seconds)
         return False
+
+    def _run_health_check(
+        self,
+        service: str,
+        health_check: Callable[[], bool],
+    ) -> bool:
+        """Fängt Healthcheckfehler ab und meldet nur sichere Lebenszyklusdaten."""
+        operation = ProviderOperation(self.diagnostics, service)
+        try:
+            available = bool(health_check())
+        except TimeoutError:
+            operation.timeout()
+            return False
+        except Exception:
+            operation.error(ProviderErrorCode.HEALTH_CHECK_FAILED)
+            return False
+        if available:
+            operation.finished()
+        else:
+            operation.error(ProviderErrorCode.HEALTH_CHECK_FAILED)
+        return available
 
     def _emit(self, status: ConnectionStatus) -> None:
         """Schreibt nur geänderte Verbindungszustände in die strukturierte Diagnose."""
@@ -254,6 +283,11 @@ class ConnectionSupervisor:
         armed = current.provider in self._provider_recovery_armed
         if armed and previous is not None and previous.health in recoverable:
             self._pending_provider_recoveries.add(current.provider)
+            emit_provider_event(
+                self.diagnostics,
+                ProviderEvent.RECOVERED,
+                current.provider,
+            )
         self._provider_recovery_armed.discard(current.provider)
 
     @staticmethod

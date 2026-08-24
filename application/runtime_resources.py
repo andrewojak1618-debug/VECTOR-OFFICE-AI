@@ -97,11 +97,14 @@ def _create_audit_store(settings) -> SQLiteToolAuditStore | None:
         return None
 
 
-def _create_knowledge_library(settings) -> IndexedKnowledgeLibrary:
+def _create_knowledge_library(
+    settings,
+    diagnostics=None,
+) -> IndexedKnowledgeLibrary:
     """Verbindet kontrollierte Importe mit automatischer lokaler Indexierung."""
     library = SQLiteKnowledgeLibrary(settings.MEMORY_DB_PATH)
     store = SQLiteEmbeddingStore(settings.MEMORY_DB_PATH)
-    provider = create_embedding_provider(settings)
+    provider = create_embedding_provider(settings, diagnostics)
     indexer = DocumentEmbeddingIndexer(library, store, provider)
     search = HybridKnowledgeSearch(
         library,

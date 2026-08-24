@@ -13,6 +13,26 @@ Transkripte, Prompts, Antworten, Dokumente, API-Schlüssel oder Vektoren werden
 bereits vor dem Schreiben abgelehnt. Transportfehler erscheinen nur als feste
 Ursachencodes; interne Fehlermeldungen werden nicht übernommen.
 
+Provideraufrufe verwenden eine zusätzliche enge Schnittstelle. Sie nimmt nur
+Providername, Laufzeit in Millisekunden, einen festen Fehlercode und bei einem
+Rückfall den Namen des Ersatzproviders an. Freie Fehlertexte und Nutzdaten sind
+an dieser Grenze nicht vorgesehen.
+
+| Ereignis | Bedeutung | Sichere Zusatzdaten |
+| --- | --- | --- |
+| `provider.started` | ein begrenzter Provideraufruf beginnt | Providername |
+| `provider.finished` | der Aufruf wurde erfolgreich beendet | Providername, Dauer |
+| `provider.timeout` | die konfigurierte Frist ist abgelaufen | Providername, Dauer, Fehlercode |
+| `provider.error` | der Provideraufruf ist kontrolliert fehlgeschlagen | Providername, Dauer, Fehlercode |
+| `provider.fallback` | ein freigegebener Ersatzprovider übernimmt | Providername, Ersatzprovider, Fehlercode |
+| `provider.recovered` | der zuvor ausgefallene Provider ist wieder nutzbar | Providername, optionaler Ersatzprovider |
+
+Die Dauer wird mit einer monotonen lokalen Uhr gemessen. Zulässige Fehlercodes
+sind feste Klassen wie `request-timeout`, `provider-unavailable`,
+`invalid-response`, `primary-unavailable` und `health-check-failed`. Fragen,
+Antworten, Sprachtexte, Erinnerungen, Dokumentabschnitte, Embeddings und Secrets
+werden weder in Erfolgs- noch in Fehlerereignisse übernommen.
+
 ## Konfiguration
 
 ```env
@@ -32,9 +52,10 @@ Roboterbetrieb nicht blockieren.
 Get-Content data\diagnostics\events.jsonl -Tail 20
 ```
 
-Die erste Integration erfasst Anwendungsstart und -ende, Ollama- und
-WirePod-Verfügbarkeit, Vector-SDK-Zugriff, Betriebsmodus, begrenzte
-Ollama-Wiederholungen sowie einen aktivierten Provider-Fallback.
+Die Integration erfasst Anwendungsstart und -ende, Ollama- und
+WirePod-Verfügbarkeit, Vector-SDK-Zugriff, Betriebsmodus sowie die begrenzten
+Lebenszyklen von OpenAI, Ollama und ElevenLabs einschließlich Rückfall und
+Wiederherstellung.
 
 ## Provider-Status sicher prüfen
 

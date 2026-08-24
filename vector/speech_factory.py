@@ -1,11 +1,16 @@
 """Compose the configured German speech provider with safe cloud defaults."""
 
+from diagnostics.events import StructuredDiagnosticReporter
 from vector.elevenlabs_speech import ElevenLabsSpeech, ElevenLabsVoiceSettings
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
 
 
-def create_speech_output(settings, vector: VectorSDKClient) -> VectorSpeech:
+def create_speech_output(
+    settings,
+    vector: VectorSDKClient,
+    diagnostics: StructuredDiagnosticReporter | None = None,
+) -> VectorSpeech:
     """Erzeugt lokale Sprache oder ausdrücklich freigegebenes ElevenLabs mit Rückfall."""
     local = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
     provider = getattr(settings, "TTS_PROVIDER", "onecore").casefold().strip()
@@ -19,7 +24,7 @@ def create_speech_output(settings, vector: VectorSDKClient) -> VectorSpeech:
     if not _has_cloud_credentials(settings):
         print("ElevenLabs key or voice ID is missing. Using local German voice.")
         return local
-    return _create_elevenlabs(settings, local)
+    return _create_elevenlabs(settings, local, diagnostics)
 
 
 def _has_cloud_credentials(settings) -> bool:
@@ -29,7 +34,11 @@ def _has_cloud_credentials(settings) -> bool:
     return bool(key.strip() and voice_id.strip())
 
 
-def _create_elevenlabs(settings, local: VectorSpeech) -> ElevenLabsSpeech:
+def _create_elevenlabs(
+    settings,
+    local: VectorSpeech,
+    diagnostics: StructuredDiagnosticReporter | None = None,
+) -> ElevenLabsSpeech:
     """Erzeugt den Cloud-TTS-Adapter mit begrenzter lokaler Rückfallstimme."""
     controls = ElevenLabsVoiceSettings(
         stability=settings.ELEVENLABS_STABILITY,
@@ -44,4 +53,5 @@ def _create_elevenlabs(settings, local: VectorSpeech) -> ElevenLabsSpeech:
         settings.ELEVENLABS_MODEL,
         settings.ELEVENLABS_TIMEOUT,
         controls,
+        diagnostics=diagnostics,
     )

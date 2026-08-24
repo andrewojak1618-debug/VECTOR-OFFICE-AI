@@ -5,8 +5,12 @@ from enum import Enum
 
 from brain.agent import LanguageModel
 from brain.context import ChatMessage
-from brain.provider_diagnostics import emit_provider
-from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
+from brain.provider_diagnostics import (
+    ProviderErrorCode,
+    ProviderEvent,
+    emit_provider_event,
+)
+from diagnostics.events import StructuredDiagnosticReporter
 
 
 class ProviderNotice(Enum):
@@ -42,14 +46,12 @@ class FallbackProvider:
         if not outage_started:
             return self._generate_fallback(messages)
         print("OpenAI unavailable. Using local Ollama fallback.")
-        emit_provider(
+        emit_provider_event(
             self.diagnostics,
-            DiagnosticLevel.WARNING,
-            "provider",
-            "fallback.activated",
-            provider="openai",
+            ProviderEvent.FALLBACK,
+            "openai",
             fallback="ollama",
-            reason_code="primary-unavailable",
+            error_code=ProviderErrorCode.PRIMARY_UNAVAILABLE,
         )
         return self._generate_fallback(messages)
 
@@ -100,12 +102,9 @@ class FallbackProvider:
 
     def _report_primary_recovery(self) -> None:
         """Meldet die Wiederherstellung des Primärproviders ohne Inhaltsdaten."""
-        emit_provider(
+        emit_provider_event(
             self.diagnostics,
-            DiagnosticLevel.INFO,
-            "provider",
-            "fallback.recovered",
-            provider="openai",
+            ProviderEvent.RECOVERED,
+            "openai",
             fallback="ollama",
-            reason_code="primary-recovered",
         )

@@ -5,7 +5,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
+from diagnostics.events import (
+    DiagnosticLevel,
+    ProviderErrorCode,
+    ProviderEvent,
+    ProviderOperation,
+    StructuredDiagnosticReporter,
+    emit_provider_event,
+)
 
 
 class StructuredDiagnosticReporterTests(unittest.TestCase):
@@ -39,7 +46,15 @@ class StructuredDiagnosticReporterTests(unittest.TestCase):
     def test_private_content_fields_are_rejected(self):
         reporter = StructuredDiagnosticReporter(self.path)
 
-        for field in ("transcript", "prompt", "response", "api_key", "document"):
+        for field in (
+            "transcript",
+            "prompt",
+            "response",
+            "api_key",
+            "document",
+            "memory",
+            "embedding",
+        ):
             with self.subTest(field=field), self.assertRaisesRegex(
                 ValueError,
                 "forbidden field",
@@ -52,6 +67,88 @@ class StructuredDiagnosticReporterTests(unittest.TestCase):
                 )
 
         self.assertFalse(self.path.exists())
+
+    def test_provider_lifecycle_uses_only_fixed_safe_metadata(self):
+        reporter = StructuredDiagnosticReporter(self.path)
+        clock = iter((10.0, 10.125)).__next__
+
+        operation = ProviderOperation(reporter, "ollama", clock=clock)
+        operation.finished()
+        emit_provider_event(
+            reporter,
+            ProviderEvent.FALLBACK,
+            "openai",
+            fallback="ollama",
+            error_code=ProviderErrorCode.PRIMARY_UNAVAILABLE,
+        )
+        emit_provider_event(
+            reporter,
+            ProviderEvent.RECOVERED,
+            "openai",
+            fallback="ollama",
+        )
+        events = self._read_events()
+
+        self.assertEqual(
+            ["provider.started", "provider.finished", "provider.fallback", "provider.recovered"],
+            [event["code"] for event in events],
+        )
+        self.assertEqual(125, events[1]["details"]["duration_ms"])
+        self.assertEqual(
+            {"provider", "duration_ms"},
+            set(events[1]["details"]),
+        )
+
+    def test_provider_failures_use_safe_codes_without_message_content(self):
+        reporter = StructuredDiagnosticReporter(self.path)
+        timeout_clock = iter((1.0, 1.2)).__next__
+        error_clock = iter((2.0, 2.05)).__next__
+
+        ProviderOperation(reporter, "openai", timeout_clock).timeout()
+        ProviderOperation(reporter, "elevenlabs", error_clock).error(
+            ProviderErrorCode.PROVIDER_UNAVAILABLE
+        )
+        events = self._read_events()
+        encoded = json.dumps(events)
+
+        self.assertEqual("provider.timeout", events[1]["code"])
+        self.assertEqual("request-timeout", events[1]["details"]["error_code"])
+        self.assertEqual("provider.error", events[3]["code"])
+        self.assertEqual(
+            "provider-unavailable",
+            events[3]["details"]["error_code"],
+        )
+        for private_value in ("private question", "private answer", "secret-key"):
+            self.assertNotIn(private_value, encoded)
+
+    def test_provider_interface_rejects_free_form_event_and_error_values(self):
+        reporter = StructuredDiagnosticReporter(self.path)
+
+        with self.assertRaisesRegex(TypeError, "Provider event"):
+            emit_provider_event(reporter, "provider.error", "ollama")
+        with self.assertRaisesRegex(TypeError, "error code"):
+            emit_provider_event(
+                reporter,
+                ProviderEvent.ERROR,
+                "ollama",
+                error_code="private failure detail",
+            )
+        with self.assertRaisesRegex(ValueError, "duration"):
+            emit_provider_event(
+                reporter,
+                ProviderEvent.FINISHED,
+                "ollama",
+                duration_ms=-1,
+            )
+
+        with self.assertRaisesRegex(ValueError, "error code"):
+            reporter.emit(
+                DiagnosticLevel.ERROR,
+                "ollama",
+                "provider.error",
+                provider="ollama",
+                error_code="private failure detail",
+            )
 
     def test_disabled_reporter_creates_no_file(self):
         reporter = StructuredDiagnosticReporter(self.path, enabled=False)
@@ -107,6 +204,12 @@ class StructuredDiagnosticReporterTests(unittest.TestCase):
                 "event.ok",
                 status=["not", "scalar"],
             )
+
+    def _read_events(self):
+        return [
+            json.loads(line)
+            for line in self.path.read_text(encoding="utf-8").splitlines()
+        ]
 
 
 if __name__ == "__main__":

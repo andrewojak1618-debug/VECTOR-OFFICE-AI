@@ -71,7 +71,7 @@ def run_application(settings) -> None:
     vector = _prepare_vector(settings, mode, diagnostics, connections)
     if vector is None:
         return
-    speech = create_speech_output(settings, vector)
+    speech = create_speech_output(settings, vector, diagnostics)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
     agent = _create_runtime_agent(settings, mode, actions, diagnostics)
     _run_input_mode(settings, mode, agent, speech, diagnostics, connections)
@@ -87,7 +87,7 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
     """Setzt einen Agenten mit gemeinsamem lokalen Speicher und Statuslesern zusammen."""
     audit_store = _create_audit_store(settings)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
-    library = _create_knowledge_library(settings)
+    library = _create_knowledge_library(settings, diagnostics)
     wirepod_status = VectorClient(
         settings.WIREPOD_HOST,
         settings.WIREPOD_REQUEST_TIMEOUT,
@@ -283,7 +283,7 @@ def _create_agent(
         store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
     library = knowledge_library
     if library is None:
-        library = _create_knowledge_library(settings)
+        library = _create_knowledge_library(settings, diagnostics)
     return Agent(
         language_model,
         memory_store=store,

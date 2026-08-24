@@ -1,15 +1,16 @@
-"""Emit content-free diagnostic metadata for language-model providers."""
+"""Expose the shared content-free provider diagnostic vocabulary."""
 
-from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
+from diagnostics.events import (
+    ProviderErrorCode,
+    ProviderEvent,
+    ProviderOperation,
+    emit_provider_event,
+)
 
 
-def emit_provider(
-    diagnostics: StructuredDiagnosticReporter | None,
-    level: DiagnosticLevel,
-    component: str,
-    code: str,
-    **details: bool | float | int | str | None,
-) -> None:
-    """Schreibt validierte Anbietermetadaten bei aktivierter Diagnose."""
-    if diagnostics is not None:
-        diagnostics.emit(level, component, code, **details)
+__all__ = [
+    "ProviderErrorCode",
+    "ProviderEvent",
+    "ProviderOperation",
+    "emit_provider_event",
+]

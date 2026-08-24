@@ -7,6 +7,13 @@ from pathlib import Path
 
 import httpx
 
+from diagnostics.events import (
+    ProviderErrorCode,
+    ProviderEvent,
+    ProviderOperation,
+    StructuredDiagnosticReporter,
+    emit_provider_event,
+)
 from vector.speech import PreparedSpeech, SpeechProviderNotice, VectorSpeech
 from vector.speech_prosody import SpeechStyle, normalize_speech_text
 
@@ -97,6 +104,7 @@ class ElevenLabsSpeech(VectorSpeech):
         timeout: float = 15.0,
         voice_settings: ElevenLabsVoiceSettings | None = None,
         client: httpx.Client | None = None,
+        diagnostics: StructuredDiagnosticReporter | None = None,
     ):
         """Initialisiert Cloud-TTS mit validierter Konfiguration und lokalem Rückfall."""
         self._validate_configuration(api_key, voice_id, model, timeout)
@@ -111,6 +119,7 @@ class ElevenLabsSpeech(VectorSpeech):
         self.model = model.strip()
         self.voice_settings = voice_settings or ElevenLabsVoiceSettings()
         self.client = client or httpx.Client(timeout=timeout)
+        self.diagnostics = diagnostics
         self._cloud_unavailable = False
         self._pending_notice: SpeechProviderNotice | None = None
 
@@ -120,16 +129,23 @@ class ElevenLabsSpeech(VectorSpeech):
         style: SpeechStyle = SpeechStyle.CONVERSATIONAL,
     ) -> PreparedSpeech:
         """Bereitet Cloud-Sprache vor oder nutzt transparent die lokale Stimme."""
+        operation = ProviderOperation(self.diagnostics, "elevenlabs")
         try:
             prepared = super().prepare(text, style)
+        except ElevenLabsTimeoutError:
+            operation.timeout()
+            self._mark_cloud_unavailable()
+            return self.local_speech.prepare(text, style)
         except (
             OSError,
             RuntimeError,
             subprocess.SubprocessError,
             wave.Error,
         ):
+            operation.error(ProviderErrorCode.PROVIDER_UNAVAILABLE)
             self._mark_cloud_unavailable()
             return self.local_speech.prepare(text, style)
+        operation.finished()
         self._mark_cloud_available()
         return prepared
 
@@ -144,12 +160,25 @@ class ElevenLabsSpeech(VectorSpeech):
         if not self._cloud_unavailable:
             print("ElevenLabs speech unavailable. Using local German voice.")
             self._pending_notice = SpeechProviderNotice.LOCAL_FALLBACK
+            emit_provider_event(
+                self.diagnostics,
+                ProviderEvent.FALLBACK,
+                "elevenlabs",
+                fallback="onecore",
+                error_code=ProviderErrorCode.PRIMARY_UNAVAILABLE,
+            )
         self._cloud_unavailable = True
 
     def _mark_cloud_available(self) -> None:
         """Merkt die erste erfolgreiche Cloud-Synthese nach einem Ausfall."""
         if self._cloud_unavailable:
             self._pending_notice = SpeechProviderNotice.CLOUD_RECOVERED
+            emit_provider_event(
+                self.diagnostics,
+                ProviderEvent.RECOVERED,
+                "elevenlabs",
+                fallback="onecore",
+            )
         self._cloud_unavailable = False
 
     def say_thinking_prelude(self) -> bool:

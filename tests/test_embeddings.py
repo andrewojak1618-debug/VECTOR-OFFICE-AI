@@ -1,7 +1,7 @@
 import json
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import httpx
 
@@ -197,6 +197,24 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
         print_mock.assert_not_called()
         self.assertNotIn(sensitive_text, str(raised.exception))
 
+    def test_diagnostics_never_receive_embedding_text_or_vectors(self):
+        diagnostics = MagicMock()
+        provider = self._provider(
+            lambda request: self._response(request),
+            diagnostics=diagnostics,
+        )
+
+        provider.embed(EmbeddingText("Vertraulicher Dokumentabschnitt"))
+
+        calls = diagnostics.emit.call_args_list
+        self.assertEqual(
+            ["provider.started", "provider.finished"],
+            [call.args[2] for call in calls],
+        )
+        encoded = repr(calls)
+        self.assertNotIn("Vertraulicher Dokumentabschnitt", encoded)
+        self.assertNotIn("0.1", encoded)
+
     def test_unexpected_dimension_is_rejected(self):
         provider = self._provider(
             lambda request: self._response(request),
@@ -238,7 +256,7 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
             },
         )
 
-    def _provider(self, handler, expected_dimension=None):
+    def _provider(self, handler, expected_dimension=None, diagnostics=None):
         client = httpx.Client(
             base_url="http://local-test",
             transport=httpx.MockTransport(handler),
@@ -249,6 +267,7 @@ class OllamaEmbeddingProviderTests(unittest.TestCase):
             model_name="embeddinggemma",
             expected_dimension=expected_dimension,
             client=client,
+            diagnostics=diagnostics,
         )
 
 

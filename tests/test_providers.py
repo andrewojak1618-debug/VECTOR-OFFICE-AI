@@ -1,6 +1,6 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import httpx
 from openai import APITimeoutError
@@ -96,6 +96,25 @@ class ProviderTests(unittest.TestCase):
             max_retries=2,
         )
 
+    def test_openai_provider_emits_content_free_lifecycle(self):
+        diagnostics = MagicMock()
+        provider = OpenAIProvider(
+            "test-key",
+            "test-model",
+            client=FakeOpenAIClient(),
+            diagnostics=diagnostics,
+        )
+
+        provider.generate(MESSAGES)
+
+        calls = diagnostics.emit.call_args_list
+        self.assertEqual(
+            ["provider.started", "provider.finished"],
+            [call.args[2] for call in calls],
+        )
+        self.assertEqual({"provider", "duration_ms"}, set(calls[1].kwargs))
+        self.assertNotIn("Hallo", repr(calls))
+
     def test_ollama_provider_maps_messages(self):
         def handle_request(request):
             payload = __import__("json").loads(request.content)
@@ -141,6 +160,33 @@ class ProviderTests(unittest.TestCase):
         )
 
         self.assertEqual("Okay", provider.generate(MESSAGES))
+
+    def test_ollama_provider_emits_content_free_lifecycle(self):
+        client = httpx.Client(
+            base_url="http://test",
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200,
+                    json={"message": {"content": "private answer"}},
+                )
+            ),
+        )
+        diagnostics = MagicMock()
+        provider = OllamaProvider(
+            "http://test",
+            "test-model",
+            client=client,
+            diagnostics=diagnostics,
+        )
+
+        provider.generate(MESSAGES)
+
+        calls = diagnostics.emit.call_args_list
+        self.assertEqual(
+            ["provider.started", "provider.finished"],
+            [call.args[2] for call in calls],
+        )
+        self.assertNotIn("private answer", repr(calls))
 
     def test_ollama_provider_rejects_invalid_temperature(self):
         with self.assertRaisesRegex(ValueError, "temperature"):

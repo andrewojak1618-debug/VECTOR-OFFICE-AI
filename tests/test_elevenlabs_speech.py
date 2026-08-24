@@ -1,11 +1,15 @@
 """Tests for optional cloud TTS and its mandatory local fallback."""
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import httpx
 
+from diagnostics.events import StructuredDiagnosticReporter
 from vector.elevenlabs_speech import (
     NATURAL_VECTOR_AUDIO_FILTER,
     ElevenLabsTimeoutError,
@@ -121,6 +125,40 @@ class ElevenLabsSpeechTests(unittest.TestCase):
             self.assertIsNone(speech.consume_notice())
             self.assertIs(stable_audio, speech.prepare("Antwort drei"))
             self.assertIsNone(speech.consume_notice())
+
+    def test_cloud_lifecycle_diagnostics_never_include_speech_text(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "events.jsonl"
+            diagnostics = StructuredDiagnosticReporter(path)
+            speech = ElevenLabsSpeech(
+                self.local,
+                "secret-key",
+                "felix-id",
+                diagnostics=diagnostics,
+            )
+            outcomes = [RuntimeError("private failure"), object(), object()]
+            with patch.object(VectorSpeech, "prepare", side_effect=outcomes):
+                speech.prepare("private spoken answer")
+                speech.prepare("another private answer")
+            events = [
+                json.loads(line)
+                for line in path.read_text(encoding="utf-8").splitlines()
+            ]
+
+        self.assertEqual(
+            [
+                "provider.started",
+                "provider.error",
+                "provider.fallback",
+                "provider.started",
+                "provider.finished",
+                "provider.recovered",
+            ],
+            [event["code"] for event in events],
+        )
+        encoded = json.dumps(events)
+        self.assertNotIn("private spoken answer", encoded)
+        self.assertNotIn("secret-key", encoded)
 
     def test_continuous_cloud_outage_does_not_repeat_notice(self):
         speech = ElevenLabsSpeech(self.local, "secret-key", "felix-id")

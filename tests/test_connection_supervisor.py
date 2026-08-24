@@ -60,6 +60,23 @@ class ConnectionSupervisorTests(unittest.TestCase):
         self.assertTrue(available)
         self.assertEqual([1.0, 2.0], delays)
 
+    def test_health_check_failure_is_isolated_without_error_content(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "events.jsonl"
+            supervisor = ConnectionSupervisor(StructuredDiagnosticReporter(path))
+
+            available = supervisor.wait_until_available(
+                "wirepod",
+                lambda: (_ for _ in ()).throw(RuntimeError("private detail")),
+                max_attempts=1,
+            )
+            encoded = path.read_text(encoding="utf-8")
+
+        self.assertFalse(available)
+        self.assertIn('"code":"provider.error"', encoded)
+        self.assertIn('"error_code":"health-check-failed"', encoded)
+        self.assertNotIn("private detail", encoded)
+
     def test_diagnostics_emit_only_state_changes_without_service_content(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "events.jsonl"
@@ -174,6 +191,7 @@ class ConnectionSupervisorTests(unittest.TestCase):
                 "provider.health.disabled",
                 "provider.health.unavailable",
                 "provider.health.degraded",
+                "provider.recovered",
                 "provider.health.healthy",
             ],
             [event["code"] for event in events],
