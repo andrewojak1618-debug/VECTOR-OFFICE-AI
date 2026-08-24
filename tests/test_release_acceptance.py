@@ -37,6 +37,31 @@ class ReleaseAcceptanceTests(unittest.TestCase):
         self.assertEqual(1, categories.count("live-openai"))
         self.assertNotIn("physical-vector", categories)
 
+    def test_focused_regression_precedes_complete_suite(self):
+        checks = build_checks(
+            "python",
+            regression_test=(
+                "tests.test_release_acceptance."
+                "ReleaseAcceptanceTests.test_default_acceptance_contains_only_core_checks"
+            ),
+        )
+
+        self.assertEqual("regression", checks[0].category)
+        self.assertEqual("Focused regression test", checks[0].name)
+        self.assertEqual("Complete unit test suite", checks[1].name)
+
+    def test_regression_target_must_stay_below_tests(self):
+        invalid_targets = (
+            "diagnostics.release_acceptance",
+            "tests/test_release_acceptance.py",
+            "tests.test_release_acceptance;whoami",
+        )
+
+        for target in invalid_targets:
+            with self.subTest(target=target):
+                with self.assertRaisesRegex(ValueError, "dotted target"):
+                    build_checks("python", regression_test=target)
+
     def test_physical_checks_require_explicit_confirmation(self):
         with self.assertRaisesRegex(ValueError, "explicit confirmation"):
             build_checks("python", physical_vector=True)

@@ -84,6 +84,30 @@ Pfade, Docstrings und Quelltexte bleiben innerhalb der Prüfung. Dieser Status
 ersetzt keinen vollständigen Testlauf, sondern meldet ausschließlich die
 statisch prüfbaren Leitplanken.
 
+## Verbindlicher Regressionstest-Ablauf
+
+Jeder neu gefundene Fehler wird vor seiner Korrektur reproduzierbar beschrieben und
+durch einen möglichst kleinen automatisierten Test abgesichert. Der Test muss gegen
+den noch fehlerhaften Stand nachweislich fehlschlagen. Erst danach wird die konkrete
+Ursache behoben; eine bloße Umgehung des beobachteten Symptoms genügt nicht.
+
+Der verbindliche Ablauf lautet:
+
+> Fehler reproduzieren → Regressionstest → Ursache beheben → Einzeltest → vollständige Testsuite → Live- oder Vector-Test
+
+Die fehlgeschlagene Vorher-Ausführung wird während der Bearbeitung kontrolliert und
+im Arbeitsbefund festgehalten. Fehlerausgaben, Benutzerinhalte, Providerantworten,
+Secrets und lokale Laufzeitdaten werden dafür nicht committed. Nach der Korrektur
+muss zunächst genau der neue Regressionstest bestehen. Anschließend folgen die
+vollständige Unit-Test-Suite, Python-Kompilierung, strikter MkDocs-Build und
+`git diff --check`.
+
+Reproduzierbare Tests bleiben vollständig von Live- und Hardwaretests getrennt.
+Provider-Live-Tests werden nur bei fachlichem Bedarf gestartet und ersetzen keinen
+Regressionstest. Physische Vector-Tests erfolgen ausschließlich nach ausdrücklicher
+Bestätigung des Nutzers. Die ausführliche Teststrategie und die zugehörigen Befehle
+stehen in [`docs/testing.md`](testing.md).
+
 Die vollständige Abnahme erfolgt mit:
 
 ```powershell

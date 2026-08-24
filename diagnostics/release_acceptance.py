@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
@@ -14,6 +15,9 @@ from config.settings import BASE_DIR, settings
 
 
 CHECK_TIMEOUT_SECONDS = 900
+REGRESSION_TARGET_PATTERN = re.compile(
+    r"^tests(?:\.[A-Za-z_][A-Za-z0-9_]*){1,3}$"
+)
 CORE_MODULES = (
     "application",
     "brain",
@@ -57,11 +61,15 @@ def build_checks(
     live_openai: bool = False,
     physical_vector: bool = False,
     physical_confirmed: bool = False,
+    regression_test: str | None = None,
 ) -> tuple[AcceptanceCheck, ...]:
     """Erzeugt Prüfungen ohne Netzwerk oder physische Aktionen stillschweigend freizugeben."""
     if physical_vector and not physical_confirmed:
         raise ValueError("Physical Vector checks require explicit confirmation.")
-    checks = list(_core_checks(python))
+    checks = []
+    if regression_test:
+        checks.append(_regression_check(python, regression_test))
+    checks.extend(_core_checks(python))
     if live_ollama:
         checks.extend(_ollama_checks(python))
     if live_openai:
@@ -124,10 +132,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         checks = build_checks(
             sys.executable,
-            arguments.live_ollama,
-            arguments.live_openai,
-            arguments.physical_vector,
-            arguments.confirm_physical,
+            live_ollama=arguments.live_ollama,
+            live_openai=arguments.live_openai,
+            physical_vector=arguments.physical_vector,
+            physical_confirmed=arguments.confirm_physical,
+            regression_test=arguments.regression_test,
         )
     except ValueError as exc:
         parser.error(str(exc))
@@ -157,6 +166,19 @@ def _core_checks(python: str) -> tuple[AcceptanceCheck, ...]:
             (python, "-m", "mkdocs", "build", "--strict"),
         ),
         AcceptanceCheck("Git whitespace validation", "core", ("git", "diff", "--check")),
+    )
+
+
+def _regression_check(python: str, target: str) -> AcceptanceCheck:
+    """Erzeugt einen sicheren Einzeltest vor der vollständigen Testsuite."""
+    if not REGRESSION_TARGET_PATTERN.fullmatch(target):
+        raise ValueError(
+            "Regression test must be a dotted target below tests."
+        )
+    return AcceptanceCheck(
+        "Focused regression test",
+        "regression",
+        (python, "-m", "unittest", target, "-v"),
     )
 
 
@@ -214,6 +236,11 @@ def _argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--live-openai", action="store_true")
     parser.add_argument("--physical-vector", action="store_true")
     parser.add_argument("--confirm-physical", action="store_true")
+    parser.add_argument(
+        "--regression-test",
+        metavar="TEST",
+        help="Run one dotted unittest target before the complete suite.",
+    )
     parser.add_argument("--report", metavar="PATH")
     return parser
 

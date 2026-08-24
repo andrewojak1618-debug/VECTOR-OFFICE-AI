@@ -38,6 +38,7 @@ nav:
   - Provider-Zuverlässigkeit: provider-reliability.md
   - Datenschutz: privacy.md
   - Codequalität: quality.md
+  - Teststrategie: testing.md
   - Spracheingabe: voice.md
   - Gedächtnis: memory.md
   - Wartung & Export: maintenance.md

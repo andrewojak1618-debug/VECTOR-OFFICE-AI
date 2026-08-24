@@ -20,6 +20,17 @@ MkDocs-Build und `git diff --check` aus. Die Unit-Tests prüfen unter anderem:
 - Datenschutz, Prompt-Injection-Schutz und Secret-Redaktion,
 - eine reale lokale SQLite-Sicherung mit anschließender Wiederherstellung.
 
+Bei einer Fehlerkorrektur kann der neue Regressionstest vor diesen Kernprüfungen
+verbindlich vorgeschaltet werden:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.release_acceptance `
+  --regression-test tests.test_modul.TestKlasse.test_fehlerfall
+```
+
+Der vollständige Ablauf einschließlich des nachgewiesenen Fehlschlags vor der
+Korrektur ist in [`docs/testing.md`](testing.md) beschrieben.
+
 Der optionale JSON-Bericht enthält nur Prüfname, Kategorie, Status,
 Rückgabecode und Dauer. Kommandos, Prozessausgaben, Dokumenttexte, Vektoren und
 Secrets werden nicht aufgenommen. `data/` bleibt von Git ausgeschlossen.
