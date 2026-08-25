@@ -6,6 +6,49 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+Noch keine Änderungen dokumentiert.
+
+## [0.2.0-rc.2] – 2026-08-25
+
+### Hinzugefügt
+
+- kontrollierte lokale Büro-, Projekt-, System-, Bibliotheks-, Memory-,
+  Roadmap-, Dokumentations- und Codequalitätswerkzeuge
+- explizit bestätigte Robot-Aktionen und kontextabhängige Ausdrucksvorschläge
+- Windows-Autostart mit Einzelinstanz-Host-Watchdog und Kaltstartdiagnose
+- zentrale Zustandsübersicht für Vector SDK, WirePod, Ollama, OpenAI und ElevenLabs
+- sicherer Provider-Statusbefehl ohne kostenpflichtige Anfrage oder Robot-Aktion
+- strukturierte Providerereignisse ohne Fragen, Antworten, Dokumente oder Secrets
+
+### Geändert
+
+- lokales Sprachmodell auf `qwen3:4b-instruct` umgestellt und live geprüft
+- deutsche Satzmelodie, Denkphase und ElevenLabs-Prosodie physisch abgestimmt
+- Provider-Timeouts, Fallback-Ketten und Wiederherstellungserkennung vereinheitlicht
+- externe Providerergebnisse vor der Sprachausgabe verbindlich validiert
+- alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
+- grenznahe Kernmodule verhaltensneutral deutlich unter 400 Zeilen aufgeteilt
+
+### Sicherheit
+
+- Provider-Isolation und bestehende Tool Registry als Sicherheitsgrenzen dokumentiert
+- Cloud-, Homeserver- und Docker-Grenzen ohne produktive Migration festgelegt
+- Regressionstest-Ablauf als verbindliche Qualitätsregel eingeführt
+- lokale Berichte, Audio, Datenbanken und Secrets weiterhin von Git ausgeschlossen
+
+### Abnahme
+
+- 635 automatisierte Tests bestanden
+- Kernabnahme mit 4/4 Prüfungen bestanden
+- lokale Ollama-Abnahme mit 7/7 Prüfungen bestanden
+- OpenAI-Live-Abnahme mit 5/5 Prüfungen bestanden
+- genau eine ElevenLabs-Erzeugung als gültiges MP3 geprüft und über Vector bestätigt
+- physische Vector-Abnahme mit 6/6 Prüfungen bestanden
+- Aussprache, Lautstärke, Wissensantwort und Begrüßungsanimation subjektiv bestätigt
+- Windows-Kaltstart, WirePod, Ollama und Vector SDK nach Neustart bestätigt
+
+### Vollständiger Änderungsverlauf
+
 - lokalen count-only Codequalitätsstatus für feste Python-Regeln ergänzt
 - beobachtete WirePod-Kurzform `Qualität Status` gezielt abgesichert
 - gesprochene Codequalitätszähler durch Zahlwörter und Satzpausen verdeutlicht

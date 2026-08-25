@@ -1,18 +1,21 @@
 # Roadmap
 
-## Aktueller Stand – RC2-Vorbereitung
+## Aktueller Stand – RC2 abgeschlossen
 
 - ✅ historischen Tag `v0.2.0-rc.1` unverändert erhalten
-- ✅ 35 einzeln geprüfte Commits seit `v0.2.0-rc.1` integriert
+- ✅ alle vorgesehenen Änderungen seit `v0.2.0-rc.1` integriert
 - ✅ README und kanonische Roadmap auf den tatsächlichen Stand synchronisiert
 - ✅ Windows-Autostart nach Neustart technisch geprüft
 - ✅ lokale Sprachfrage nach Kaltstart korrekt und verständlich beantwortet
 - ✅ letzter vollständiger Qualitätslauf mit 635 automatisierten Tests bestanden
-- ⏳ vollständige RC2-Kernabnahme auf einem unveränderten Commit ausführen
-- ⏳ tatsächlich eingesetzte Provider für RC2 kontrolliert live prüfen
-- ⏳ physischen Vector-Pfad für RC2 abschließend bestätigen
-- ⏳ Changelog und Versionsstand für `0.2.0-rc.2` festlegen
-- ⏳ geprüften annotierten Tag `v0.2.0-rc.2` erst danach setzen
+- ✅ vollständige RC2-Kernabnahme mit 4/4 Prüfungen bestanden
+- ✅ lokale Ollama-Abnahme mit 7/7 Prüfungen bestanden
+- ✅ OpenAI-Live-Abnahme mit 5/5 Prüfungen bestanden
+- ✅ genau eine ElevenLabs-Erzeugung validiert und über Vector hörgeprüft
+- ✅ physischen Vector-Pfad mit 6/6 Prüfungen technisch bestanden
+- ✅ Aussprache, Lautstärke, Wissensantwort und Animation subjektiv bestätigt
+- ✅ Changelog und Versionsstand für `0.2.0-rc.2` festgelegt
+- ✅ geprüften annotierten Tag `v0.2.0-rc.2` gesetzt
 
 ## Release-Stabilisierung
 
@@ -23,6 +26,8 @@
 - ✅ physischen Wissens- und Aktionspfad subjektiv bestätigen
 - ✅ Versionsnummer und Changelog für `0.2.0-rc.1` festlegen
 - ✅ ersten geprüften Git-Tag `v0.2.0-rc.1` historisch setzen
+- ✅ Versionsnummer und Changelog für `0.2.0-rc.2` festlegen
+- ✅ zweiten geprüften Git-Tag `v0.2.0-rc.2` setzen
 
 ## Conversation Foundation
 

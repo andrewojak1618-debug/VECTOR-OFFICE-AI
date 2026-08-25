@@ -893,19 +893,18 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | Provider Reliability | `5224315` | Providerstatus, Timeouts, Fallbacks, Diagnosen und Ergebnisvalidierung |
 | Deployment-Grenzen | `ea970c3` | Windows-, Homeserver- und spätere Docker-Grenzen dokumentiert |
 | Aktueller Qualitätsstand | `33a195e` | Grenznahe Kernmodule aufgeteilt und 635 Tests abgenommen |
+| Zweiter Release-Kandidat | `v0.2.0-rc.2` | Vollständig geprüfter RC2-Stand vom 25. August 2026 |
 
 Der annotierte Git-Tag `v0.2.0-rc.1` bleibt der historisch geprüfte erste
-Release-Kandidat. Seitdem enthält `main` 35 weitere, einzeln geprüfte Commits.
-Der aktuelle Stand befindet sich in der **RC2-Vorbereitung**; eine neue
-Versionsnummer oder ein neuer Tag wird erst nach der vollständigen RC2-Abnahme
-gesetzt. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
+Release-Kandidat. Der aktuelle Stand ist als **0.2.0-rc.2** vollständig mit
+Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
+Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
 
 ## 🚧 Aktueller Projektstatus
 
 ### Aktuelle Phase
 
-**Stabilisierter Stand nach `v0.2.0-rc.1`, Vorbereitung auf RC2 mit physischem
-Vector 2.0**
+**Release-Kandidat 0.2.0-rc.2 mit physischem Vector 2.0**
 
 - ✅ WirePod-Verbindung
 - ✅ direkte Vector-SDK-Verbindung
@@ -960,13 +959,15 @@ Vector 2.0**
 ## 🗺️ Roadmap
 
 Die ausführliche, verbindliche Aufgabenübersicht steht in
-[`docs/roadmap.md`](docs/roadmap.md). Der aktuelle nächste Meilenstein ist RC2:
+[`docs/roadmap.md`](docs/roadmap.md). Die RC2-Freigabe ist abgeschlossen:
 
 1. ✅ README und Roadmap mit dem realen Projektstand synchronisieren.
-2. ⏳ vollständige RC2-Kernabnahme auf dem unveränderten Commit ausführen.
-3. ⏳ tatsächlich eingesetzte Provider kontrolliert live prüfen.
-4. ⏳ den physischen Vector-Pfad für RC2 abschließend bestätigen.
-5. ⏳ erst danach Changelog, Versionsstand und Tag `v0.2.0-rc.2` festlegen.
+2. ✅ vollständige RC2-Kernabnahme auf dem unveränderten Commit ausführen.
+3. ✅ Ollama und OpenAI kontrolliert live prüfen.
+4. ✅ ElevenLabs-Audio erzeugen, validieren und über Vector bestätigen.
+5. ✅ den physischen Wissens-, Sprach- und Aktionspfad abschließend bestätigen.
+6. ✅ Changelog und Versionsstand für `0.2.0-rc.2` festlegen.
+7. ✅ den geprüften annotierten Tag `v0.2.0-rc.2` setzen.
 
 Nach RC2 werden weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln
 über die bestehende Tool Registry abgesichert. Ein Vergleich von ElevenLabs

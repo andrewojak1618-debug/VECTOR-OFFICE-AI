@@ -93,3 +93,19 @@ Lautstärke, die korrekte Wissensantwort `0,35` und die Begrüßungsbewegung.
 Daraufhin wurde `0.2.0-rc.1` als erster Release-Kandidat vorbereitet. Die
 lokalen JSON-Berichte bleiben unter `data/acceptance/` und werden nicht
 versioniert.
+
+## Ergebnis des zweiten Release-Kandidaten
+
+Am 25. August 2026 bestand der finale RC2-Stand den automatischen Kern mit 4/4
+Prüfungen und 635 automatisierten Tests. Die lokale Ollama-Abnahme erreichte
+7/7 und die minimale OpenAI-Live-Abnahme 5/5 Prüfungen. Genau eine kurze
+ElevenLabs-Erzeugung wurde als gültiges MP3 dekodiert und anschließend ohne
+erneuten Cloud-Aufruf über Vector abgespielt.
+
+Der physische Vector-Pfad bestand 6/6 Prüfungen: semantischer Dokumentabruf,
+lokale Ollama-Antwort, deutsche Sprachausgabe und eine kontrollierte
+Begrüßungsanimation wurden technisch abgeschlossen. Der Nutzer bestätigte
+anschließend Aussprache, Lautstärke, Wissensantwort, ElevenLabs-Stimme und
+Animation. Auch der vollständige Windows-Kaltstart mit WirePod, Ollama und
+Vector SDK wurde vor der Freigabe praktisch bestätigt. Damit erfüllt
+`0.2.0-rc.2` alle Freigabekriterien.
