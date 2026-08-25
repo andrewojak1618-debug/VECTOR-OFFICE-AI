@@ -1,6 +1,7 @@
 """Supervise local WirePod and Vector Office AI startup on Windows."""
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -8,22 +9,20 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-import httpx
-
 from application.connection_supervisor import ConnectionSupervisor
 from application.process_control import (
     SingleInstanceLock,
     hidden_process_flags,
     process_exists,
     stop_process_tree,
-    wirepod_process_running,
 )
+from application.wirepod_host_service import WirePodHostService
+from application.wirepod_preflight import WirePodSdkProbe, WirePodSdkState
 from config.settings import settings
 from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
 
 
 APP_RESTART_DELAYS = (2.0, 5.0, 10.0, 30.0)
-WIREPOD_HEALTH_PATH = "/api/get_logs"
 
 
 @dataclass(frozen=True)
@@ -53,52 +52,6 @@ class HostWatchdogConfig:
             raise ValueError("Watchdog owner process ID must be positive.")
 
 
-class WirePodHostService:
-    """Check and start the configured local WirePod process safely."""
-
-    def __init__(
-        self,
-        host: str,
-        executable: Path,
-        client: httpx.Client | None = None,
-        process_running: Callable[[], bool] | None = None,
-        process_launcher: Callable[..., object] | None = None,
-    ):
-        """Initialisiert die lokale WirePod-Prüfung mit austauschbaren Grenzen."""
-        self.host = host.rstrip("/")
-        self.executable = executable
-        self.client = client or httpx.Client(timeout=1.5)
-        self.process_running = process_running or wirepod_process_running
-        self.process_launcher = process_launcher or subprocess.Popen
-
-    def is_available(self) -> bool:
-        """Prüft, ob WirePod aktuell am lokalen Log-Endpunkt antwortet."""
-        try:
-            response = self.client.get(f"{self.host}{WIREPOD_HEALTH_PATH}")
-            response.raise_for_status()
-            return True
-        except httpx.HTTPError:
-            return False
-
-    def ensure_started(self) -> bool:
-        """Startet WirePod nur bei fehlendem Prozess und vorhandener Programmdatei."""
-        if self.is_available() or self.process_running():
-            return True
-        if not self.executable.is_file():
-            return False
-        try:
-            self.process_launcher(
-                [str(self.executable), "-d"],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=hidden_process_flags(),
-            )
-        except OSError:
-            return False
-        return True
-
-
 class HostWatchdog:
     """Keep local startup dependencies healthy around one application process."""
 
@@ -124,6 +77,7 @@ class HostWatchdog:
         self.process_stopper = process_stopper or stop_process_tree
         self.connections = ConnectionSupervisor(diagnostics, sleeper=sleeper)
         self._application_process = None
+        self._wirepod_sdk_restart_used = False
 
     def run(self) -> int:
         """Überwacht bis zum bewussten Anwendungsende oder begrenzten Fehler."""
@@ -149,13 +103,22 @@ class HostWatchdog:
 
     def _run_locked(self) -> int:
         """Startet WirePod und Anwendung unter gehaltener Einzelinstanzsperre."""
-        if not self._ensure_wirepod():
-            self._emit(DiagnosticLevel.ERROR, "watchdog.blocked", status="wirepod")
+        if not self._prepare_wirepod():
             return 1
         self._application_process = self._start_application()
         if self._application_process is None:
             return 1
         return self._monitor_application()
+
+    def _prepare_wirepod(self) -> bool:
+        """Prüft WirePod-Prozess und SDK-Zugriff vor einem Anwendungsstart."""
+        if not self._ensure_wirepod():
+            self._emit(DiagnosticLevel.ERROR, "watchdog.blocked", status="wirepod")
+            return False
+        if self._ensure_wirepod_sdk():
+            return True
+        self._emit(DiagnosticLevel.ERROR, "watchdog.blocked", status="wirepod-sdk")
+        return False
 
     def _ensure_wirepod(self) -> bool:
         """Versucht WirePod mit begrenzten Wiederholungen verfügbar zu machen."""
@@ -169,6 +132,70 @@ class HostWatchdog:
             if attempt < self.config.startup_attempts:
                 self.sleeper(status.retry_after_seconds)
         return False
+
+    def _ensure_wirepod_sdk(self) -> bool:
+        """Validiert den SDK-Lesezugriff und repariert nur veraltete Zuordnungen."""
+        state = self._sdk_state()
+        self.connections.observe("wirepod-sdk", state is WirePodSdkState.READY)
+        if state is WirePodSdkState.READY:
+            return True
+        if state is WirePodSdkState.AUTHENTICATION_FAILED:
+            return self._repair_wirepod_sdk()
+        if state in {WirePodSdkState.INVALID_RESPONSE, WirePodSdkState.DISABLED}:
+            return False
+        return self._wait_for_wirepod_sdk()
+
+    def _repair_wirepod_sdk(self) -> bool:
+        """Lädt eine nach Prozessstart geänderte WirePod-Zuordnung genau einmal neu."""
+        if self._wirepod_sdk_restart_used:
+            return False
+        if not self._credentials_changed_after_start():
+            return False
+        self._wirepod_sdk_restart_used = True
+        self._emit(DiagnosticLevel.WARNING, "watchdog.wirepod_sdk_restarting")
+        if not self._restart_wirepod() or not self._ensure_wirepod():
+            return False
+        return self._wait_for_wirepod_sdk()
+
+    def _wait_for_wirepod_sdk(self) -> bool:
+        """Wiederholt den passiven SDK-Test nur innerhalb der Startgrenze."""
+        terminal = {
+            WirePodSdkState.AUTHENTICATION_FAILED,
+            WirePodSdkState.INVALID_RESPONSE,
+            WirePodSdkState.DISABLED,
+        }
+        for attempt in range(1, self.config.startup_attempts + 1):
+            state = self._sdk_state()
+            status = self.connections.observe(
+                "wirepod-sdk",
+                state is WirePodSdkState.READY,
+            )
+            if state is WirePodSdkState.READY:
+                return True
+            if state in terminal:
+                return False
+            if attempt < self.config.startup_attempts:
+                self.sleeper(status.retry_after_seconds)
+        return False
+
+    def _sdk_state(self) -> WirePodSdkState:
+        """Liest den SDK-Zustand über eine rückwärtskompatible Dienstgrenze."""
+        checker = getattr(self.wirepod, "sdk_state", None)
+        return checker() if checker is not None else WirePodSdkState.READY
+
+    def _credentials_changed_after_start(self) -> bool:
+        """Fragt ausschließlich den inhaltsfreien Zeitvergleich des Dienstes ab."""
+        checker = getattr(
+            self.wirepod,
+            "credentials_changed_after_process_start",
+            None,
+        )
+        return bool(checker()) if checker is not None else False
+
+    def _restart_wirepod(self) -> bool:
+        """Ruft die fest begrenzte lokale WirePod-Neustartgrenze auf."""
+        restart = getattr(self.wirepod, "restart", None)
+        return bool(restart()) if restart is not None else False
 
     def _monitor_application(self) -> int:
         """Überwacht Besitzer, Anwendung und WirePod bis zum definierten Ende."""
@@ -210,7 +237,7 @@ class HostWatchdog:
             retry_delay_seconds=delay,
         )
         self.sleeper(delay)
-        if not self._ensure_wirepod():
+        if not self._prepare_wirepod():
             return False
         self._application_process = self._start_application()
         return self._application_process is not None
@@ -281,6 +308,13 @@ def _parse_arguments():
     return parser.parse_args()
 
 
+def _wirepod_sdk_info_path() -> Path:
+    """Erzeugt den festen lokalen Pfad zu WirePods SDK-Zuordnung."""
+    roaming = os.getenv("APPDATA")
+    base = Path(roaming) if roaming else Path.home() / "AppData" / "Roaming"
+    return base / "wire-pod" / "jdocs" / "botSdkInfo.json"
+
+
 def main() -> None:
     """Startet den lokalen Watchdog und liefert dessen Beendigungsstatus."""
     if settings.INPUT_MODE.casefold().strip() != "wirepod":
@@ -292,7 +326,17 @@ def main() -> None:
         settings.DIAGNOSTICS_ENABLED,
         settings.DIAGNOSTICS_MAX_BYTES,
     )
-    wirepod = WirePodHostService(config.wirepod_host, config.wirepod_executable)
+    sdk_probe = WirePodSdkProbe(
+        config.wirepod_host,
+        settings.VECTOR_SERIAL,
+        settings.WIREPOD_REQUEST_TIMEOUT,
+    )
+    wirepod = WirePodHostService(
+        config.wirepod_host,
+        config.wirepod_executable,
+        sdk_probe=sdk_probe,
+        sdk_info_path=_wirepod_sdk_info_path(),
+    )
     raise SystemExit(HostWatchdog(config, wirepod, diagnostics).run())
 
 

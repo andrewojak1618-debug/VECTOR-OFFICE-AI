@@ -40,6 +40,31 @@ function Test-LocalEndpoint {
     }
 }
 
+function Test-WirePodSdkEndpoint {
+    $sdkInfoPath = Join-Path $env:APPDATA "wire-pod\jdocs\botSdkInfo.json"
+    try {
+        $sdkInfo = Get-Content -Raw -LiteralPath $sdkInfoPath | ConvertFrom-Json
+        $robot = @($sdkInfo.robots | Where-Object { $_.activated })[0]
+        if ($null -eq $robot -or [string]::IsNullOrWhiteSpace($robot.esn)) {
+            return $false
+        }
+        $serial = [Uri]::EscapeDataString([string]$robot.esn)
+        $response = Invoke-WebRequest `
+            -Uri "http://127.0.0.1:8080/api-sdk/get_battery?serial=$serial" `
+            -Method Post `
+            -UseBasicParsing `
+            -TimeoutSec $TimeoutSeconds
+        if ($response.Content -match "Unauthenticated|Unauthorized|rpc error") {
+            return $false
+        }
+        $payload = $response.Content | ConvertFrom-Json
+        return $response.StatusCode -eq 200 -and $null -ne $payload.status
+    }
+    catch {
+        return $false
+    }
+}
+
 function Get-MatchingProcessCount {
     param([string]$CommandPattern)
 
@@ -79,8 +104,10 @@ catch {
 }
 
 $wirePodAvailable = Test-LocalEndpoint "http://127.0.0.1:8080/api/get_logs"
+$wirePodSdkAvailable = Test-WirePodSdkEndpoint
 $ollamaAvailable = Test-LocalEndpoint "http://127.0.0.1:11434/api/tags"
 Add-StartupCheck "WirePod endpoint" $wirePodAvailable "local"
+Add-StartupCheck "WirePod SDK authorization" $wirePodSdkAvailable "read-only"
 Add-StartupCheck "Ollama endpoint" $ollamaAvailable "local"
 
 try {

@@ -9,10 +9,10 @@ from application.connection_supervisor import (
     ConnectionSupervisor,
     ProviderHealth,
 )
+from application.wirepod_preflight import WirePodSdkProbe
 from application.runtime import get_runtime_mode, register_provider_statuses
 from brain.ollama_runtime import OllamaRuntime
 from config.settings import settings
-from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 
 
@@ -136,6 +136,8 @@ def _check_local(
         return ProviderHealth.UNAVAILABLE, "Prüfung sicher fehlgeschlagen"
     if capture.available:
         return ProviderHealth.HEALTHY, "erreichbar"
+    if provider == "wirepod":
+        return ProviderHealth.UNAVAILABLE, "SDK-Zugriff nicht verfügbar"
     return ProviderHealth.UNAVAILABLE, "nicht erreichbar"
 
 
@@ -164,14 +166,16 @@ def _has_text_setting(settings_obj, name: str) -> bool:
 def _default_checkers(settings_obj) -> dict[str, ProviderChecker]:
     """Erzeugt ausschließlich passive lokale Verfügbarkeitsprüfungen."""
     vector = VectorSDKClient(settings_obj.VECTOR_SERIAL)
+    wirepod = WirePodSdkProbe(
+        settings_obj.WIREPOD_HOST,
+        settings_obj.VECTOR_SERIAL,
+        getattr(settings_obj, "WIREPOD_REQUEST_TIMEOUT", 5.0),
+    )
     return {
         "vector-sdk": lambda: vector.is_available(
             timeout=VECTOR_PROBE_TIMEOUT_SECONDS,
         ),
-        "wirepod": VectorClient(
-            settings_obj.WIREPOD_HOST,
-            getattr(settings_obj, "WIREPOD_REQUEST_TIMEOUT", 5.0),
-        ).is_available,
+        "wirepod": wirepod.is_available,
         "ollama": OllamaRuntime(settings_obj.OLLAMA_HOST).is_available,
     }
 

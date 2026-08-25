@@ -50,7 +50,7 @@ def available_checkers(**overrides):
 
 class ProviderStatusTests(unittest.TestCase):
     @patch("diagnostics.provider_status.OllamaRuntime")
-    @patch("diagnostics.provider_status.VectorClient")
+    @patch("diagnostics.provider_status.WirePodSdkProbe")
     @patch("diagnostics.provider_status.VectorSDKClient")
     def test_default_vector_probe_uses_bounded_cold_start_timeout(
         self,
@@ -150,7 +150,10 @@ class ProviderStatusTests(unittest.TestCase):
 
         text = "\n".join(output)
         self.assertFalse(available)
-        self.assertIn("WirePod: unavailable - nicht erreichbar", text)
+        self.assertIn(
+            "WirePod: unavailable - SDK-Zugriff nicht verfügbar",
+            text,
+        )
         self.assertIn("Ollama: unavailable - Prüfung sicher fehlgeschlagen", text)
         self.assertNotIn("private transport detail", text)
 

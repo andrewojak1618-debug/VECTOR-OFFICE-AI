@@ -156,6 +156,33 @@ Nach Aktivierung dieser Korrektur wurde die geplante Aufgabe kontrolliert neu
 gestartet. WirePod und Ollama waren verfügbar, der Vector-SDK-Test endete nach
 rund 1,2 Sekunden erfolgreich und der Sprachdialog blieb anschließend aktiv.
 
+### WirePod-SDK-Preflight und einmalige Selbstheilung
+
+`application/wirepod_preflight.py` prüft vor jedem Anwendungsstart ausschließlich
+WirePods lokalen Batterieendpunkt. Gültig ist nur eine erfolgreiche JSON-Antwort
+mit der erwarteten Statusstruktur. Antwortinhalte, Seriennummer, GUID und
+Zertifikate gelangen weder in Diagnoseereignisse noch in die Terminalausgabe.
+
+`application/wirepod_host_service.py` trennt Prozesssteuerung und SDK-Preflight
+vom eigentlichen Host-Watchdog. Meldet WirePod `401 Unauthorized` oder
+`Unauthenticated`, vergleicht der Dienst nur die Änderungszeit der lokalen
+`botSdkInfo.json` mit der Startzeit von `chipper.exe`. Ist die Zuordnung neuer,
+wird ausschließlich vor dem Anwendungsstart genau ein kontrollierter
+WirePod-Neustart ausgeführt. Danach gelten erneut dieselben begrenzten
+Startversuche.
+
+Ein unveränderter, ungültiger oder nach dem Neustart weiterhin nicht
+autorisierter Zustand blockiert den Anwendungsstart. Es gibt keine endlose
+Schleife, keine Zertifikatsänderung und keine Firmwareaktion. Während die
+Anwendung läuft, bleibt die bestehende Verfügbarkeitsüberwachung erhalten; der
+SDK-Preflight löst dann ausdrücklich keinen WirePod-Neustart aus und wiederholt
+keine Sprache, Werkzeuge oder Robot-Aktionen.
+
+Die erste Live-Abnahme von Punkt 34 meldete den SDK-Preflight als `ready` und
+konnte die lokale Chipper-Startzeit sicher bestimmen. Nach kontrolliertem
+Neustart der geplanten Aufgabe bestanden zehn von zehn Startprüfungen; Watchdog,
+Anwendung und WirePod liefen jeweils genau einmal.
+
 ## Kaltstart-Abnahme
 
 Vor einem Neustart kann der rein lesende Vorabtest ausgeführt werden. `-AllowReady`
@@ -177,9 +204,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 Die Prüfung verändert keine Aufgabe und liest weder `.env` noch Gespräche. Sie
 verlangt die laufende geplante Aufgabe, passende lokale Startaktion, zulässiges
-letztes Ergebnis, erreichbares WirePod und Ollama sowie jeweils höchstens eine
-Watchdog-, Anwendungs- und WirePod-Instanz. Danach wird eine normale lokale
-Sprachfrage gestellt und die verständliche Vector-Ausgabe manuell bestätigt.
+letztes Ergebnis, erreichbares WirePod, autorisierten WirePod-SDK-Lesezugriff
+und Ollama sowie jeweils höchstens eine Watchdog-, Anwendungs- und
+WirePod-Instanz. Danach wird eine normale lokale Sprachfrage gestellt und die
+verständliche Vector-Ausgabe manuell bestätigt.
 Launcher und eigentlicher Interpreter einer `uv`-basierten `.venv` gelten dabei
 als eine logische Prozesskette; nur unabhängige Prozesswurzeln zählen mehrfach.
 

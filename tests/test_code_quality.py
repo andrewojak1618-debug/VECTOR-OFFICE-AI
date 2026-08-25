@@ -47,6 +47,8 @@ ARCHITECTURE_MODULE_DOCS = {
     ),
     Path("application/host_watchdog.py"): Path("docs/windows-startup.md"),
     Path("application/process_control.py"): Path("docs/windows-startup.md"),
+    Path("application/wirepod_host_service.py"): Path("docs/windows-startup.md"),
+    Path("application/wirepod_preflight.py"): Path("docs/windows-startup.md"),
     Path("application/voice_recovery.py"): Path("docs/connections.md"),
     Path("application/expression_delivery.py"): Path("docs/robot-actions.md"),
     Path("application/expression_conversation.py"): Path("docs/robot-actions.md"),

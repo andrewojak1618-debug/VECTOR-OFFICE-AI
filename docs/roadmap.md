@@ -40,6 +40,7 @@
 - ✅ lokalen Windows-Autostart und Host-Watchdog implementieren
 - ✅ vollständigen Windows-Kaltstart und Bereitschaftsstatus praktisch abnehmen
 - ✅ lokale Ollama-Antwortlatenz für den Voice-Modus begrenzen und praktisch messen
+- ✅ WirePod-SDK-Zugriff vor dem Start prüfen und veraltete Zuordnung einmal neu laden
 
 ## Provider-Zuverlässigkeit
 

@@ -59,17 +59,21 @@ Wiederherstellung.
 
 ## Provider-Status sicher prüfen
 
-Der argumentlose Diagnosebefehl prüft Vector SDK, WirePod und Ollama über
-begrenzte, ausschließlich lesende Verfügbarkeitszugriffe:
+Der argumentlose Diagnosebefehl prüft Vector SDK, WirePods tatsächlichen
+SDK-Lesezugriff und Ollama über begrenzte, ausschließlich lesende Zugriffe:
 
 ```powershell
 .venv\Scripts\python.exe -m diagnostics.provider_status
 ```
 
 Die passive Vector-Prüfung fordert keine Verhaltenskontrolle an und startet
-weder Bewegung, Animation noch Sprache. Jede lokale Prüfung besitzt zusätzlich
-eine äußere Frist von sechs Sekunden. Interne Transportfehler werden verworfen
-und nicht in die Terminalausgabe übernommen.
+weder Bewegung, Animation noch Sprache. Der WirePod-Check liest nur den lokalen
+Batterieendpunkt und verwirft dessen Inhalt nach der Strukturprüfung. Ein
+Authentifizierungsfehler erscheint ausschließlich als nicht verfügbar; der
+Diagnosebefehl startet keine automatische Reparatur. Jede lokale Prüfung besitzt
+eine äußere Frist von 22 Sekunden, der direkte Vector-SDK-Test davon intern fünf
+Sekunden. Interne Transportfehler werden verworfen und nicht in die
+Terminalausgabe übernommen.
 
 OpenAI und ElevenLabs werden bewusst nur anhand ihrer lokalen Freigabe und der
 Vollständigkeit erforderlicher Konfigurationsfelder bewertet. Der Befehl sendet

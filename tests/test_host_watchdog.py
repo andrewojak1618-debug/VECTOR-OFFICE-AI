@@ -15,6 +15,7 @@ from application.host_watchdog import (
     WirePodHostService,
     main,
 )
+from application.wirepod_preflight import WirePodSdkState
 from application.process_control import (
     SingleInstanceLock,
     process_exists,
@@ -71,6 +72,28 @@ class FakeWirePod:
 
     def ensure_started(self):
         self.start_calls += 1
+        return True
+
+
+class FakePreflightWirePod(FakeWirePod):
+    def __init__(self, availability, sdk_states, credentials_changed=True):
+        super().__init__(availability)
+        self.sdk_states = list(sdk_states)
+        self.credentials_changed = credentials_changed
+        self.restart_calls = 0
+        self.sdk_calls = 0
+
+    def sdk_state(self):
+        self.sdk_calls += 1
+        if len(self.sdk_states) > 1:
+            return self.sdk_states.pop(0)
+        return self.sdk_states[0]
+
+    def credentials_changed_after_process_start(self):
+        return self.credentials_changed
+
+    def restart(self):
+        self.restart_calls += 1
         return True
 
 
@@ -165,6 +188,54 @@ class HostWatchdogTests(unittest.TestCase):
         self.assertTrue(service.ensure_started())
         launcher.assert_not_called()
 
+    def test_wirepod_detects_sdk_info_changed_after_process_start(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable = root / "chipper.exe"
+            sdk_info = root / "botSdkInfo.json"
+            executable.touch()
+            sdk_info.write_text("{}", encoding="utf-8")
+            service = WirePodHostService(
+                "http://127.0.0.1:8080",
+                executable,
+                sdk_info_path=sdk_info,
+                process_started_at=lambda: sdk_info.stat().st_mtime - 1,
+            )
+
+            self.assertTrue(service.credentials_changed_after_process_start())
+
+    def test_wirepod_restart_uses_exact_stopper_and_hidden_launcher(self):
+        with tempfile.TemporaryDirectory() as directory:
+            executable = Path(directory) / "chipper.exe"
+            executable.touch()
+            stopper = MagicMock(return_value=True)
+            launcher = MagicMock()
+            service = WirePodHostService(
+                "http://127.0.0.1:8080",
+                executable,
+                process_stopper=stopper,
+                process_launcher=launcher,
+            )
+
+            self.assertTrue(service.restart())
+            stopper.assert_called_once_with()
+            self.assertEqual([str(executable), "-d"], launcher.call_args.args[0])
+
+    def test_failed_wirepod_stop_prevents_relaunch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            executable = Path(directory) / "chipper.exe"
+            executable.touch()
+            launcher = MagicMock()
+            service = WirePodHostService(
+                "http://127.0.0.1:8080",
+                executable,
+                process_stopper=lambda: False,
+                process_launcher=launcher,
+            )
+
+            self.assertFalse(service.restart())
+            launcher.assert_not_called()
+
     def test_watchdog_waits_for_wirepod_before_starting_application(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -185,6 +256,93 @@ class HostWatchdogTests(unittest.TestCase):
             self.assertEqual(1, wirepod.start_calls)
             sleeper.assert_called_once_with(1.0)
             self.assertTrue(lock.released)
+
+    def test_sdk_auth_failure_restarts_wirepod_once_before_application(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wirepod = FakePreflightWirePod(
+                [True, True],
+                [WirePodSdkState.AUTHENTICATION_FAILED, WirePodSdkState.READY],
+            )
+            launcher = MagicMock(return_value=FakeProcess([0]))
+            watchdog = HostWatchdog(
+                make_config(root),
+                wirepod,
+                MagicMock(),
+                process_launcher=launcher,
+                sleeper=MagicMock(),
+                instance_lock=FakeLock(),
+            )
+
+            self.assertEqual(0, watchdog.run())
+            self.assertEqual(1, wirepod.restart_calls)
+            self.assertEqual(1, launcher.call_count)
+
+    def test_persistent_sdk_auth_failure_blocks_application_after_one_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wirepod = FakePreflightWirePod(
+                [True, True],
+                [
+                    WirePodSdkState.AUTHENTICATION_FAILED,
+                    WirePodSdkState.AUTHENTICATION_FAILED,
+                ],
+            )
+            launcher = MagicMock()
+            watchdog = HostWatchdog(
+                make_config(root),
+                wirepod,
+                MagicMock(),
+                process_launcher=launcher,
+                sleeper=MagicMock(),
+                instance_lock=FakeLock(),
+            )
+
+            self.assertEqual(1, watchdog.run())
+            self.assertEqual(1, wirepod.restart_calls)
+            launcher.assert_not_called()
+
+    def test_unchanged_credentials_do_not_trigger_wirepod_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            wirepod = FakePreflightWirePod(
+                [True],
+                [WirePodSdkState.AUTHENTICATION_FAILED],
+                credentials_changed=False,
+            )
+            launcher = MagicMock()
+            watchdog = HostWatchdog(
+                make_config(Path(directory)),
+                wirepod,
+                MagicMock(),
+                process_launcher=launcher,
+                sleeper=MagicMock(),
+                instance_lock=FakeLock(),
+            )
+
+            self.assertEqual(1, watchdog.run())
+            self.assertEqual(0, wirepod.restart_calls)
+            launcher.assert_not_called()
+
+    def test_active_conversation_does_not_repeat_sdk_preflight_or_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            wirepod = FakePreflightWirePod(
+                [True, True],
+                [WirePodSdkState.READY, WirePodSdkState.AUTHENTICATION_FAILED],
+            )
+            watchdog = HostWatchdog(
+                make_config(Path(directory)),
+                wirepod,
+                MagicMock(),
+                process_launcher=MagicMock(
+                    return_value=FakeProcess([None, 0]),
+                ),
+                sleeper=MagicMock(),
+                instance_lock=FakeLock(),
+            )
+
+            self.assertEqual(0, watchdog.run())
+            self.assertEqual(1, wirepod.sdk_calls)
+            self.assertEqual(0, wirepod.restart_calls)
 
     def test_slow_cold_start_accepts_the_sixth_wirepod_probe(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -362,6 +520,8 @@ class HostWatchdogTests(unittest.TestCase):
         self.assertIn("Get-ScheduledTask -TaskName", diagnostic)
         self.assertIn("Get-ScheduledTaskInfo -TaskName", diagnostic)
         self.assertIn("/api/get_logs", diagnostic)
+        self.assertIn("/api-sdk/get_battery", diagnostic)
+        self.assertIn("WirePod SDK authorization", diagnostic)
         self.assertIn("/api/tags", diagnostic)
         self.assertIn("-m application.host_watchdog", diagnostic)
         self.assertIn("ParentProcessId -notin", diagnostic)

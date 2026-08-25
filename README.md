@@ -918,9 +918,19 @@ erzeugt werden.
 
 Vorbeugend wird WirePod nach jeder erneuten SDK-Aktivierung oder Änderung der
 lokalen Robot-Zuordnung neu gestartet, bevor Vector Office AI gestartet wird.
-Ein `401 Unauthorized` darf nicht durch das Löschen von Zertifikaten oder eine
-Firmwareänderung beantwortet werden. Bleibt der Fehler nach dem kontrollierten
-Neustart bestehen, wird die Anwendung gestoppt und die Zuordnung zunächst
+Punkt 34 automatisiert diese Startgrenze: Der Host-Watchdog prüft vor dem
+Anwendungsstart den rein lesenden Batterieendpunkt. Erkennt er den bestätigten
+Authentifizierungsfehler und ist `botSdkInfo.json` neuer als der laufende
+`chipper.exe`-Prozess, lädt er WirePod genau einmal kontrolliert neu und prüft
+den SDK-Zugriff erneut. Ein ungültiges Ergebnis oder ein weiterhin bestehender
+Fehler blockiert den Anwendungsstart sicher.
+
+Diese Selbstheilung läuft ausschließlich vor einem Anwendungsstart. Während
+eines Gesprächs startet der Watchdog WirePod nicht wegen eines SDK-Ergebnisses
+neu; Werkzeuge, Sprache und Robot-Aktionen werden niemals automatisch
+wiederholt. Ein `401 Unauthorized` darf außerdem nicht durch das Löschen von
+Zertifikaten oder eine Firmwareänderung beantwortet werden. Bleibt der Fehler
+nach dem kontrollierten Neustart bestehen, wird die Zuordnung zunächst
 inhaltsfrei anhand von Seriennummer, IP, GUID-Gleichheit und
 Zertifikat-Fingerabdruck diagnostiziert.
 
@@ -1059,13 +1069,14 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ verbindlicher Regressionstest-Ablauf für spätere Fehlerkorrekturen
 - ✅ Windows-Autostart, Host-Watchdog und vollständige Kaltstart-Abnahme
 - ✅ begrenzter automatischer Wiederanlauf nach temporär blockiertem SDK-Kaltstart
+- ✅ WirePod-SDK-Vorabprüfung mit einmaliger kontrollierter Selbstheilung
 - ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
 - ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
 - ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 670 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 682 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 

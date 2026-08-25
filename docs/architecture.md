@@ -30,7 +30,10 @@ Primärversuchen greift der bestehende lokale Provider-Fallback.
 
 `main.py` ist ausschließlich der schlanke Einstiegspunkt. Der optionale lokale
 Windows-Start wird in `application/host_watchdog.py` überwacht und bleibt von
-der eigentlichen Laufzeitkomposition getrennt. Die Zusammensetzung
+der eigentlichen Laufzeitkomposition getrennt. Der passive WirePod-SDK-Test
+liegt in `application/wirepod_preflight.py`; die zugehörige begrenzte
+Prozesssteuerung liegt in `application/wirepod_host_service.py`. Der bisherige
+Import von `WirePodHostService` über den Host-Watchdog bleibt kompatibel. Die Zusammensetzung
 der Abhängigkeiten liegt in `application/runtime.py`; Konsolen- und
 WirePod-Dialoge liegen in `application/conversation.py` und die expliziten
 Verwaltungsbefehle in `application/commands.py`. Die Vorbereitung und Ausgabe

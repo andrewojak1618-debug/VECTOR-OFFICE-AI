@@ -927,3 +927,20 @@ Die deutsche TTS wurde schrittweise verbessert:
 - neue Architekturpfade in der automatischen Dokumentationssperre verankert
 - größte produktive Module von 384–363 auf höchstens 324 Zeilen reduziert
 - 635 automatisierte Tests, Python-Kompilierung und strikten MkDocs-Build bestanden
+
+## Punkt 34 – WirePod-SDK-Vorabprüfung und kontrollierte Selbstheilung
+
+- lokalen Batterieendpunkt als rein lesenden SDK-Preflight angebunden
+- gültige JSON-Struktur, Authentifizierungsfehler, ungültige Antwort und Timeout
+  als feste inhaltsfreie Zustände getrennt
+- Änderungszeit von `botSdkInfo.json` ohne Inhaltszugriff mit der
+  `chipper.exe`-Startzeit verglichen
+- veraltete Authentifizierungszuordnung ausschließlich vor dem Anwendungsstart
+  genau einmal durch einen kontrollierten WirePod-Neustart neu geladen
+- weiterhin fehlerhaften SDK-Zustand ohne Anwendungsstart sicher blockiert
+- automatische SDK-bedingte Neustarts während aktiver Gespräche ausgeschlossen
+- Provider-Status auf den tatsächlichen WirePod-SDK-Lesezugriff erweitert
+- neue Fachgrenzen unterhalb der 400-Zeilen-Regel aus dem Watchdog ausgelagert
+- 682 automatisierte Tests einschließlich aller neuen Fehlerpfade bestanden
+- passiven Live-Preflight als `ready` und Chipper-Startzeit als lesbar bestätigt
+- kontrollierten Aufgabenstart mit zehn von zehn Startprüfungen bestanden

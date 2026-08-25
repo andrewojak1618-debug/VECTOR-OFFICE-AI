@@ -14,6 +14,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   ablehnende Formulierungen
 - eng freigegebene höfliche Kopfaktionsphrase „schau bitte nach oben“
 - begrenzter Watchdog-Wiederanlauf nach vorübergehend blockiertem SDK-Kaltstart
+- passiver WirePod-SDK-Preflight vor jedem Anwendungsstart mit einmaligem
+  Neuladen einer nach Prozessstart geänderten Authentifizierungszuordnung
 
 ### Sicherheit
 
@@ -23,10 +25,12 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - Vectors Firmware und WirePods Remote-Wakeword-Endpunkt bleiben unverändert
 - bewusste Gesprächsenden bleiben von technischen Startfehlern unterscheidbar
 - bestätigungspflichtige Aktionen werden nach einem Neustart niemals wiederholt
+- SDK-Preflight startet WirePod niemals während eines aktiven Gesprächs neu und
+  blockiert bei ungültiger oder weiterhin nicht autorisierter Antwort sicher
 
 ### Abnahme
 
-- 670 automatisierte Tests einschließlich lokaler Folgeaufnahme bestanden
+- 682 automatisierte Tests einschließlich WirePod-SDK-Preflight bestanden
 - deutscher Windows-Offline-Erkenner ohne Mikrofonöffnung als verfügbar bestätigt
 - Bestätigungsfrage, wakeword-freie Antwort und freigegebene Kopfaktion auf
   unveränderter `6076ep`-Firmware physisch bestätigt
@@ -34,6 +38,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Bestätigungsdialog erfolgreich geprüft
 - Host-Watchdog mit der neuen Startfehlertrennung geladen; anschließender
   SDK-Kaltstart nach rund 1,2 Sekunden erfolgreich und Aufgabe dauerhaft aktiv
+- Punkt 34 live geladen: WirePod-SDK-Preflight `ready`, Prozessstartzeit lesbar
+  und Windows-Startabnahme mit zehn von zehn Prüfungen bestanden
 
 ## [0.2.0-rc.2] – 2026-08-25
 

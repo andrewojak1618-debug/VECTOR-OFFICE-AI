@@ -1,7 +1,9 @@
 """Provide bounded operating-system process controls for local supervision."""
 
 import os
+import csv
 import subprocess
+from io import StringIO
 from pathlib import Path
 
 
@@ -120,6 +122,104 @@ def wirepod_process_running() -> bool:
         return False
     output = result.stdout or b""
     return b"chipper.exe" in output.lower()
+
+
+def wirepod_process_started_at() -> float | None:
+    """Liefert die älteste lokale Chipper-Startzeit als Unix-Zeitstempel."""
+    if os.name != "nt":
+        return None
+    start_times = [
+        started
+        for process_id in _wirepod_process_ids()
+        if (started := _windows_process_started_at(process_id)) is not None
+    ]
+    return min(start_times) if start_times else None
+
+
+def stop_wirepod_processes() -> bool:
+    """Beendet ausschließlich lokale Chipper-Prozesse samt Nachkommen."""
+    if os.name != "nt" or not wirepod_process_running():
+        return True
+    try:
+        result = subprocess.run(
+            ["taskkill", "/IM", "chipper.exe", "/T", "/F"],
+            check=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=hidden_process_flags(),
+        )
+    except OSError:
+        return False
+    return result.returncode == 0
+
+
+def _wirepod_process_ids() -> tuple[int, ...]:
+    """Liest ausschließlich Prozess-IDs exakter Chipper-Prozesse aus."""
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq chipper.exe", "/FO", "CSV", "/NH"],
+            check=False,
+            capture_output=True,
+            creationflags=hidden_process_flags(),
+        )
+    except OSError:
+        return ()
+    text = (result.stdout or b"").decode("utf-8", errors="ignore")
+    rows = csv.reader(StringIO(text))
+    return tuple(
+        int(row[1])
+        for row in rows
+        if len(row) >= 2 and row[0].casefold() == "chipper.exe" and row[1].isdigit()
+    )
+
+
+def _windows_process_started_at(process_id: int) -> float | None:
+    """Ermittelt eine Windows-Prozessstartzeit mit minimalem Lesezugriff."""
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = _process_time_api(ctypes, wintypes)
+    handle = kernel32.OpenProcess(0x1000, False, process_id)
+    if not handle:
+        return None
+    creation = wintypes.FILETIME()
+    exit_time = wintypes.FILETIME()
+    kernel_time = wintypes.FILETIME()
+    user_time = wintypes.FILETIME()
+    try:
+        success = kernel32.GetProcessTimes(
+            handle,
+            ctypes.byref(creation),
+            ctypes.byref(exit_time),
+            ctypes.byref(kernel_time),
+            ctypes.byref(user_time),
+        )
+    finally:
+        kernel32.CloseHandle(handle)
+    if not success:
+        return None
+    ticks = creation.dwLowDateTime + (creation.dwHighDateTime << 32)
+    return (ticks - 116_444_736_000_000_000) / 10_000_000
+
+
+def _process_time_api(ctypes, wintypes):
+    """Konfiguriert die sicheren Windows-Signaturen für Prozesszeiten."""
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    file_time_pointer = ctypes.POINTER(wintypes.FILETIME)
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.GetProcessTimes.argtypes = (
+        wintypes.HANDLE,
+        file_time_pointer,
+        file_time_pointer,
+        file_time_pointer,
+        file_time_pointer,
+    )
+    kernel32.GetProcessTimes.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    return kernel32
 
 
 def _windows_process_exists(process_id: int) -> bool:
