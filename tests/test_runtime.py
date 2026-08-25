@@ -13,6 +13,7 @@ from application.runtime import (
     _run_input_mode,
     _run_wirepod_input,
     get_runtime_mode,
+    run_application,
 )
 from application.connection_supervisor import ConnectionSupervisor
 from brain.ollama_runtime import OllamaRuntime
@@ -35,6 +36,21 @@ def make_settings(**overrides):
 
 
 class RuntimeModeTests(unittest.TestCase):
+    @patch("application.runtime._prepare_vector", return_value=None)
+    @patch("application.runtime._emit_runtime_start")
+    @patch("application.runtime._create_diagnostics")
+    @patch("application.runtime._print_header")
+    def test_blocked_vector_start_reports_failure_to_host(
+        self,
+        _print_header,
+        create_diagnostics,
+        _emit_runtime_start,
+        _prepare_vector,
+    ):
+        create_diagnostics.return_value = MagicMock()
+
+        self.assertIs(run_application(make_settings()), False)
+
     def test_runtime_keeps_wirepod_client_dependency_available(self):
         self.assertIs(VectorClient, runtime_module.VectorClient)
 

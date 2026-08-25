@@ -97,6 +97,14 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual("greeting", selection.arguments["action"])
         self.assertEqual(PermissionLevel.MUTATING, selection.permission)
 
+    def test_polite_head_phrase_selects_same_allowlisted_action(self):
+        selection = self.selector.select("Schau bitte nach oben!")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("vector.perform_action", selection.tool_name)
+        self.assertEqual("head_up", selection.arguments["action"])
+        self.assertEqual(PermissionLevel.MUTATING, selection.permission)
+
     def test_additional_instruction_is_not_guessed(self):
         selection = self.selector.select("Begrüße mich und fahre vorwärts")
 

@@ -65,8 +65,8 @@ def get_runtime_mode(settings) -> RuntimeMode:
     return RuntimeMode(provider, fallback, input_mode, local_voice, needs_ollama)
 
 
-def run_application(settings) -> None:
-    """Startet Dienste, setzt Abhängigkeiten zusammen und führt den Eingabemodus aus."""
+def run_application(settings) -> bool:
+    """Startet die Anwendung und meldet einen blockierten Start an den Aufrufer."""
     _print_header(settings)
     mode = get_runtime_mode(settings)
     diagnostics = _create_diagnostics(settings)
@@ -75,7 +75,7 @@ def run_application(settings) -> None:
     _emit_runtime_start(diagnostics, mode)
     vector = _prepare_vector(settings, mode, diagnostics, connections)
     if vector is None:
-        return
+        return False
     speech = create_speech_output(settings, vector, diagnostics)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
     agent = _create_runtime_agent(settings, mode, actions, diagnostics)
@@ -86,6 +86,7 @@ def run_application(settings) -> None:
         "runtime.stopped",
         status="completed",
     )
+    return True
 
 
 def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:

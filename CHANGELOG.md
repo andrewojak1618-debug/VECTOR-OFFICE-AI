@@ -12,6 +12,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Windows-Erkenner für kontrollierte Ja-Nein-Fragen ohne wiederholtes Wakeword
 - konservative Erkennung natürlicher Ja- und Nein-Sätze mit Vorrang für
   ablehnende Formulierungen
+- eng freigegebene höfliche Kopfaktionsphrase „schau bitte nach oben“
+- begrenzter Watchdog-Wiederanlauf nach vorübergehend blockiertem SDK-Kaltstart
 
 ### Sicherheit
 
@@ -19,13 +21,19 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - eine nicht verfügbare lokale Folgeaufnahme fällt auf den normalen
   WirePod-Wakeword-Ablauf zurück
 - Vectors Firmware und WirePods Remote-Wakeword-Endpunkt bleiben unverändert
+- bewusste Gesprächsenden bleiben von technischen Startfehlern unterscheidbar
+- bestätigungspflichtige Aktionen werden nach einem Neustart niemals wiederholt
 
 ### Abnahme
 
-- 666 automatisierte Tests einschließlich lokaler Folgeaufnahme bestanden
+- 670 automatisierte Tests einschließlich lokaler Folgeaufnahme bestanden
 - deutscher Windows-Offline-Erkenner ohne Mikrofonöffnung als verfügbar bestätigt
 - Bestätigungsfrage, wakeword-freie Antwort und freigegebene Kopfaktion auf
   unveränderter `6076ep`-Firmware physisch bestätigt
+- höfliche Variante „schau bitte nach oben“ im vollständigen physischen
+  Bestätigungsdialog erfolgreich geprüft
+- Host-Watchdog mit der neuen Startfehlertrennung geladen; anschließender
+  SDK-Kaltstart nach rund 1,2 Sekunden erfolgreich und Aufgabe dauerhaft aktiv
 
 ## [0.2.0-rc.2] – 2026-08-25
 

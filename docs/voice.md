@@ -51,6 +51,11 @@ Ablehnende Wörter wie `Nein` oder `nicht` haben aus Sicherheitsgründen immer
 Vorrang. Eine Aussage wie „Ja, doch nicht ausführen“ erteilt daher keine
 Berechtigung.
 
+Die eng freigegebene höfliche Variante „schau bitte nach oben“ wurde am
+physischen Vector zusammen mit der wakeword-freien Folgeantwort erfolgreich
+bestätigt. Sie verweist auf dieselbe Kopfaktion und benötigt weiterhin ein
+separates gesprochenes Ja.
+
 Die Folgeaufnahme läuft in einer verborgenen, nicht interaktiven Windows-
 PowerShell und besitzt zusätzlich zur Gesprächsfrist eine kurze technische
 Abbruchgrenze. Sie protokolliert weder Audio noch Transkript, Rohfehler oder

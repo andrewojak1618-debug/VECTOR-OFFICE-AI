@@ -156,7 +156,7 @@ class ToolConversationIntegrationTests(unittest.TestCase):
         self.assertEqual(2, len(self.speech.spoken))
 
     def test_voice_uses_five_second_wakeword_free_confirmation_window(self):
-        listener = SequenceListener(("schau nach oben",))
+        listener = SequenceListener(("schau bitte nach oben",))
         follow_up = RecordingFollowUp(
             transcripts=("Ja, bitte schau nach oben.",),
         )

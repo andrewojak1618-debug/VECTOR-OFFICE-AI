@@ -16,7 +16,8 @@ from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 
 
-PROBE_TIMEOUT_SECONDS = 6.0
+PROBE_TIMEOUT_SECONDS = 22.0
+VECTOR_PROBE_TIMEOUT_SECONDS = 5.0
 MIN_PROBE_TIMEOUT_SECONDS = 0.1
 MAX_PROBE_TIMEOUT_SECONDS = 30.0
 LOCAL_PROVIDERS = frozenset({"vector-sdk", "wirepod", "ollama"})
@@ -162,8 +163,11 @@ def _has_text_setting(settings_obj, name: str) -> bool:
 
 def _default_checkers(settings_obj) -> dict[str, ProviderChecker]:
     """Erzeugt ausschließlich passive lokale Verfügbarkeitsprüfungen."""
+    vector = VectorSDKClient(settings_obj.VECTOR_SERIAL)
     return {
-        "vector-sdk": VectorSDKClient(settings_obj.VECTOR_SERIAL).is_available,
+        "vector-sdk": lambda: vector.is_available(
+            timeout=VECTOR_PROBE_TIMEOUT_SECONDS,
+        ),
         "wirepod": VectorClient(
             settings_obj.WIREPOD_HOST,
             getattr(settings_obj, "WIREPOD_REQUEST_TIMEOUT", 5.0),

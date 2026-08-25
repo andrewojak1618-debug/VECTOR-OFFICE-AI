@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from diagnostics.provider_status import (
+    VECTOR_PROBE_TIMEOUT_SECONDS,
     collect_provider_statuses,
     main,
     run_diagnostic,
@@ -48,6 +49,25 @@ def available_checkers(**overrides):
 
 
 class ProviderStatusTests(unittest.TestCase):
+    @patch("diagnostics.provider_status.OllamaRuntime")
+    @patch("diagnostics.provider_status.VectorClient")
+    @patch("diagnostics.provider_status.VectorSDKClient")
+    def test_default_vector_probe_uses_bounded_cold_start_timeout(
+        self,
+        vector_type,
+        wirepod_type,
+        ollama_type,
+    ):
+        vector_type.return_value.is_available.return_value = True
+        wirepod_type.return_value.is_available.return_value = True
+        ollama_type.return_value.is_available.return_value = True
+
+        collect_provider_statuses(make_settings())
+
+        vector_type.return_value.is_available.assert_called_once_with(
+            timeout=VECTOR_PROBE_TIMEOUT_SECONDS,
+        )
+
     def test_status_reports_local_health_and_configuration_only_cloud_state(self):
         output = []
 

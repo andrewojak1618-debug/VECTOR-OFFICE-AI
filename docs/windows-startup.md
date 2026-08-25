@@ -124,6 +124,38 @@ die einmalige deutsche Wiederherstellungsansage ausgegeben.
 Kann der PC selbst nicht starten oder verliert Vector seine Strom- oder
 Netzwerkverbindung, kann der Host-Watchdog keine Robot-Kommunikation herstellen.
 
+### Vorübergehend blockierter Vector-SDK-Start
+
+Am 25. August 2026 war Vector im WLAN erreichbar und bot auf Port 443 das
+passende Zertifikat sowie HTTP/2 an. Unmittelbar nach einem Roboterneustart
+benötigte der SDK-Verbindungsaufbau dennoch mehrere Anläufe, bevor die
+Verhaltenskontrolle wieder freigegeben wurde. WirePod und Ollama waren während
+dieses Zeitraums durchgehend erreichbar. Die Ursache lag damit im kalten
+SDK-/Kontrollaufbau und nicht im Dialogcode oder in der Firmware.
+
+Ein blockierter Anwendungsstart liefert deshalb jetzt einen Fehlerstatus an den
+Host-Watchdog. Dieser startet die Anwendung ausschließlich nach den bereits
+begrenzten Wartezeiten und höchstens entsprechend
+`HOST_WATCHDOG_APP_RESTART_ATTEMPTS` neu. Ein bewusst beendetes Gespräch bleibt
+ein erfolgreicher Prozessabschluss und wird nicht erneut gestartet. Robot-
+Aktionen oder bestätigungspflichtige Tools werden bei einem Wiederanlauf niemals
+automatisch wiederholt.
+
+Der rein lesende Provider-Status gewährt dem passiven SDK-Check fünf Sekunden
+und besitzt eine äußere Frist von 22 Sekunden. Damit kann der SDK-interne
+Transport seine eigene begrenzte Kaltstartphase abschließen, ohne als
+unbegrenzter Healthcheck weiterzulaufen.
+
+Sind alle automatischen Versuche erschöpft, bleibt die Aufgabe kontrolliert
+beendet. Dann gilt weiterhin: Vector normal wecken oder einmal regulär neu
+starten, seine vollständige Bereitschaft abwarten, den SDK-Status prüfen und
+erst danach die geplante Aufgabe erneut starten. Firmware, Zertifikate und
+Konfiguration werden bei dieser Wiederherstellung nicht verändert.
+
+Nach Aktivierung dieser Korrektur wurde die geplante Aufgabe kontrolliert neu
+gestartet. WirePod und Ollama waren verfügbar, der Vector-SDK-Test endete nach
+rund 1,2 Sekunden erfolgreich und der Sprachdialog blieb anschließend aktiv.
+
 ## Kaltstart-Abnahme
 
 Vor einem Neustart kann der rein lesende Vorabtest ausgeführt werden. `-AllowReady`

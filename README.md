@@ -886,6 +886,44 @@ Einzelstimmenbetrieb sind deshalb in WirePod `Enable intent-graph` und
 weiterhin das Transkript, während ausschließlich die deutsche Anwendungstimme
 antwortet.
 
+### WirePod zeigt Vector fälschlich als nicht verbunden
+
+Am 25. August 2026 zeigte die lokale WirePod-Einstellungsseite Vector als nicht
+verbunden an, obwohl der Roboter im WLAN und auf Port 443 erreichbar war und
+Vector Office AI über das Python-SDK kommunizieren konnte. WirePods Batterie-,
+Statistik- und Einstellungsendpunkte antworteten dabei mit `401 Unauthorized`
+beziehungsweise `rpc error` statt mit Roboterdaten. Der Browsercache war nicht
+die Ursache.
+
+Zertifikat, Seriennummer, IP-Adresse und SDK-GUID waren in WirePod und in
+`.anki_vector` identisch. Der laufende `chipper.exe`-Prozess war jedoch älter
+als die anschließend aktualisierte SDK-Konfiguration. WirePod verwendete damit
+noch eine zwischengespeicherte Authentifizierungszuordnung und wurde von Vector
+abgewiesen, während das Python-SDK bereits die aktuelle Zuordnung nutzte.
+
+Die bestätigte Wiederherstellung erfolgt in dieser Reihenfolge:
+
+1. Vector Office AI kontrolliert stoppen.
+2. WirePod vollständig beenden und `chipper.exe -d` verborgen neu starten.
+3. Die lokalen Endpunkte `get_battery`, `get_robot_stats` und
+   `get_sdk_settings` auf gültige JSON-Antworten prüfen.
+4. Vector Office AI wieder starten und den WirePod-Zugriff erneut prüfen.
+5. Die bereits geöffnete Einstellungsseite mit `Strg + F5` aktualisieren.
+
+Nach diesem Ablauf lief Vector Office AI wieder dauerhaft, alle drei
+WirePod-Endpunkte blieben auch parallel zur Anwendung autorisiert und die
+Weboberfläche erzeugte keine RPC- oder JavaScript-Fehler mehr. Firmware,
+Zertifikate und gespeicherte Roboterdaten mussten weder gelöscht noch neu
+erzeugt werden.
+
+Vorbeugend wird WirePod nach jeder erneuten SDK-Aktivierung oder Änderung der
+lokalen Robot-Zuordnung neu gestartet, bevor Vector Office AI gestartet wird.
+Ein `401 Unauthorized` darf nicht durch das Löschen von Zertifikaten oder eine
+Firmwareänderung beantwortet werden. Bleibt der Fehler nach dem kontrollierten
+Neustart bestehen, wird die Anwendung gestoppt und die Zuordnung zunächst
+inhaltsfrei anhand von Seriennummer, IP, GUID-Gleichheit und
+Zertifikat-Fingerabdruck diagnostiziert.
+
 ## 🔐 Sicherheit und Secrets
 
 Folgende Daten dürfen niemals committed oder veröffentlicht werden:
@@ -1020,13 +1058,14 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ datensparsame Providerereignisse und geprüfte Ergebnisse vor der TTS
 - ✅ verbindlicher Regressionstest-Ablauf für spätere Fehlerkorrekturen
 - ✅ Windows-Autostart, Host-Watchdog und vollständige Kaltstart-Abnahme
+- ✅ begrenzter automatischer Wiederanlauf nach temporär blockiertem SDK-Kaltstart
 - ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
 - ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
 - ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 666 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 670 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 

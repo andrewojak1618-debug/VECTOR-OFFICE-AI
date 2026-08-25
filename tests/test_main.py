@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import main as main_module
 from application.voice_recovery import CONNECTION_OFFLINE_NOTICE
 from main import run_conversation, run_voice_conversation
 
@@ -349,6 +350,16 @@ class ConversationLoopTests(unittest.TestCase):
         self.assertIn("Voice input failed", output.getvalue())
         self.assertEqual([], agent.requests)
         self.assertEqual([CONNECTION_OFFLINE_NOTICE], speech.spoken)
+
+
+class ApplicationEntryPointTests(unittest.TestCase):
+    @patch("main.run_application", return_value=False)
+    def test_blocked_start_returns_failure_to_watchdog(self, run_application):
+        with self.assertRaises(SystemExit) as raised:
+            main_module.main()
+
+        self.assertEqual(1, raised.exception.code)
+        run_application.assert_called_once_with(main_module.settings)
 
 
 if __name__ == "__main__":

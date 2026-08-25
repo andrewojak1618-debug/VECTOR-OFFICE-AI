@@ -219,7 +219,7 @@ DEFAULT_INTENT_RULES = (
         "sichere Aktionen anzeigen",
     ),
     ToolIntentRule(
-        ("schau nach oben", "kopf nach oben"),
+        ("schau nach oben", "schau bitte nach oben", "kopf nach oben"),
         "vector.perform_action",
         "Kopf nach oben",
         (("action", "head_up"),),
