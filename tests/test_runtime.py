@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import application.runtime as runtime_module
 from application.runtime import (
     _create_tool_registry,
+    _create_follow_up_capture,
     _ensure_ollama,
     _knowledge_enabled,
     register_provider_statuses,
@@ -228,7 +229,7 @@ class RuntimeModeTests(unittest.TestCase):
         run_input.assert_called_once_with(settings, agent, speech, connections)
 
     @patch("application.runtime.run_voice_conversation")
-    @patch("application.runtime.WirePodFollowUpCapture")
+    @patch("application.runtime.WindowsSpeechFollowUpCapture")
     @patch("application.runtime.WirePodTranscriptListener")
     def test_wirepod_runtime_wires_bounded_follow_up_capture(
         self,
@@ -242,6 +243,8 @@ class RuntimeModeTests(unittest.TestCase):
             VECTOR_SERIAL="0dd1fd3b",
             VOICE_LISTEN_TIMEOUT=120,
             VOICE_FOLLOWUP_TIMEOUT=5,
+            VOICE_FOLLOWUP_LOCAL=True,
+            VOICE_FOLLOWUP_MIN_CONFIDENCE=0.42,
         )
         agent = MagicMock()
         speech = MagicMock()
@@ -253,11 +256,7 @@ class RuntimeModeTests(unittest.TestCase):
             settings.WIREPOD_HOST,
             request_timeout=4.0,
         )
-        follow_up_type.assert_called_once_with(
-            settings.WIREPOD_HOST,
-            settings.VECTOR_SERIAL,
-            request_timeout=4.0,
-        )
+        follow_up_type.assert_called_once_with(min_confidence=0.42)
         run_voice.assert_called_once_with(
             agent,
             speech,
@@ -267,6 +266,13 @@ class RuntimeModeTests(unittest.TestCase):
             follow_up=follow_up_type.return_value,
             follow_up_timeout=5,
         )
+
+    @patch("application.runtime.WindowsSpeechFollowUpCapture")
+    def test_local_follow_up_can_be_disabled(self, follow_up_type):
+        settings = make_settings(VOICE_FOLLOWUP_LOCAL=False)
+
+        self.assertIsNone(_create_follow_up_capture(settings))
+        follow_up_type.assert_not_called()
 
 
 if __name__ == "__main__":

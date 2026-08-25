@@ -294,13 +294,16 @@ Vector:   [Bestätigungsfrage]
 Benutzer: Ja
 ```
 
-Nach einer kontrollierten Ja-Nein-Frage aktiviert Vector nun automatisch ein
-fünf Sekunden langes Antwortfenster. Das zweite `Hey Vector` entfällt; eine
-erkannte Antwort beendet die Aufnahme sofort. Bleibt sie aus, wird die offene
-Aktion ohne Ausführung verworfen. Natürliche Antworten wie „Ja, bitte schau
-nach oben“ werden akzeptiert, während ein widersprüchliches „Ja, doch nicht“
-sicher als Ablehnung gilt. Unterstützt die installierte WirePod-Firmware die
-lokale Folgeaktivierung nicht, bleibt der bisherige Wakeword-Ablauf erhalten.
+Nach einer kontrollierten Ja-Nein-Frage aktiviert die Anwendung nun automatisch
+ein fünf Sekunden langes Antwortfenster über das Standardmikrofon des
+Windows-Rechners. Der installierte deutsche Windows-Erkenner arbeitet lokal;
+Vectors Firmware und der inkompatible WirePod-Remote-Wakeword-Endpunkt bleiben
+unberührt. Das zweite `Hey Vector` entfällt, eine erkannte Antwort beendet die
+Aufnahme sofort. Bleibt sie aus, wird die offene Aktion ohne Ausführung
+verworfen. Natürliche Antworten wie „Ja, bitte schau nach oben“ werden
+akzeptiert, während ein widersprüchliches „Ja, doch nicht“ sicher als Ablehnung
+gilt. Ist die lokale Aufnahme nicht verfügbar, bleibt der bisherige
+Wakeword-Ablauf als sicherer Rückfall erhalten.
 
 Das Antwortfenster erteilt selbst keine Berechtigung und wählt kein Tool aus.
 Datei- und Ordneraktionen sind weiterhin nicht frei verfügbar; sie benötigen
@@ -344,7 +347,7 @@ genug.
 Der bevorzugte Weg bleibt deshalb firmwarefrei:
 
 1. Der bestehende sichere Wakeword-Fallback bleibt aktiv.
-2. Das fünfsekündige Folgefenster erhält später einen austauschbaren lokalen
+2. Das fünfsekündige Folgefenster nutzt einen austauschbaren lokalen
    Eingabekanal über das Laptop- oder ein günstiges USB-Mikrofon.
 3. Nur während einer bereits gestellten Ja-Nein-Frage wird dieser Kanal kurz
    geöffnet; danach schließt er sofort und erteilt selbst keine Toolbefugnis.
@@ -603,6 +606,9 @@ ROBOT_ACTION_TIMEOUT=8
 
 INPUT_MODE=console
 VOICE_LISTEN_TIMEOUT=120
+VOICE_FOLLOWUP_TIMEOUT=5
+VOICE_FOLLOWUP_LOCAL=true
+VOICE_FOLLOWUP_MIN_CONFIDENCE=0.35
 VOICE_ALLOW_CLOUD=false
 REFLECTION_ENABLED=true
 
@@ -1017,8 +1023,10 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
 - ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
 - ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`
+- ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
+- ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 656 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 666 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 

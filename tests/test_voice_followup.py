@@ -1,18 +1,28 @@
 """Tests for the bounded conversational follow-up state."""
 
 import unittest
+from unittest.mock import MagicMock
 
-from application.voice_followup import VoiceFollowUpWindow
+from application.voice_followup import (
+    FollowUpCaptureUnavailable,
+    VoiceFollowUpWindow,
+)
 
 
 class RecordingCapture:
-    def __init__(self, result=True):
-        self.result = result
-        self.calls = 0
+    def __init__(self, prepared=True, transcript="ja"):
+        self.prepared = prepared
+        self.transcript = transcript
+        self.prepare_calls = 0
+        self.capture_timeouts = []
 
-    def activate(self):
-        self.calls += 1
-        return self.result
+    def prepare(self):
+        self.prepare_calls += 1
+        return self.prepared
+
+    def capture(self, timeout):
+        self.capture_timeouts.append(timeout)
+        return self.transcript
 
 
 class VoiceFollowUpWindowTests(unittest.TestCase):
@@ -21,16 +31,36 @@ class VoiceFollowUpWindowTests(unittest.TestCase):
         window = VoiceFollowUpWindow(capture, timeout=5)
 
         self.assertTrue(window.update(awaiting_confirmation=True))
-        self.assertEqual(5, window.listening_timeout(120))
+        listener = MagicMock()
+
+        self.assertEqual("ja", window.listen(listener, 120))
         window.consume_transcript()
-        self.assertEqual(120, window.listening_timeout(120))
-        self.assertEqual(1, capture.calls)
+        listener.return_value = "normal"
+        self.assertEqual("normal", window.listen(listener, 120))
+        self.assertEqual(1, capture.prepare_calls)
+        self.assertEqual([5], capture.capture_timeouts)
+        listener.assert_called_once_with(120)
 
     def test_failed_activation_keeps_normal_timeout(self):
-        window = VoiceFollowUpWindow(RecordingCapture(result=False), timeout=5)
+        window = VoiceFollowUpWindow(RecordingCapture(prepared=False), timeout=5)
+        listener = MagicMock(return_value="normal")
 
         self.assertFalse(window.update(awaiting_confirmation=True))
-        self.assertEqual(120, window.listening_timeout(120))
+        self.assertEqual("normal", window.listen(listener, 120))
+        listener.assert_called_once_with(120)
+
+    def test_capture_failure_falls_back_to_default_listener(self):
+        capture = RecordingCapture()
+        capture.capture = MagicMock(
+            side_effect=FollowUpCaptureUnavailable("private detail"),
+        )
+        window = VoiceFollowUpWindow(capture, timeout=5)
+        listener = MagicMock(return_value="ja")
+        window.update(awaiting_confirmation=True)
+
+        self.assertEqual("ja", window.listen(listener, 120))
+        self.assertFalse(window.active)
+        listener.assert_called_once_with(120)
 
     def test_timeout_is_reported_only_once(self):
         window = VoiceFollowUpWindow(RecordingCapture(), timeout=5)

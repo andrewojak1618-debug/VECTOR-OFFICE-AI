@@ -12,10 +12,17 @@ MAX_FOLLOW_UP_TIMEOUT_SECONDS = 10.0
 
 
 class FollowUpCapture(Protocol):
-    """Expose the only operation needed to start a follow-up recording."""
+    """Expose bounded local preparation and capture operations."""
 
-    def activate(self) -> bool:
-        """Startet genau eine begrenzte Folgeaufnahme."""
+    def prepare(self) -> bool:
+        """Prüft den lokalen Aufnahmeweg ohne das Mikrofon zu öffnen."""
+
+    def capture(self, timeout: float) -> str | None:
+        """Erfasst genau eine lokale Antwort innerhalb der Frist."""
+
+
+class FollowUpCaptureUnavailable(RuntimeError):
+    """Mark an unavailable local capture path without exposing details."""
 
 
 class VoiceFollowUpWindow:
@@ -33,17 +40,31 @@ class VoiceFollowUpWindow:
         self.timeout = timeout
         self.active = False
 
-    def listening_timeout(self, default: float) -> float:
-        """Wählt für eine aktive Bestätigung die kurze Aufnahmefrist."""
-        return self.timeout if self.active else default
-
     def update(self, awaiting_confirmation: bool) -> bool:
-        """Aktiviert bei offener Entscheidung höchstens eine Folgeaufnahme."""
+        """Bereitet bei offener Entscheidung höchstens eine Folgeaufnahme vor."""
         self.active = False
         if not awaiting_confirmation or self.capture is None:
             return False
-        self.active = self.capture.activate()
+        self.active = self.capture.prepare()
         return self.active
+
+    def listen(
+        self,
+        default_listener: Callable[[float], str | None],
+        default_timeout: float,
+    ) -> str | None:
+        """Nutzt lokal das kurze Fenster oder sicher den normalen Listener."""
+        if not self.active or self.capture is None:
+            return default_listener(default_timeout)
+        try:
+            user_text = self.capture.capture(self.timeout)
+        except FollowUpCaptureUnavailable:
+            self.active = False
+            print("Local follow-up unavailable; say 'Hey Vector' to answer.")
+            return default_listener(default_timeout)
+        if user_text:
+            print(f"Du: {user_text}")
+        return user_text
 
     def consume_timeout(self) -> bool:
         """Beendet ein abgelaufenes Fenster und meldet den vorherigen Zustand."""
@@ -66,7 +87,7 @@ def receive_voice_turn(
 ) -> tuple[str | None, int, bool]:
     """Empfängt einen Sprachturn und begrenzt Fehler sowie Bestätigungsfristen."""
     try:
-        user_text = listen(follow_up.listening_timeout(default_timeout))
+        user_text = follow_up.listen(listen, default_timeout)
     except RuntimeError:
         _expire_follow_up(follow_up, cancel_pending)
         failures += 1

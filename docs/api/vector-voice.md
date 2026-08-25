@@ -54,7 +54,13 @@
     options:
       members: true
 
-## Wakeword-freie Folgeaufnahme
+## Firmwarefreie lokale Folgeaufnahme
+
+::: voice.windows_followup
+    options:
+      members: true
+
+## Reservierter WirePod-Folgepfad
 
 ::: voice.wirepod_followup
     options:

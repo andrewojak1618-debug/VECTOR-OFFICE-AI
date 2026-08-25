@@ -159,6 +159,18 @@ class Settings:
         maximum=10,
     )
 
+    VOICE_FOLLOWUP_LOCAL = get_bool_setting(
+        "VOICE_FOLLOWUP_LOCAL",
+        default=True,
+    )
+
+    VOICE_FOLLOWUP_MIN_CONFIDENCE = get_float_setting(
+        "VOICE_FOLLOWUP_MIN_CONFIDENCE",
+        default=0.35,
+        minimum=0.0,
+        maximum=1.0,
+    )
+
     VOICE_ALLOW_CLOUD = get_bool_setting(
         "VOICE_ALLOW_CLOUD",
         default=False,

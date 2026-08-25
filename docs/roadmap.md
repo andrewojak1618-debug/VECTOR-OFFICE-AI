@@ -57,6 +57,8 @@
 ## Voice Input
 
 - ✅ mehrturnigen physischen Voice-Dialog stabilisieren
+- ✅ firmwarefreie lokale Folgeaufnahme über den deutschen Windows-Erkenner implementieren
+- ✅ lokale Folgeaufnahme am physischen Gesprächsfluss bestätigt
 - ✅ Erkennungsfehler und Abbruchsignale behandeln
 - ✅ doppelte WirePod-Reaktionen verhindern
 - ✅ optionalen ElevenLabs-TTS-Pfad mit lokaler Freigabe und Fallback implementieren

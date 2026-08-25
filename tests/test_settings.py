@@ -95,6 +95,19 @@ class SettingsTests(unittest.TestCase):
             ), self.assertRaisesRegex(ValueError, "VOICE_FOLLOWUP_TIMEOUT"):
                 get_int_setting("VOICE_FOLLOWUP_TIMEOUT", 5, 1, 10)
 
+    def test_voice_follow_up_confidence_is_bounded(self):
+        for value in (-0.1, 1.1):
+            with self.subTest(value=value), patch.dict(
+                os.environ,
+                {"VOICE_FOLLOWUP_MIN_CONFIDENCE": str(value)},
+            ), self.assertRaisesRegex(ValueError, "VOICE_FOLLOWUP_MIN_CONFIDENCE"):
+                get_float_setting(
+                    "VOICE_FOLLOWUP_MIN_CONFIDENCE",
+                    0.35,
+                    0.0,
+                    1.0,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

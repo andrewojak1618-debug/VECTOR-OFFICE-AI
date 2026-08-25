@@ -25,33 +25,37 @@ nächsten tatsächlichen Text.
 ## Wakeword-freie Ja-Nein-Antwort
 
 Stellt ein kontrollierter Tool-, Ausdrucks- oder Kontextdialog eine
-Bestätigungsfrage, aktiviert `voice/wirepod_followup.py` genau einmal WirePods
-festen Endpunkt `/api-sdk/trigger_wake_word` für den konfigurierten Vector.
-Die Antwort kann dadurch unmittelbar ohne ein zweites „Hey Vector“ gesprochen
-werden. `application/voice_followup.py` begrenzt dieses Fenster standardmäßig
-auf fünf Sekunden:
+Bestätigungsfrage, öffnet `voice/windows_followup.py` genau einmal das
+Standardmikrofon des Windows-Rechners. Der installierte deutsche
+System-Speech-Erkenner verarbeitet die Antwort vollständig lokal. Vectors
+Firmware und WirePods Remote-Wakeword-Endpunkt werden dafür nicht verändert
+oder aufgerufen. Die Antwort kann unmittelbar ohne ein zweites „Hey Vector“
+gesprochen werden. `application/voice_followup.py` begrenzt dieses Fenster
+standardmäßig auf fünf Sekunden:
 
 ```env
 VOICE_FOLLOWUP_TIMEOUT=5
+VOICE_FOLLOWUP_LOCAL=true
+VOICE_FOLLOWUP_MIN_CONFIDENCE=0.35
 ```
 
 Eine erkannte Antwort beendet das Fenster sofort. Bleibt sie aus, werden alle
 offenen Vorschläge ohne Toolausführung verworfen und die Anwendung kehrt zum
-normalen Wakeword-Betrieb zurück. Ist der WirePod-Endpunkt wegen einer nicht
-unterstützten Firmware oder eines Verbindungsfehlers nicht verfügbar, bleibt
-die offene Bestätigung erhalten; der Nutzer kann sie weiterhin nach einem
-normalen Wakeword beantworten. Es gibt keine automatische Toolwiederholung.
+normalen Wakeword-Betrieb zurück. Fehlt der deutsche Windows-Erkenner oder
+scheitert der lokale Aufnahmeprozess, bleibt die offene Bestätigung erhalten;
+der Nutzer kann sie weiterhin nach einem normalen Wakeword beantworten. Es
+gibt keine automatische Toolwiederholung.
 
 Natürliche Sätze, die eindeutig mit `Ja` beginnen, gelten als Bestätigung.
 Ablehnende Wörter wie `Nein` oder `nicht` haben aus Sicherheitsgründen immer
 Vorrang. Eine Aussage wie „Ja, doch nicht ausführen“ erteilt daher keine
 Berechtigung.
 
-Temporäre Fehler des lokalen WirePod-Endpunkts beenden den Dialog nicht mehr
-sofort. Initialisierung und laufende Erkennung werden bis zu fünfmal mit der
-begrenzten Staffel 1, 2, 5 und 10 Sekunden erneut versucht. Erst fünf
-aufeinanderfolgende Fehler beenden die Sitzung kontrolliert. Die Fehlermeldung übernimmt dabei weder interne
-HTTP-Fehlerdetails noch zusätzliche Transkriptinhalte.
+Die Folgeaufnahme läuft in einer verborgenen, nicht interaktiven Windows-
+PowerShell und besitzt zusätzlich zur Gesprächsfrist eine kurze technische
+Abbruchgrenze. Sie protokolliert weder Audio noch Transkript, Rohfehler oder
+andere Gesprächsinhalte. Der normale WirePod-Listener behält unabhängig davon
+seine begrenzte Wiederherstellung für temporäre Verbindungsfehler.
 
 ## Wakeword-Annahme
 
@@ -99,6 +103,8 @@ oder:
 INPUT_MODE=wirepod
 VOICE_LISTEN_TIMEOUT=120
 VOICE_FOLLOWUP_TIMEOUT=5
+VOICE_FOLLOWUP_LOCAL=true
+VOICE_FOLLOWUP_MIN_CONFIDENCE=0.35
 VOICE_ALLOW_CLOUD=false
 ```
 

@@ -8,16 +8,24 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ### Hinzugefügt
 
-- lokales Fünf-Sekunden-Antwortfenster für kontrollierte Ja-Nein-Fragen ohne
-  wiederholtes Wakeword
+- firmwarefreies lokales Fünf-Sekunden-Antwortfenster über den deutschen
+  Windows-Erkenner für kontrollierte Ja-Nein-Fragen ohne wiederholtes Wakeword
 - konservative Erkennung natürlicher Ja- und Nein-Sätze mit Vorrang für
   ablehnende Formulierungen
 
 ### Sicherheit
 
 - offene Aktionen werden bei ausbleibender Antwort ohne Ausführung verworfen
-- nicht unterstützte WirePod-Folgeaktivierung fällt auf den normalen
-  Wakeword-Ablauf zurück
+- eine nicht verfügbare lokale Folgeaufnahme fällt auf den normalen
+  WirePod-Wakeword-Ablauf zurück
+- Vectors Firmware und WirePods Remote-Wakeword-Endpunkt bleiben unverändert
+
+### Abnahme
+
+- 666 automatisierte Tests einschließlich lokaler Folgeaufnahme bestanden
+- deutscher Windows-Offline-Erkenner ohne Mikrofonöffnung als verfügbar bestätigt
+- Bestätigungsfrage, wakeword-freie Antwort und freigegebene Kopfaktion auf
+  unveränderter `6076ep`-Firmware physisch bestätigt
 
 ## [0.2.0-rc.2] – 2026-08-25
 
