@@ -67,12 +67,25 @@ class SequenceListener:
     def __init__(self, values):
         self.values = iter(values)
         self.primed = False
+        self.timeouts = []
 
     def prime(self):
         self.primed = True
 
-    def wait_for_transcript(self, _timeout):
-        return TranscriptEvent(next(self.values))
+    def wait_for_transcript(self, timeout):
+        self.timeouts.append(timeout)
+        value = next(self.values)
+        return None if value is None else TranscriptEvent(value)
+
+
+class RecordingFollowUp:
+    def __init__(self, result=True):
+        self.result = result
+        self.calls = 0
+
+    def activate(self):
+        self.calls += 1
+        return self.result
 
 
 class ToolConversationIntegrationTests(unittest.TestCase):
@@ -135,6 +148,66 @@ class ToolConversationIntegrationTests(unittest.TestCase):
         self.actions.perform.assert_called_once_with("head_up")
         self.assertEqual(0, self.model.calls)
         self.assertEqual(2, len(self.speech.spoken))
+
+    def test_voice_uses_five_second_wakeword_free_confirmation_window(self):
+        listener = SequenceListener(
+            ("schau nach oben", "Ja, bitte schau nach oben."),
+        )
+        follow_up = RecordingFollowUp()
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                listen_timeout=30,
+                max_turns=2,
+                follow_up=follow_up,
+                follow_up_timeout=5,
+            )
+
+        self.assertEqual([30, 5], listener.timeouts)
+        self.assertEqual(1, follow_up.calls)
+        self.actions.perform.assert_called_once_with("head_up")
+
+    def test_voice_confirmation_timeout_discards_pending_action(self):
+        listener = SequenceListener(
+            ("schau nach oben", None, "vector beenden"),
+        )
+        follow_up = RecordingFollowUp()
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                listen_timeout=30,
+                follow_up=follow_up,
+                follow_up_timeout=5,
+            )
+
+        self.assertEqual([30, 5, 30], listener.timeouts)
+        self.assertEqual(1, follow_up.calls)
+        self.actions.perform.assert_not_called()
+
+    def test_voice_trigger_failure_falls_back_to_normal_wakeword_wait(self):
+        listener = SequenceListener(("schau nach oben", "ja"))
+        follow_up = RecordingFollowUp(result=False)
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                listen_timeout=30,
+                max_turns=2,
+                follow_up=follow_up,
+                follow_up_timeout=5,
+            )
+
+        self.assertEqual([30, 30], listener.timeouts)
+        self.assertEqual(1, follow_up.calls)
+        self.actions.perform.assert_called_once_with("head_up")
 
     def test_console_delivers_confirmed_expression_then_answer(self):
         model = FixedLanguageModel()

@@ -87,6 +87,14 @@ class SettingsTests(unittest.TestCase):
                 ), self.assertRaisesRegex(ValueError, name):
                     get_float_setting(name, minimum, minimum, maximum)
 
+    def test_voice_follow_up_timeout_is_bounded(self):
+        for value in (0, 11):
+            with self.subTest(value=value), patch.dict(
+                os.environ,
+                {"VOICE_FOLLOWUP_TIMEOUT": str(value)},
+            ), self.assertRaisesRegex(ValueError, "VOICE_FOLLOWUP_TIMEOUT"):
+                get_int_setting("VOICE_FOLLOWUP_TIMEOUT", 5, 1, 10)
+
 
 if __name__ == "__main__":
     unittest.main()

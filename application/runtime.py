@@ -7,6 +7,7 @@ from application.runtime_startup import (
     ensure_ollama as _ensure_ollama,
 )
 from brain.agent import Agent
+from brain.ollama_runtime import OllamaRuntime
 from brain.providers import OllamaProvider, create_language_model
 from brain.reflection import ReflectionPolicy
 from diagnostics.events import DiagnosticLevel, StructuredDiagnosticReporter
@@ -14,9 +15,11 @@ from memory.database import SQLiteMemoryStore
 from tools.registry import ToolRegistry
 from vector.actions import VectorActions
 from vector.behavior_control import BehaviorControl
+from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
 from vector.speech_factory import create_speech_output
+from voice.wirepod_followup import WirePodFollowUpCapture
 from voice.wirepod_input import WirePodTranscriptListener
 
 from application.conversation import run_conversation, run_voice_conversation
@@ -291,10 +294,19 @@ def _run_wirepod_input(settings, agent, speech, connections) -> None:
         settings.WIREPOD_HOST,
         request_timeout=settings.WIREPOD_REQUEST_TIMEOUT,
     )
+    follow_up = None
+    if settings.VECTOR_SERIAL.strip():
+        follow_up = WirePodFollowUpCapture(
+            settings.WIREPOD_HOST,
+            settings.VECTOR_SERIAL,
+            request_timeout=settings.WIREPOD_REQUEST_TIMEOUT,
+        )
     run_voice_conversation(
         agent,
         speech,
         listener,
         listen_timeout=settings.VOICE_LISTEN_TIMEOUT,
         connections=connections,
+        follow_up=follow_up,
+        follow_up_timeout=settings.VOICE_FOLLOWUP_TIMEOUT,
     )

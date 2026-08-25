@@ -302,6 +302,22 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.actions.perform.assert_called_once_with("greeting")
         self.assertEqual(0, self.model.calls)
 
+    def test_natural_affirmative_sentence_confirms_pending_action(self):
+        self.controller.handle("schau nach oben")
+
+        completed = self.controller.handle("Ja, bitte schau nach oben.")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, completed.status)
+        self.actions.perform.assert_called_once_with("head_up")
+
+    def test_affirmative_sentence_with_cancellation_never_executes(self):
+        self.controller.handle("schau nach oben")
+
+        cancelled = self.controller.handle("Ja, doch nicht ausführen.")
+
+        self.assertEqual(ToolTurnStatus.CANCELLED, cancelled.status)
+        self.actions.perform.assert_not_called()
+
     def test_unknown_confirmation_keeps_action_pending(self):
         self.controller.handle("schau nach oben")
 

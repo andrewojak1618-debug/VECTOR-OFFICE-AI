@@ -22,6 +22,31 @@ Leere `intent_system_noaudio`-Ereignisse zählen nicht als Spracheingabe. Damit
 wartet die Anwendung nach einem fehlgeschlagenen Aufnahmeversuch auf den
 nächsten tatsächlichen Text.
 
+## Wakeword-freie Ja-Nein-Antwort
+
+Stellt ein kontrollierter Tool-, Ausdrucks- oder Kontextdialog eine
+Bestätigungsfrage, aktiviert `voice/wirepod_followup.py` genau einmal WirePods
+festen Endpunkt `/api-sdk/trigger_wake_word` für den konfigurierten Vector.
+Die Antwort kann dadurch unmittelbar ohne ein zweites „Hey Vector“ gesprochen
+werden. `application/voice_followup.py` begrenzt dieses Fenster standardmäßig
+auf fünf Sekunden:
+
+```env
+VOICE_FOLLOWUP_TIMEOUT=5
+```
+
+Eine erkannte Antwort beendet das Fenster sofort. Bleibt sie aus, werden alle
+offenen Vorschläge ohne Toolausführung verworfen und die Anwendung kehrt zum
+normalen Wakeword-Betrieb zurück. Ist der WirePod-Endpunkt wegen einer nicht
+unterstützten Firmware oder eines Verbindungsfehlers nicht verfügbar, bleibt
+die offene Bestätigung erhalten; der Nutzer kann sie weiterhin nach einem
+normalen Wakeword beantworten. Es gibt keine automatische Toolwiederholung.
+
+Natürliche Sätze, die eindeutig mit `Ja` beginnen, gelten als Bestätigung.
+Ablehnende Wörter wie `Nein` oder `nicht` haben aus Sicherheitsgründen immer
+Vorrang. Eine Aussage wie „Ja, doch nicht ausführen“ erteilt daher keine
+Berechtigung.
+
 Temporäre Fehler des lokalen WirePod-Endpunkts beenden den Dialog nicht mehr
 sofort. Initialisierung und laufende Erkennung werden bis zu fünfmal mit der
 begrenzten Staffel 1, 2, 5 und 10 Sekunden erneut versucht. Erst fünf
@@ -73,6 +98,7 @@ oder:
 ```env
 INPUT_MODE=wirepod
 VOICE_LISTEN_TIMEOUT=120
+VOICE_FOLLOWUP_TIMEOUT=5
 VOICE_ALLOW_CLOUD=false
 ```
 

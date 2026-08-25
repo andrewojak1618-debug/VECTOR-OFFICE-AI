@@ -6,7 +6,18 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
-Noch keine Änderungen dokumentiert.
+### Hinzugefügt
+
+- lokales Fünf-Sekunden-Antwortfenster für kontrollierte Ja-Nein-Fragen ohne
+  wiederholtes Wakeword
+- konservative Erkennung natürlicher Ja- und Nein-Sätze mit Vorrang für
+  ablehnende Formulierungen
+
+### Sicherheit
+
+- offene Aktionen werden bei ausbleibender Antwort ohne Ausführung verworfen
+- nicht unterstützte WirePod-Folgeaktivierung fällt auf den normalen
+  Wakeword-Ablauf zurück
 
 ## [0.2.0-rc.2] – 2026-08-25
 

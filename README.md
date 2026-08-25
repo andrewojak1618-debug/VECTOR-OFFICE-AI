@@ -294,6 +294,68 @@ Vector:   [Bestätigungsfrage]
 Benutzer: Ja
 ```
 
+Nach einer kontrollierten Ja-Nein-Frage aktiviert Vector nun automatisch ein
+fünf Sekunden langes Antwortfenster. Das zweite `Hey Vector` entfällt; eine
+erkannte Antwort beendet die Aufnahme sofort. Bleibt sie aus, wird die offene
+Aktion ohne Ausführung verworfen. Natürliche Antworten wie „Ja, bitte schau
+nach oben“ werden akzeptiert, während ein widersprüchliches „Ja, doch nicht“
+sicher als Ablehnung gilt. Unterstützt die installierte WirePod-Firmware die
+lokale Folgeaktivierung nicht, bleibt der bisherige Wakeword-Ablauf erhalten.
+
+Das Antwortfenster erteilt selbst keine Berechtigung und wählt kein Tool aus.
+Datei- und Ordneraktionen sind weiterhin nicht frei verfügbar; sie benötigen
+später ein eigenes, pfadgebundenes Allowlist-Tool in der Tool Registry.
+
+### Firmware-Entscheidung für direkte Folgeantworten
+
+Der physische Vector verwendet weiterhin `2.0.1.6076ep`. Das installierte
+WirePod `v1.2.18` kennzeichnet den Remote-Wakeword-Endpunkt ausdrücklich als
+nur mit Dev-Firmware beziehungsweise `2.0.1.6085ep` oder neuer verfügbar. Der
+beobachtete Timeout beim lokalen Aufruf dieses Endpunkts ist deshalb eine
+Firmware-Kompatibilitätsgrenze und kein Grund, Sicherheits- oder
+Berechtigungsprüfungen der Anwendung zu lockern.
+
+Die Zielversion `2.0.1.6085ep` und eine mögliche Rückkehrdatei
+`2.0.1.6076ep` wurden offline vollständig geprüft. Beide Manifeste besitzen
+eine gültige Signatur des offiziellen Vector-OTA-Schlüssels; die entschlüsselten
+Boot- und Systemabbilder stimmen jeweils mit ihren signierten SHA-256-Werten
+und Größen überein. Die Dateien bleiben lokal in einer Firmwarequarantäne und
+wurden nicht an Vector übertragen.
+
+Trotz dieser bestätigten Authentizität bestehen relevante Diskrepanzen:
+
+| Bereich | Erwarteter Nutzen oder Befund | Grenze für unser Projekt |
+|---|---|---|
+| Remote-Wakeword | `6085ep` soll WirePods `/api-sdk/trigger_wake_word` unterstützen. | Der konkrete Ablauf ist erst nach der Firmwareänderung physisch prüfbar. |
+| Direktes Ja/Nein-Fenster | Folgeantworten könnten Vectors eigenes Mikrofon ohne zweites Wakeword verwenden. | Das verbessert nur die Gesprächsübergabe; Brain, Memory, TTS und Tool Registry benötigen das Update nicht. |
+| Normaler Rücksprung | Eine signierte `6076ep` liegt lokal vor. | Die Produktions-Updateengine verbietet niedrigere Versionen und würde den normalen Downgrade voraussichtlich mit Fehler `216` ablehnen. |
+| A/B-Slots | Ein Update schreibt zunächst in den inaktiven Slot und aktiviert ihn erst nach erfolgreichen Prüfungen. | Der aktive Slot und ein automatischer Bootloader-Rollback sind am konkreten Vector noch nicht bestätigt. |
+| Recovery | Offizielle Recovery-Schritte und alle Firmwaredaten sind dokumentiert. | Der Recovery-Start wurde noch nicht physisch und ohne Installation abgenommen. |
+| Lokales DDL-Web-Setup | Die offizielle historische Quelle wurde lokal archiviert. | Ihre alten Node-Abhängigkeiten meldeten bekannte Sicherheitslücken; sie wurden entfernt und das Werkzeug ist nicht zur Ausführung freigegeben. |
+| Projektkompatibilität | WirePod erwartet `6085ep` für die gewünschte Funktion. | Wakeword, SDK, Zertifikate, TTS und Autostart müssten anschließend vollständig neu abgenommen werden. |
+
+Damit gilt vorerst `No-Go` für die Installation. Eine kontrollierte und
+überwachte Aktualisierung kann Übertragungsfehler erkennen und den A/B-Schutz
+nutzen, aber sie kann nach Beginn des Schreibvorgangs weder einen gefahrlosen
+Sofortabbruch noch einen normalen Downgrade garantieren. Für den aktuell
+einzigen bestätigten Zusatznutzen ist dieses Verhältnis noch nicht günstig
+genug.
+
+Der bevorzugte Weg bleibt deshalb firmwarefrei:
+
+1. Der bestehende sichere Wakeword-Fallback bleibt aktiv.
+2. Das fünfsekündige Folgefenster erhält später einen austauschbaren lokalen
+   Eingabekanal über das Laptop- oder ein günstiges USB-Mikrofon.
+3. Nur während einer bereits gestellten Ja-Nein-Frage wird dieser Kanal kurz
+   geöffnet; danach schließt er sofort und erteilt selbst keine Toolbefugnis.
+4. Vectors eigenes Mikrofon bleibt der normale Wakeword-Eingang.
+5. `6085ep` wird erst erneut bewertet, wenn aktiver Slot, Recovery-Start und
+   eine sichere lokale Setupoberfläche nachweislich bestätigt sind.
+
+Die verbindlichen Einzelheiten stehen unter
+[`docs/firmware-safety.md`](docs/firmware-safety.md) und
+[`docs/firmware-recovery.md`](docs/firmware-recovery.md).
+
 Ohne diese eindeutige Einleitung wird kein zusätzlicher Klassifikationsaufruf
 gestartet. Das Modell sieht nur abstrakte Vorschlags-IDs und kann weder
 Toolnamen noch Parameter oder Berechtigungen bestimmen. Der Vorschlag verfällt
@@ -954,7 +1016,9 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ Windows-Autostart, Host-Watchdog und vollständige Kaltstart-Abnahme
 - ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
 - ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
-- ✅ 635 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`
+- ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
+- ✅ 656 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 

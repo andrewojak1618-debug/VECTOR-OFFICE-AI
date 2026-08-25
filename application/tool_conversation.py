@@ -3,6 +3,10 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from application.confirmation import (
+    ConfirmationDecision,
+    classify_confirmation,
+)
 from brain.agent import Agent
 from tools.permissions import PermissionLevel, ToolAuthorization
 from tools.registry import ToolExecutionResult
@@ -14,15 +18,6 @@ from tools.selection import (
 
 
 EMERGENCY_TOOL_NAME = "vector.emergency_stop"
-CONFIRMATION_PHRASES = frozenset({"ja", "ja bitte", "bestätigen", "ausführen"})
-CANCELLATION_PHRASES = frozenset({
-    "nein",
-    "abbrechen",
-    "abbruch",
-    "nicht ausführen",
-})
-
-
 class ToolTurnStatus(Enum):
     """Describe how a tool-related conversation turn was handled."""
 
@@ -58,6 +53,17 @@ class ControlledToolConversation:
         self.selector = selector
         self._pending: ToolSelection | None = None
 
+    @property
+    def awaiting_confirmation(self) -> bool:
+        """Meldet, ob ein kontrolliertes Tool auf eine Entscheidung wartet."""
+        return self._pending is not None
+
+    def cancel_pending(self) -> bool:
+        """Verwirft eine offene Toolauswahl ohne Berechtigung oder Ausführung."""
+        existed = self._pending is not None
+        self._pending = None
+        return existed
+
     def handle(self, user_text: str) -> ToolTurnResult:
         """Wählt, bestätigt, verwirft oder führt eine kontrollierte Toolanfrage aus."""
         selection = self.selector.select(user_text)
@@ -81,16 +87,19 @@ class ControlledToolConversation:
 
     def _handle_confirmation(self, user_text: str) -> ToolTurnResult:
         """Verarbeitet eine separate Bestätigung oder Ablehnung des offenen Tools."""
-        normalized = _normalize_confirmation(user_text)
+        decision = classify_confirmation(user_text)
         pending = self._pending
-        if normalized in CANCELLATION_PHRASES:
-            self._pending = None
+        if decision in {
+            ConfirmationDecision.REJECT,
+            ConfirmationDecision.CANCEL,
+        }:
+            self.cancel_pending()
             return ToolTurnResult(
                 ToolTurnStatus.CANCELLED,
                 "Die Aktion wurde abgebrochen.",
                 True,
             )
-        if normalized not in CONFIRMATION_PHRASES:
+        if decision is not ConfirmationDecision.CONFIRM:
             return self._confirmation_result(pending)
         self._pending = None
         authority = _confirmed_authorization(pending.permission)
@@ -145,11 +154,6 @@ class ControlledToolConversation:
             f"Soll ich '{selection.label}' ausführen? Antworte mit Ja oder Nein.",
             True,
         )
-
-
-def _normalize_confirmation(value: str) -> str:
-    """Normalisiert eine kurze Toolbestätigung oder Ablehnung."""
-    return " ".join(value.casefold().strip().rstrip(".!?").split())
 
 
 def _confirmed_authorization(permission: PermissionLevel) -> ToolAuthorization:

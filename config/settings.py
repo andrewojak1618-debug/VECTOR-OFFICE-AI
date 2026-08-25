@@ -152,6 +152,13 @@ class Settings:
         maximum=600,
     )
 
+    VOICE_FOLLOWUP_TIMEOUT = get_int_setting(
+        "VOICE_FOLLOWUP_TIMEOUT",
+        default=5,
+        minimum=1,
+        maximum=10,
+    )
+
     VOICE_ALLOW_CLOUD = get_bool_setting(
         "VOICE_ALLOW_CLOUD",
         default=False,

@@ -3,6 +3,11 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from application.confirmation import (
+    ConfirmationDecision,
+    classify_confirmation,
+    normalize_confirmation,
+)
 from application.expression_delivery import (
     ExpressionDeliveryResult,
     ExpressionDeliveryStatus,
@@ -24,13 +29,6 @@ EXPRESSION_REQUEST_PREFIXES = (
     "mit ausdruck:",
     "mit ausdruck ",
 )
-CONFIRMATION_PHRASES = frozenset({"ja", "ja bitte", "bestätigen", "ausführen"})
-DECLINE_PHRASES = frozenset({"nein", "ohne animation"})
-CANCELLATION_PHRASES = frozenset({
-    "abbrechen",
-    "abbruch",
-    "antwort verwerfen",
-})
 CONFIRMATION_MESSAGE = (
     "Soll ich die Antwort mit einer ruhigen Kopf- und Augenbewegung ausgeben? "
     "Antworte mit Ja oder Nein."
@@ -145,21 +143,27 @@ class ControlledExpressionConversation:
 
     def _handle_confirmation(self, user_text: str) -> ExpressionTurnResult:
         """Verarbeitet die separate Entscheidung über den vorbereiteten Ausdruck."""
-        normalized = _normalize_choice(user_text)
-        if normalized in CANCELLATION_PHRASES:
+        normalized = normalize_confirmation(user_text)
+        decision = classify_confirmation(user_text)
+        if decision is ConfirmationDecision.CANCEL:
             self.cancel_pending()
             return ExpressionTurnResult(
                 ExpressionTurnStatus.CANCELLED,
                 "Die vorbereitete Antwort wurde verworfen.",
                 True,
             )
-        if normalized not in CONFIRMATION_PHRASES | DECLINE_PHRASES:
+        if normalized == "ohne animation":
+            decision = ConfirmationDecision.REJECT
+        if decision not in {
+            ConfirmationDecision.CONFIRM,
+            ConfirmationDecision.REJECT,
+        }:
             return self._confirmation_result()
         pending = self._pending
         self._pending = None
         authorization = None
         animate = False
-        if normalized in CONFIRMATION_PHRASES:
+        if decision is ConfirmationDecision.CONFIRM:
             authorization = ToolAuthorization(
                 allow_mutation=True,
                 confirmed=True,
@@ -211,8 +215,3 @@ def _extract_expression_request(user_text: str) -> str | None:
     if normalized in {"antworte mit ausdruck", "mit ausdruck"}:
         return ""
     return None
-
-
-def _normalize_choice(value: str) -> str:
-    """Normalisiert eine kurze Ja-Nein- oder Abbruchantwort."""
-    return " ".join(value.casefold().strip().rstrip(".!?").split())

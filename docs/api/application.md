@@ -24,6 +24,10 @@
     options:
       members: true
 
+::: application.voice_followup
+    options:
+      members: true
+
 ## Gesprächsschleifen
 
 ::: application.conversation

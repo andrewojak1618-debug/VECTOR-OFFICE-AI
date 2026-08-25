@@ -3,15 +3,19 @@ from types import SimpleNamespace
 
 from unittest.mock import MagicMock, patch
 
+import application.runtime as runtime_module
 from application.runtime import (
     _create_tool_registry,
     _ensure_ollama,
     _knowledge_enabled,
     register_provider_statuses,
     _run_input_mode,
+    _run_wirepod_input,
     get_runtime_mode,
 )
 from application.connection_supervisor import ConnectionSupervisor
+from brain.ollama_runtime import OllamaRuntime
+from vector.client import VectorClient
 
 
 def make_settings(**overrides):
@@ -30,6 +34,12 @@ def make_settings(**overrides):
 
 
 class RuntimeModeTests(unittest.TestCase):
+    def test_runtime_keeps_wirepod_client_dependency_available(self):
+        self.assertIs(VectorClient, runtime_module.VectorClient)
+
+    def test_runtime_keeps_ollama_status_dependency_available(self):
+        self.assertIs(OllamaRuntime, runtime_module.OllamaRuntime)
+
     def test_runtime_registers_only_controlled_production_tools(self):
         registry = _create_tool_registry(
             MagicMock(),
@@ -216,6 +226,47 @@ class RuntimeModeTests(unittest.TestCase):
         )
 
         run_input.assert_called_once_with(settings, agent, speech, connections)
+
+    @patch("application.runtime.run_voice_conversation")
+    @patch("application.runtime.WirePodFollowUpCapture")
+    @patch("application.runtime.WirePodTranscriptListener")
+    def test_wirepod_runtime_wires_bounded_follow_up_capture(
+        self,
+        listener_type,
+        follow_up_type,
+        run_voice,
+    ):
+        settings = make_settings(
+            WIREPOD_HOST="http://127.0.0.1:8080",
+            WIREPOD_REQUEST_TIMEOUT=4.0,
+            VECTOR_SERIAL="0dd1fd3b",
+            VOICE_LISTEN_TIMEOUT=120,
+            VOICE_FOLLOWUP_TIMEOUT=5,
+        )
+        agent = MagicMock()
+        speech = MagicMock()
+        connections = MagicMock()
+
+        _run_wirepod_input(settings, agent, speech, connections)
+
+        listener_type.assert_called_once_with(
+            settings.WIREPOD_HOST,
+            request_timeout=4.0,
+        )
+        follow_up_type.assert_called_once_with(
+            settings.WIREPOD_HOST,
+            settings.VECTOR_SERIAL,
+            request_timeout=4.0,
+        )
+        run_voice.assert_called_once_with(
+            agent,
+            speech,
+            listener_type.return_value,
+            listen_timeout=120,
+            connections=connections,
+            follow_up=follow_up_type.return_value,
+            follow_up_timeout=5,
+        )
 
 
 if __name__ == "__main__":

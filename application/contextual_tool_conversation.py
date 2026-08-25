@@ -5,6 +5,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
+from application.confirmation import (
+    ConfirmationDecision,
+    classify_confirmation,
+)
 from application.model_tool_proposals import ModelToolProposalService
 from brain.agent import Agent
 from tools.permissions import PermissionLevel, ToolAuthorization
@@ -18,13 +22,6 @@ PROPOSAL_REQUEST_PREFIXES = (
     "welche aktion passt dazu",
 )
 PROPOSAL_REQUEST_SEPARATORS = " \t:?!,;"
-CONFIRMATION_PHRASES = frozenset({"ja", "ja bitte", "bestätigen", "ausführen"})
-CANCELLATION_PHRASES = frozenset({
-    "nein",
-    "abbrechen",
-    "abbruch",
-    "nicht ausführen",
-})
 CONTEXTUAL_EXPRESSION_TARGETS = {
     "vector.reflective_expression": "reflective_expression",
 }
@@ -139,8 +136,11 @@ class ControlledContextualToolConversation:
                 ContextualToolTurnStatus.EXPIRED,
                 "Die Kontextanfrage ist abgelaufen und wurde verworfen.",
             )
-        normalized = _normalize_choice(user_text)
-        if normalized in CANCELLATION_PHRASES:
+        decision = classify_confirmation(user_text)
+        if decision in {
+            ConfirmationDecision.REJECT,
+            ConfirmationDecision.CANCEL,
+        }:
             self._context_expires_at = None
             return self._result(
                 ContextualToolTurnStatus.CANCELLED,
@@ -181,14 +181,17 @@ class ControlledContextualToolConversation:
                 ContextualToolTurnStatus.EXPIRED,
                 "Der Aktionsvorschlag ist abgelaufen und wurde verworfen.",
             )
-        normalized = _normalize_choice(user_text)
-        if normalized in CANCELLATION_PHRASES:
+        decision = classify_confirmation(user_text)
+        if decision in {
+            ConfirmationDecision.REJECT,
+            ConfirmationDecision.CANCEL,
+        }:
             self._pending = None
             return self._result(
                 ContextualToolTurnStatus.CANCELLED,
                 "Der Aktionsvorschlag wurde verworfen.",
             )
-        if normalized not in CONFIRMATION_PHRASES:
+        if decision is not ConfirmationDecision.CONFIRM:
             return self._confirmation_result(self._pending)
         return self._execute_pending()
 
@@ -278,8 +281,3 @@ def _extract_proposal_request(user_text: str) -> str | None:
             continue
         return remainder.lstrip(PROPOSAL_REQUEST_SEPARATORS).strip()
     return None
-
-
-def _normalize_choice(value: str) -> str:
-    """Normalisiert eine kurze Bestätigungs- oder Abbruchantwort."""
-    return " ".join(value.casefold().strip().rstrip(".!?").split())

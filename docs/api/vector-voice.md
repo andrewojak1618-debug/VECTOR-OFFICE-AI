@@ -53,3 +53,9 @@
 ::: voice.wirepod_input
     options:
       members: true
+
+## Wakeword-freie Folgeaufnahme
+
+::: voice.wirepod_followup
+    options:
+      members: true

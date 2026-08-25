@@ -36,6 +36,8 @@ nav:
   - Entwicklung: progress.md
   - Architektur: architecture.md
   - Homeserver & Docker: deployment.md
+  - Firmware-Sicherheit: firmware-safety.md
+  - Firmware-Recovery: firmware-recovery.md
   - Provider-Zuverlässigkeit: provider-reliability.md
   - Datenschutz: privacy.md
   - Codequalität: quality.md

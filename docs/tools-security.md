@@ -126,8 +126,10 @@ Gesprächseingaben und lösen kein Tool aus.
 
 - `READ_ONLY` wird nach erfolgreicher Registry-Prüfung direkt ausgeführt,
 - `MUTATING` wird zunächst nur vorgeschlagen und benötigt anschließend ein
-  separates `Ja`, `Ja bitte`, `Bestätigen` oder `Ausführen`,
+  separates `Ja`, `Ja bitte`, `Bestätigen` oder `Ausführen`; ein eindeutig mit
+  `Ja` beginnender natürlicher Antwortsatz ist ebenfalls zulässig,
 - `Nein`, `Abbrechen` oder `Nicht ausführen` verwirft den Vorschlag,
+- ablehnende Wörter haben auch nach einem anfänglichen `Ja` Vorrang,
 - andere Antworten halten die Aktion offen und erteilen keine Berechtigung,
 - `DANGEROUS` wird in diesem Gesprächspfad grundsätzlich blockiert,
 - ein exakter Notfallstopp unterbricht offene Vorschläge und wird sofort
@@ -136,6 +138,10 @@ Gesprächseingaben und lösen kein Tool aus.
 Die Bestätigung erzeugt genau ein `ToolAuthorization`-Objekt für diesen Aufruf
 und wird danach vergessen. Das Sprachmodell sieht keine Tooldefinitionen,
 wählt keinen Toolnamen und erzeugt weder Parameter noch Berechtigungen.
+Im WirePod-Modus öffnet die Anwendung nach der gesprochenen Frage ein lokales,
+standardmäßig fünf Sekunden langes Antwortfenster ohne erneutes Wakeword.
+Ein Timeout verwirft die offene Auswahl; eine nicht unterstützte
+Folgeaktivierung fällt sicher auf den bisherigen Wakeword-Ablauf zurück.
 
 Der produktive Konsolentest wurde mit der Folge „Welche Aktionen kannst du?“,
 „Begrüße mich“ und „Ja“ durchgeführt. Vector las die Allowlist ohne Bewegung
