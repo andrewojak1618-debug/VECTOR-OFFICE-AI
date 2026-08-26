@@ -22,6 +22,10 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Windows-Standardanwendung ohne freie Pfade oder Shellbefehle
 - beim Anwendungsstart vorgewärmter deutscher Windows-Erkenner für einen
   unmittelbar verfügbaren, wakeword-freien Bestätigungsdialog
+- bestätigungspflichtiges Öffnen des fest freigegebenen Dokumentationsordners
+  ohne freie Pfade, Anwendungen oder Shellbefehle
+- lokale Read-only-Abfrage der letzten bekannten kontrollierten Tool-Aktion mit
+  fester deutscher Bezeichnung und sicherem Ergebnisstatus
 
 ### Sicherheit
 
@@ -49,6 +53,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   getrennte konservative Ja-Nein-Prüfung bleibt die Berechtigungsgrenze
 - freie Diktaterkennung im Folgefenster entfernt und Aufnahme auf feste lokale
   Ja-, Nein- und Abbruchformulierungen begrenzt
+- letzte Tool-Aktion verwirft Parameter, Pfade, Inhalte, Zeitpunkte, Fehlercodes
+  und unbekannte Toolnamen; die Abfrage selbst wird beim Rückblick übersprungen
 
 ### Abnahme
 
@@ -68,6 +74,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   verständlich am physischen Vector bestätigt
 - wakeword-freies einzelnes `Ja` über das Laptop-Mikrofon erkannt und genau eine
   erfolgreiche Roadmap-Öffnung im redigierten lokalen Tool-Audit bestätigt
+- fest freigegebenen Dokumentationsordner mit der kurzen Phrase
+  `Dokumentation öffnen` physisch geöffnet und im redigierten Audit bestätigt
 
 ## [0.2.0-rc.2] – 2026-08-25
 

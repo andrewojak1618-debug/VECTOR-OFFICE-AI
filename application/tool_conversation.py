@@ -20,6 +20,7 @@ from tools.selection import (
 EMERGENCY_TOOL_NAME = "vector.emergency_stop"
 SPOKEN_RESULT_TOOLS = frozenset({
     "development.latest_change",
+    "development.latest_tool_status",
     "research.python_latest_version",
     "research.python_source_status",
     "development.code_quality_status",

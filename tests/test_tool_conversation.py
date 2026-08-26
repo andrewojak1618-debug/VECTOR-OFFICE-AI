@@ -21,6 +21,7 @@ from tools.documentation_status import (
 )
 from tools.changelog_status import register_latest_project_change_tool
 from tools.library_status import register_local_library_status_tool
+from tools.latest_tool_status import register_latest_tool_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import CoreTestSummary, register_core_project_test_tool
@@ -82,6 +83,7 @@ class ControlledToolConversationTests(unittest.TestCase):
             self.registry,
             reader=lambda _root: "kontrolliertes Werkzeug ergänzt",
         )
+        register_latest_tool_status_tool(self.registry, lambda: None)
         register_project_document_catalog_tool(
             self.registry,
             status_reader=lambda _root: ProjectDocumentCatalogStatus(
@@ -263,6 +265,13 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("kontrolliertes Werkzeug ergänzt", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_latest_tool_status_executes_without_model_or_confirmation(self):
+        result = self.controller.handle("Was wurde zuletzt ausgeführt?")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("keine kontrollierte Aktion", result.message)
         self.assertEqual(0, self.model.calls)
 
     def test_research_source_requires_separate_yes_before_network_use(self):

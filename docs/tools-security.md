@@ -87,6 +87,15 @@ Toolaktion. Die Runtime arbeitet dann mit einer neutralen Warnung ohne lokale
 Persistenz weiter. Die additive Tabelle verändert oder löscht keine Memory-,
 Dokument-, Versions- oder Embedding-Daten.
 
+`tools/latest_tool_status.py` erlaubt eine rein lesende Auskunft über die letzte
+bekannte kontrollierte Aktion. Das Werkzeug akzeptiert keine Parameter und
+übersetzt ausschließlich fest bekannte Toolnamen und die vier strukturierten
+Ergebniszustände in lokale deutsche Texte. Zeitpunkte, Toolargumente,
+Datei- oder Ordnerpfade, Fehlercodes und interne Meldungen werden nicht
+ausgegeben. Unbekannte Ereignisse und die Statusabfrage selbst werden beim
+Rückblick übersprungen. Ist das Audit deaktiviert oder leer, meldet die
+Anwendung lediglich, dass keine frühere kontrollierte Aktion verfügbar ist.
+
 `diagnostics/tool_audit.py` bietet ausschließlich lokale Wartungsbefehle:
 
 ```powershell

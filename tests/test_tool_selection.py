@@ -15,6 +15,7 @@ from tools.documentation_status import (
 from tools.changelog_status import register_latest_project_change_tool
 from tools.permissions import PermissionLevel
 from tools.library_status import register_local_library_status_tool
+from tools.latest_tool_status import register_latest_tool_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
@@ -82,6 +83,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
             self.registry,
             reader=lambda _root: "kontrolliertes Werkzeug ergänzt",
         )
+        register_latest_tool_status_tool(self.registry, lambda: None)
         register_project_document_catalog_tool(
             self.registry,
             status_reader=lambda _root: ProjectDocumentCatalogStatus(
@@ -321,6 +323,14 @@ class ToolIntentSelectorTests(unittest.TestCase):
 
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("development.latest_change", selection.tool_name)
+
+    def test_latest_tool_status_selects_fixed_read_only_tool(self):
+        selection = self.selector.select("Was wurde zuletzt ausgeführt?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.latest_tool_status", selection.tool_name)
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+        self.assertEqual({}, dict(selection.arguments))
         self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
 

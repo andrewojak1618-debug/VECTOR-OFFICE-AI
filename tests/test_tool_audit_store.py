@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 from application.runtime import _create_audit_store, _create_tool_registry
 from memory.database import SQLiteMemoryStore
 from tools.audit_store import SQLiteToolAuditStore
+from tools.latest_tool_status import TOOL_NAME as LATEST_TOOL_STATUS_NAME
 from tools.permissions import PermissionLevel
 from tools.registry import (
     REDACTED_ARGUMENT,
@@ -196,6 +197,24 @@ class AuditRuntimeIntegrationTests(unittest.TestCase):
 
         self.assertTrue(result.succeeded)
         self.assertEqual("vector.list_actions", store.list_events()[0].tool_name)
+        actions.perform.assert_not_called()
+
+    def test_runtime_status_reports_previous_known_event_and_skips_itself(self):
+        settings = _settings(self.database_path)
+        store = _create_audit_store(settings)
+        actions = MagicMock()
+        actions.available_actions.return_value = ("greeting",)
+        registry = _create_tool_registry(actions, store)
+        registry.execute("vector.list_actions", {})
+
+        first = registry.execute(LATEST_TOOL_STATUS_NAME, {})
+        second = registry.execute(LATEST_TOOL_STATUS_NAME, {})
+
+        self.assertTrue(first.succeeded)
+        self.assertTrue(second.succeeded)
+        self.assertEqual("Robot-Aktionen auflisten", first.output["action"])
+        self.assertEqual(first.output, second.output)
+        self.assertEqual(LATEST_TOOL_STATUS_NAME, store.list_events()[0].tool_name)
         actions.perform.assert_not_called()
 
     def test_disabled_audit_creates_no_database(self):

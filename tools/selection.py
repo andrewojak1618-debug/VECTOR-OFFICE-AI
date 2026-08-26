@@ -85,6 +85,16 @@ DEFAULT_INTENT_RULES = (
     *PROJECT_DOCUMENT_OPEN_RULES,
     ToolIntentRule(
         (
+            "was wurde zuletzt ausgeführt",
+            "welche aktion wurde zuletzt ausgeführt",
+            "letzte tool aktion",
+            "letzte kontrollierte aktion",
+        ),
+        "development.latest_tool_status",
+        "letzte kontrollierte Aktion nennen",
+    ),
+    ToolIntentRule(
+        (
             "projekt änderung",
             "projektänderung",
             "letzte projektänderung",

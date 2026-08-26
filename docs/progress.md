@@ -1013,3 +1013,20 @@ Die deutsche TTS wurde schrittweise verbessert:
 - genau einen erfolgreichen Ordneraufruf mit der abstrakten ID `documentation`
   im redigierten lokalen Tool-Audit bestätigt
 - physische Windows-Abnahme vollständig abgeschlossen
+
+## Punkt 38 – Letzte kontrollierte Tool-Aktion transparent abfragen
+
+- `development.latest_tool_status` als argumentloses Read-only-Tool ergänzt
+- ausschließlich bekannte produktive Toolnamen auf feste deutsche
+  Aktionsbezeichnungen abgebildet
+- Ergebnis auf `success`, `blocked`, `invalid` oder `failed` begrenzt
+- Zeitpunkte, Parameter, Pfade, Inhalte, Fehlercodes und interne Meldungen aus
+  Tool-Ergebnis und Sprache ausgeschlossen
+- unbekannte Auditereignisse und die Statusabfrage selbst beim Rückblick
+  übersprungen
+- wiederholte Abfragen weiterhin auf die vorherige tatsächliche Aktion bezogen
+- deaktiviertes oder leeres Audit mit einer neutralen lokalen Antwort behandelt
+- festen Sprachbefehl `Was wurde zuletzt ausgeführt?` ohne Modellaufruf ergänzt
+- Registry-, Runtime-, Dialog-, Datenschutz- und Selbstbezugspfade
+  automatisiert abgesichert
+- physische Sprachabnahme als letzter offener Schritt vorgemerkt

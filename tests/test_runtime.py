@@ -71,6 +71,7 @@ class RuntimeModeTests(unittest.TestCase):
                 "development.code_quality_status",
                 "development.documentation_status",
                 "development.latest_change",
+                "development.latest_tool_status",
                 "development.next_roadmap_item",
                 "development.open_project_directory",
                 "development.open_project_document",

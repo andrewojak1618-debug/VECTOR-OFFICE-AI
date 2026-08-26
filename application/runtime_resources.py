@@ -16,6 +16,10 @@ from tools.changelog_status import register_latest_project_change_tool
 from tools.code_quality_status import register_code_quality_status_tool
 from tools.documentation_status import register_documentation_status_tool
 from tools.library_status import register_local_library_status_tool
+from tools.latest_tool_status import (
+    create_latest_tool_status_reader,
+    register_latest_tool_status_tool,
+)
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
@@ -50,6 +54,7 @@ def _create_tool_registry(
     register_code_quality_status_tool(registry)
     register_documentation_status_tool(registry)
     register_latest_project_change_tool(registry)
+    register_latest_tool_status_tool(registry, _latest_tool_status_reader(audit_store))
     register_project_directory_open_tool(registry)
     register_project_document_catalog_tool(registry)
     register_project_document_open_tool(registry)
@@ -66,6 +71,18 @@ def _create_tool_registry(
         memory_status_reader,
     )
     return registry
+
+
+def _latest_tool_status_reader(audit_store):
+    """Liefert den lokalen Audit-Leser oder einen neutralen leeren Ersatz."""
+    if audit_store is None:
+        return _empty_latest_tool_status
+    return create_latest_tool_status_reader(audit_store)
+
+
+def _empty_latest_tool_status():
+    """Meldet bei deaktiviertem Audit einen neutralen fehlenden Verlauf."""
+    return None
 
 
 def _register_optional_status_tools(

@@ -101,12 +101,14 @@ Der aktuelle Prototyp unterstützt bereits:
 - aktuelle stabile Python-Version als streng gefilterte Python.org-Abfrage
 - letzte dokumentierte Projektänderung aus dem festen lokalen Changelog
 - lokale redigierte Tool-Audits mit automatischer Aufbewahrungsbegrenzung
+- lokale Read-only-Abfrage der letzten bekannten Tool-Aktion ausschließlich mit
+  fester deutscher Bezeichnung und sicherem Ergebnisstatus
 - lokalen Windows-Autostart mit Einzelinstanz-Host-Watchdog
 - nach Windows-Neustart praktisch bestätigte Kaltstart- und Sprachabnahme
 - verbindlichen Regressionstest-Ablauf und deutsche Funktions-Docstrings
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
-- zuletzt 712 erfolgreich ausgeführte automatisierte Tests einschließlich
+- zuletzt 734 erfolgreich ausgeführte automatisierte Tests einschließlich
   Architektur-, Datenschutz- und Qualitätsregeln
 
 ## 🗣️ Deutsche Sprachausgabe
@@ -1091,7 +1093,7 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 725 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 734 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 
