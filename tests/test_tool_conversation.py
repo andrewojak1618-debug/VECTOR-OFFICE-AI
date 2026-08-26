@@ -28,6 +28,7 @@ from tools.project_documents import (
     DOCUMENT_COUNT as PROJECT_DOCUMENT_COUNT,
     ProjectDocumentCatalogStatus,
     register_project_document_catalog_tool,
+    register_project_document_open_tool,
 )
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
 from tools.python_release import register_python_latest_version_tool
@@ -85,6 +86,12 @@ class ControlledToolConversationTests(unittest.TestCase):
             status_reader=lambda _root: ProjectDocumentCatalogStatus(
                 ("valid",) * PROJECT_DOCUMENT_COUNT,
             ),
+        )
+        self.document_opener = MagicMock()
+        register_project_document_open_tool(
+            self.registry,
+            Path("."),
+            self.document_opener,
         )
         register_project_status_tool(
             self.registry,
@@ -178,6 +185,42 @@ class ControlledToolConversationTests(unittest.TestCase):
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("Projektübersicht", result.message)
         self.assertEqual(0, self.model.calls)
+
+    def test_project_document_open_waits_for_separate_yes(self):
+        proposed = self.controller.handle("Öffne bitte die Roadmap")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.assertIn("Roadmap öffnen", proposed.message)
+        self.document_opener.assert_not_called()
+
+        completed = self.controller.handle("Ja, bitte öffnen")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, completed.status)
+        self.assertIn("Roadmap wurde geöffnet", completed.message)
+        self.document_opener.assert_called_once()
+        self.assertEqual(0, self.model.calls)
+
+    def test_observed_polite_roadmap_order_never_reaches_model(self):
+        proposed = self.controller.handle("Bitte öffne die Roadmap")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.document_opener.assert_not_called()
+        self.assertEqual(0, self.model.calls)
+
+    def test_observed_infinitive_split_roadmap_never_reaches_model(self):
+        proposed = self.controller.handle("bitte öffnen road map")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.document_opener.assert_not_called()
+        self.assertEqual(0, self.model.calls)
+
+    def test_project_document_open_is_discarded_after_no(self):
+        self.controller.handle("Öffne bitte die Roadmap")
+
+        cancelled = self.controller.handle("Nein")
+
+        self.assertEqual(ToolTurnStatus.CANCELLED, cancelled.status)
+        self.document_opener.assert_not_called()
 
     def test_code_quality_status_executes_without_model_or_confirmation(self):
         result = self.controller.handle("Codequalität Status")

@@ -36,8 +36,21 @@ standardmäßig auf fünf Sekunden:
 ```env
 VOICE_FOLLOWUP_TIMEOUT=5
 VOICE_FOLLOWUP_LOCAL=true
-VOICE_FOLLOWUP_MIN_CONFIDENCE=0.35
+VOICE_FOLLOWUP_MIN_CONFIDENCE=0.15
 ```
+
+Der verborgene Erkennungsprozess wird bereits beim Anwendungsstart einmal
+initialisiert. Zwischen Bestätigungsfragen bleibt das Mikrofon geschlossen; nur
+die geladene deutsche Grammatik bleibt im lokalen Prozess bereit. Nach einer
+Frage muss deshalb kein neuer PowerShell-Prozess mehr anlaufen. Die festen
+Varianten enthalten unter anderem „Ja, bitte öffnen“; anschließend entscheidet
+weiterhin die konservative Ja-Nein-Klassifikation über die Berechtigung.
+Die lokale Erkennungsschwelle liegt nach der physischen Messung bei `0,15`.
+Dieser Wert erteilt keine Autorität: Falsch oder unklar erkannter Text wird von
+der nachgelagerten Wortprüfung weiterhin abgelehnt.
+Freie Windows-Diktaterkennung ist in diesem kurzen Fenster deaktiviert. Der
+Erkenner akzeptiert nur die feste lokale Liste aus eindeutigen Ja-, Nein- und
+Abbruchformulierungen; normale Gespräche bleiben Aufgabe von WirePod.
 
 Eine erkannte Antwort beendet das Fenster sofort. Bleibt sie aus, werden alle
 offenen Vorschläge ohne Toolausführung verworfen und die Anwendung kehrt zum
@@ -57,10 +70,12 @@ bestätigt. Sie verweist auf dieselbe Kopfaktion und benötigt weiterhin ein
 separates gesprochenes Ja.
 
 Die Folgeaufnahme läuft in einer verborgenen, nicht interaktiven Windows-
-PowerShell und besitzt zusätzlich zur Gesprächsfrist eine kurze technische
-Abbruchgrenze. Sie protokolliert weder Audio noch Transkript, Rohfehler oder
-andere Gesprächsinhalte. Der normale WirePod-Listener behält unabhängig davon
-seine begrenzte Wiederherstellung für temporäre Verbindungsfehler.
+PowerShell und besitzt zusätzlich zur Gesprächsfrist kurze technische
+Abbruchgrenzen für Start und Antwort. Beim Sitzungsende wird der Erkenner
+geschlossen und das Mikrofon freigegeben. Die Anwendung protokolliert weder
+Audio noch Transkript, Rohfehler oder andere Gesprächsinhalte. Der normale
+WirePod-Listener behält unabhängig davon seine begrenzte Wiederherstellung für
+temporäre Verbindungsfehler.
 
 ## Wakeword-Annahme
 
@@ -109,7 +124,7 @@ INPUT_MODE=wirepod
 VOICE_LISTEN_TIMEOUT=120
 VOICE_FOLLOWUP_TIMEOUT=5
 VOICE_FOLLOWUP_LOCAL=true
-VOICE_FOLLOWUP_MIN_CONFIDENCE=0.35
+VOICE_FOLLOWUP_MIN_CONFIDENCE=0.15
 VOICE_ALLOW_CLOUD=false
 ```
 

@@ -311,10 +311,12 @@ def _create_follow_up_capture(settings):
     """Erzeugt den firmwarefreien lokalen Antwortweg nur bei Freigabe."""
     if not getattr(settings, "VOICE_FOLLOWUP_LOCAL", True):
         return None
-    return WindowsSpeechFollowUpCapture(
+    capture = WindowsSpeechFollowUpCapture(
         min_confidence=getattr(
             settings,
             "VOICE_FOLLOWUP_MIN_CONFIDENCE",
-            0.35,
+            0.15,
         ),
     )
+    capture.prepare()
+    return capture

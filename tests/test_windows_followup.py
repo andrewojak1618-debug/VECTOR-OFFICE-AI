@@ -1,42 +1,74 @@
-"""Tests for the firmware-free local Windows follow-up capture."""
+"""Tests for the warmed firmware-free Windows follow-up capture."""
 
 import base64
+import io
 import subprocess
 import unittest
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from application.voice_followup import FollowUpCaptureUnavailable
 from voice.windows_followup import WindowsSpeechFollowUpCapture
 
 
+class FakeProcess:
+    """Stellt ein begrenztes zeilenbasiertes Unterprozessprotokoll bereit."""
+
+    def __init__(self, responses):
+        """Initialisiert feste Antworten und beschreibbare Standardeingabe."""
+        self.stdin = io.StringIO()
+        self.stdout = io.StringIO("".join(f"{item}\n" for item in responses))
+        self.terminated = False
+
+    def poll(self):
+        """Meldet den Testprozess bis zur Beendigung als aktiv."""
+        return 0 if self.terminated else None
+
+    def wait(self, timeout):
+        """Beendet den Testprozess innerhalb der festen Testfrist."""
+        self.terminated = True
+        return 0
+
+    def terminate(self):
+        """Markiert den Testprozess als zwangsweise beendet."""
+        self.terminated = True
+
+
 class WindowsSpeechFollowUpCaptureTests(unittest.TestCase):
-    def test_prepare_detects_and_caches_german_recognizer(self):
-        runner = MagicMock(return_value=_result("available\n"))
-        capture = WindowsSpeechFollowUpCapture(runner=runner)
+    def test_prepare_starts_and_reuses_warmed_german_recognizer(self):
+        process = FakeProcess(("READY",))
+        factory = MagicMock(return_value=process)
+        capture = WindowsSpeechFollowUpCapture(process_factory=factory)
 
         self.assertTrue(capture.prepare())
         self.assertTrue(capture.prepare())
-        self.assertEqual(1, runner.call_count)
+        self.assertEqual(1, factory.call_count)
+        capture.close()
 
     def test_capture_returns_bounded_recognized_text(self):
-        runner = MagicMock(return_value=_result("Ja, den Ordner bitte.\n"))
-        capture = WindowsSpeechFollowUpCapture(runner=runner)
+        encoded = base64.b64encode("Ja, bitte öffnen.".encode()).decode()
+        process = FakeProcess(("READY", "LISTENING", f"RESULT:{encoded}"))
+        capture = WindowsSpeechFollowUpCapture(
+            process_factory=MagicMock(return_value=process),
+        )
 
-        self.assertEqual("Ja, den Ordner bitte.", capture.capture(5))
-        command = runner.call_args.args[0]
-        self.assertIn("-EncodedCommand", command)
-        self.assertIn("de-DE", _decode_script(command))
-        self.assertEqual(8.0, runner.call_args.kwargs["timeout"])
+        self.assertEqual("Ja, bitte öffnen.", capture.capture(5))
+        self.assertIn("CAPTURE 5000\n", process.stdin.getvalue())
+        capture.close()
 
     def test_empty_recognition_returns_none(self):
-        capture = WindowsSpeechFollowUpCapture(runner=MagicMock(return_value=_result()))
+        process = FakeProcess(("READY", "LISTENING", "RESULT:"))
+        capture = WindowsSpeechFollowUpCapture(
+            process_factory=MagicMock(return_value=process),
+        )
 
         self.assertIsNone(capture.capture(5))
+        capture.close()
 
-    def test_process_error_raises_only_safe_capture_error(self):
-        runner = MagicMock(return_value=_result("", returncode=7))
-        capture = WindowsSpeechFollowUpCapture(runner=runner)
+    def test_missing_result_raises_only_safe_capture_error(self):
+        process = FakeProcess(("READY", "LISTENING", "ERROR"))
+        capture = WindowsSpeechFollowUpCapture(
+            process_factory=MagicMock(return_value=process),
+        )
 
         with self.assertRaisesRegex(
             FollowUpCaptureUnavailable,
@@ -44,27 +76,48 @@ class WindowsSpeechFollowUpCaptureTests(unittest.TestCase):
         ):
             capture.capture(5)
 
-    def test_process_timeout_raises_safe_capture_error(self):
-        runner = MagicMock(side_effect=subprocess.TimeoutExpired("secret", 8))
-        capture = WindowsSpeechFollowUpCapture(runner=runner)
+    def test_process_start_error_keeps_capture_unavailable(self):
+        factory = MagicMock(side_effect=OSError("private device detail"))
+        capture = WindowsSpeechFollowUpCapture(process_factory=factory)
 
+        self.assertFalse(capture.prepare())
         with self.assertRaises(FollowUpCaptureUnavailable) as raised:
             capture.capture(5)
 
-        self.assertNotIn("secret", str(raised.exception))
+        self.assertNotIn("private", str(raised.exception))
 
-    def test_runner_hides_window_and_never_uses_shell(self):
-        runner = MagicMock(return_value=_result("ja"))
-        capture = WindowsSpeechFollowUpCapture(runner=runner)
+    def test_process_hides_window_and_never_uses_shell(self):
+        process = FakeProcess(("READY",))
+        factory = MagicMock(return_value=process)
+        capture = WindowsSpeechFollowUpCapture(process_factory=factory)
 
-        capture.capture(5)
+        self.assertTrue(capture.prepare())
 
-        kwargs = runner.call_args.kwargs
+        kwargs = factory.call_args.kwargs
         self.assertNotIn("shell", kwargs)
         self.assertEqual(
             getattr(subprocess, "CREATE_NO_WINDOW", 0),
             kwargs["creationflags"],
         )
+        command = factory.call_args.args[0]
+        self.assertIn("-EncodedCommand", command)
+        script = _decode_script(command)
+        self.assertIn("de-DE", script)
+        self.assertIn("ja bitte öffnen", script)
+        self.assertNotIn("DictationGrammar", script)
+        capture.close()
+
+    def test_close_releases_the_warmed_process(self):
+        process = FakeProcess(("READY",))
+        capture = WindowsSpeechFollowUpCapture(
+            process_factory=MagicMock(return_value=process),
+        )
+        self.assertTrue(capture.prepare())
+
+        capture.close()
+
+        self.assertTrue(process.terminated)
+        self.assertIn("STOP\n", process.stdin.getvalue())
 
     def test_timeout_confidence_and_culture_are_restricted(self):
         with self.assertRaises(ValueError):
@@ -76,11 +129,8 @@ class WindowsSpeechFollowUpCaptureTests(unittest.TestCase):
             WindowsSpeechFollowUpCapture(culture="en-US").prepare()
 
 
-def _result(stdout="", returncode=0):
-    return SimpleNamespace(stdout=stdout, returncode=returncode)
-
-
 def _decode_script(command):
+    """Dekodiert das feste Testskript aus seinem PowerShell-Argument."""
     encoded = command[command.index("-EncodedCommand") + 1]
     return base64.b64decode(encoded).decode("utf-16-le")
 

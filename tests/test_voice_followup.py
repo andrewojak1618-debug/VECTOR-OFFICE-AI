@@ -15,6 +15,7 @@ class RecordingCapture:
         self.transcript = transcript
         self.prepare_calls = 0
         self.capture_timeouts = []
+        self.close_calls = 0
 
     def prepare(self):
         self.prepare_calls += 1
@@ -23,6 +24,9 @@ class RecordingCapture:
     def capture(self, timeout):
         self.capture_timeouts.append(timeout)
         return self.transcript
+
+    def close(self):
+        self.close_calls += 1
 
 
 class VoiceFollowUpWindowTests(unittest.TestCase):
@@ -68,6 +72,16 @@ class VoiceFollowUpWindowTests(unittest.TestCase):
 
         self.assertTrue(window.consume_timeout())
         self.assertFalse(window.consume_timeout())
+
+    def test_close_releases_stateful_capture(self):
+        capture = RecordingCapture()
+        window = VoiceFollowUpWindow(capture, timeout=5)
+        window.update(awaiting_confirmation=True)
+
+        window.close()
+
+        self.assertFalse(window.active)
+        self.assertEqual(1, capture.close_calls)
 
     def test_timeout_is_bounded(self):
         for timeout in (0.9, 10.1):

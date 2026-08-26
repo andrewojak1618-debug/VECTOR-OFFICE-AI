@@ -1,9 +1,11 @@
-"""Capture one local German follow-up through Windows System.Speech."""
+"""Capture one local German follow-up through a warmed Windows recognizer."""
 
 import base64
 import math
 import os
+import queue
 import subprocess
+import threading
 from collections.abc import Callable
 from pathlib import Path
 
@@ -13,22 +15,14 @@ from application.voice_followup import FollowUpCaptureUnavailable
 MIN_CAPTURE_TIMEOUT_SECONDS = 1.0
 MAX_CAPTURE_TIMEOUT_SECONDS = 10.0
 MAX_TRANSCRIPT_CHARACTERS = 240
-POWERSHELL_GRACE_SECONDS = 3.0
+STARTUP_TIMEOUT_SECONDS = 8.0
+RESPONSE_GRACE_SECONDS = 2.0
 DEFAULT_CULTURE = "de-DE"
+_END_OF_OUTPUT = object()
 
-_AVAILABILITY_SCRIPT = r"""
+_SERVER_SCRIPT = r"""
 $ErrorActionPreference = 'Stop'
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-Add-Type -AssemblyName System.Speech
-$recognizer = [System.Speech.Recognition.SpeechRecognitionEngine]::InstalledRecognizers() |
-    Where-Object { $_.Culture.Name -eq '__CULTURE__' } |
-    Select-Object -First 1
-if ($null -eq $recognizer) { exit 2 }
-Write-Output 'available'
-"""
-
-_CAPTURE_SCRIPT = r"""
-$ErrorActionPreference = 'Stop'
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Speech
 $recognizer = [System.Speech.Recognition.SpeechRecognitionEngine]::InstalledRecognizers() |
@@ -38,15 +32,43 @@ if ($null -eq $recognizer) { exit 2 }
 $engine = [System.Speech.Recognition.SpeechRecognitionEngine]::new($recognizer)
 try {
     $choices = [System.Speech.Recognition.Choices]::new()
-    $choices.Add([string[]]@('ja', 'ja bitte', 'bestätigen', 'ausführen', 'nein', 'abbrechen', 'stopp', 'nicht ausführen'))
+    $choices.Add([string[]]@(
+        'ja', 'ja bitte', 'ja bitte öffnen', 'ja bitte ausführen',
+        'ja den ordner bitte öffnen', 'ja die datei bitte öffnen',
+        'bestätigen', 'bitte bestätigen', 'ausführen',
+        'nein', 'nein danke', 'abbrechen', 'stopp', 'nicht ausführen'
+    ))
     $builder = [System.Speech.Recognition.GrammarBuilder]::new($choices)
     $builder.Culture = $recognizer.Culture
     $engine.LoadGrammar([System.Speech.Recognition.Grammar]::new($builder))
-    $engine.LoadGrammar([System.Speech.Recognition.DictationGrammar]::new())
-    $engine.SetInputToDefaultAudioDevice()
-    $result = $engine.Recognize([TimeSpan]::FromSeconds(__TIMEOUT__))
-    if ($null -ne $result -and $result.Confidence -ge __CONFIDENCE__) {
-        Write-Output $result.Text
+    [Console]::Out.WriteLine('READY')
+    [Console]::Out.Flush()
+    while ($true) {
+        $command = [Console]::In.ReadLine()
+        if ($null -eq $command -or $command -eq 'STOP') { break }
+        if ($command -notmatch '^CAPTURE ([1-9][0-9]{2,4})$') { continue }
+        $milliseconds = [int]$Matches[1]
+        if ($milliseconds -lt 1000 -or $milliseconds -gt 10000) { continue }
+        try {
+            $engine.SetInputToDefaultAudioDevice()
+            [Console]::Out.WriteLine('LISTENING')
+            [Console]::Out.Flush()
+            $result = $engine.Recognize([TimeSpan]::FromMilliseconds($milliseconds))
+            $engine.SetInputToNull()
+            $text = ''
+            if ($null -ne $result -and $result.Confidence -ge __CONFIDENCE__) {
+                $text = [Convert]::ToBase64String(
+                    [System.Text.Encoding]::UTF8.GetBytes($result.Text)
+                )
+            }
+            [Console]::Out.WriteLine('RESULT:' + $text)
+            [Console]::Out.Flush()
+        }
+        catch {
+            try { $engine.SetInputToNull() } catch {}
+            [Console]::Out.WriteLine('ERROR')
+            [Console]::Out.Flush()
+        }
     }
 }
 finally {
@@ -56,13 +78,13 @@ finally {
 
 
 class WindowsSpeechFollowUpCapture:
-    """Use the installed German Windows recognizer for one bounded answer."""
+    """Hält den deutschen Windows-Erkenner für eine kurze Antwort bereit."""
 
     def __init__(
         self,
-        min_confidence: float = 0.35,
+        min_confidence: float = 0.15,
         culture: str = DEFAULT_CULTURE,
-        runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+        process_factory: Callable[..., subprocess.Popen[str]] = subprocess.Popen,
         powershell_path: str | Path | None = None,
     ):
         """Initialisiert den lokalen Erkenner mit festen sicheren Grenzen."""
@@ -70,49 +92,146 @@ class WindowsSpeechFollowUpCapture:
             raise ValueError("Follow-up confidence must be between 0 and 1.")
         self.min_confidence = min_confidence
         self.culture = culture
-        self.runner = runner
+        self.process_factory = process_factory
         self.powershell_path = Path(powershell_path or _default_powershell_path())
-        self._available: bool | None = None
+        self._process: subprocess.Popen[str] | None = None
+        self._responses: queue.Queue[str | object] = queue.Queue()
+        self._reader: threading.Thread | None = None
 
     def prepare(self) -> bool:
-        """Prüft einmalig den deutschen Offline-Erkenner ohne Mikrofonzugriff."""
-        if self._available is not None:
-            return self._available
-        result = self._run(_availability_script(self.culture), timeout=3.0)
-        self._available = result is not None and result.stdout.strip() == "available"
-        return self._available
+        """Startet und erwärmt den Offline-Erkenner höchstens einmal gleichzeitig."""
+        _safe_culture(self.culture)
+        if self._process is not None and self._process.poll() is None:
+            return True
+        self.close()
+        if not self._start_process():
+            return False
+        if self._next_response(STARTUP_TIMEOUT_SECONDS) == "READY":
+            return True
+        self.close()
+        return False
 
     def capture(self, timeout: float) -> str | None:
-        """Nimmt eine kurze lokale Antwort auf und gibt nur erkannten Text zurück."""
+        """Erfasst unmittelbar eine kurze Antwort über den vorgewärmten Erkenner."""
         if not _valid_timeout(timeout):
             raise ValueError("Follow-up timeout must be between 1 and 10 seconds.")
-        script = _capture_script(self.culture, timeout, self.min_confidence)
-        result = self._run(script, timeout=timeout + POWERSHELL_GRACE_SECONDS)
-        if result is None:
-            raise FollowUpCaptureUnavailable("Local follow-up capture is unavailable.")
-        transcript = result.stdout.strip()
-        return transcript[:MAX_TRANSCRIPT_CHARACTERS] or None
+        if not self.prepare() or not self._write_command(_capture_command(timeout)):
+            raise _unavailable()
+        if self._next_response(RESPONSE_GRACE_SECONDS) != "LISTENING":
+            self.close()
+            raise _unavailable()
+        response = self._next_response(timeout + RESPONSE_GRACE_SECONDS)
+        if not isinstance(response, str) or not response.startswith("RESULT:"):
+            self.close()
+            raise _unavailable()
+        return _decode_transcript(response.removeprefix("RESULT:"))
 
-    def _run(
-        self,
-        script: str,
-        timeout: float,
-    ) -> subprocess.CompletedProcess[str] | None:
-        """Startet eine verborgene feste PowerShell-Anweisung ohne Rohfehlerausgabe."""
-        command = _powershell_command(self.powershell_path, script)
+    def close(self) -> None:
+        """Beendet den lokalen Erkenner und gibt das Mikrofon sicher frei."""
+        process = self._process
+        self._process = None
+        if process is None:
+            return
+        _request_process_stop(process)
+        self._responses = queue.Queue()
+        self._reader = None
+
+    def _start_process(self) -> bool:
+        """Startet den festen verborgenen PowerShell-Server ohne Shellzugriff."""
+        command = _powershell_command(
+            self.powershell_path,
+            _server_script(self.culture, self.min_confidence),
+        )
         try:
-            result = self.runner(
+            process = self.process_factory(
                 command,
-                capture_output=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
                 text=True,
                 encoding="utf-8",
-                timeout=timeout,
+                bufsize=1,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-                check=False,
             )
-        except (OSError, subprocess.TimeoutExpired):
+        except OSError:
+            return False
+        if process.stdin is None or process.stdout is None:
+            _request_process_stop(process)
+            return False
+        self._process = process
+        self._responses = queue.Queue()
+        self._reader = threading.Thread(
+            target=self._read_process_output,
+            args=(process,),
+            daemon=True,
+        )
+        self._reader.start()
+        return True
+
+    def _read_process_output(self, process: subprocess.Popen[str]) -> None:
+        """Überträgt feste Protokollzeilen aus dem lokalen Unterprozess."""
+        if process.stdout is None:
+            self._responses.put(_END_OF_OUTPUT)
+            return
+        try:
+            for line in process.stdout:
+                self._responses.put(line.rstrip("\r\n"))
+        finally:
+            self._responses.put(_END_OF_OUTPUT)
+
+    def _next_response(self, timeout: float) -> str | object | None:
+        """Liest genau eine begrenzte Protokollantwort ohne Rohfehler."""
+        try:
+            return self._responses.get(timeout=timeout)
+        except queue.Empty:
             return None
-        return result if result.returncode == 0 else None
+
+    def _write_command(self, command: str) -> bool:
+        """Sendet ausschließlich einen intern erzeugten begrenzten Steuerbefehl."""
+        process = self._process
+        if process is None or process.stdin is None or process.poll() is not None:
+            return False
+        try:
+            process.stdin.write(command + "\n")
+            process.stdin.flush()
+        except (OSError, ValueError):
+            return False
+        return True
+
+
+def _request_process_stop(process: subprocess.Popen[str]) -> None:
+    """Beendet einen lokalen Erkenner begrenzt und ohne Rohfehlerausgabe."""
+    try:
+        if process.poll() is None and process.stdin is not None:
+            process.stdin.write("STOP\n")
+            process.stdin.flush()
+        process.wait(timeout=1.0)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        try:
+            process.terminate()
+        except OSError:
+            pass
+
+
+def _capture_command(timeout: float) -> str:
+    """Formt eine validierte Sekundenfrist in einen festen Millisekundenbefehl um."""
+    return f"CAPTURE {round(timeout * 1000)}"
+
+
+def _decode_transcript(payload: str) -> str | None:
+    """Dekodiert ausschließlich eine begrenzte UTF-8-Erkennungsantwort."""
+    if not payload:
+        return None
+    try:
+        text = base64.b64decode(payload, validate=True).decode("utf-8").strip()
+    except (ValueError, UnicodeError):
+        raise _unavailable() from None
+    return text[:MAX_TRANSCRIPT_CHARACTERS] or None
+
+
+def _unavailable() -> FollowUpCaptureUnavailable:
+    """Erzeugt eine konstante inhaltsfreie Fehlermeldung für den Dialog."""
+    return FollowUpCaptureUnavailable("Local follow-up capture is unavailable.")
 
 
 def _default_powershell_path() -> Path:
@@ -135,15 +254,9 @@ def _powershell_command(path: Path, script: str) -> list[str]:
     ]
 
 
-def _availability_script(culture: str) -> str:
-    """Setzt die begrenzte Sprachkultur in die feste Verfügbarkeitsprüfung ein."""
-    return _AVAILABILITY_SCRIPT.replace("__CULTURE__", _safe_culture(culture))
-
-
-def _capture_script(culture: str, timeout: float, confidence: float) -> str:
-    """Setzt ausschließlich validierte Zahlen und Sprachkultur in das Skript ein."""
-    script = _CAPTURE_SCRIPT.replace("__CULTURE__", _safe_culture(culture))
-    script = script.replace("__TIMEOUT__", format(timeout, ".3f"))
+def _server_script(culture: str, confidence: float) -> str:
+    """Setzt nur validierte Kultur und Konfidenz in das feste Serverskript ein."""
+    script = _SERVER_SCRIPT.replace("__CULTURE__", _safe_culture(culture))
     return script.replace("__CONFIDENCE__", format(confidence, ".3f"))
 
 

@@ -22,6 +22,7 @@ from tools.project_documents import (
     DOCUMENT_COUNT as PROJECT_DOCUMENT_COUNT,
     ProjectDocumentCatalogStatus,
     register_project_document_catalog_tool,
+    register_project_document_open_tool,
 )
 from tools.project_status import register_project_status_tool
 from tools.python_release import register_python_latest_version_tool
@@ -86,6 +87,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
                 ("valid",) * PROJECT_DOCUMENT_COUNT,
             ),
         )
+        register_project_document_open_tool(self.registry, opener=MagicMock())
         register_project_status_tool(self.registry)
         register_next_roadmap_item_tool(self.registry)
         register_fixed_research_source_tool(self.registry, lambda: True)
@@ -222,6 +224,50 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("development.project_document_catalog", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
+
+    def test_open_roadmap_selects_fixed_mutating_document_tool(self):
+        selection = self.selector.select("Öffne bitte die Roadmap")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.open_project_document", selection.tool_name)
+        self.assertEqual({"document_id": "roadmap"}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.MUTATING, selection.permission)
+
+    def test_observed_polite_roadmap_order_selects_same_tool(self):
+        selection = self.selector.select("Bitte öffne die Roadmap")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.open_project_document", selection.tool_name)
+        self.assertEqual({"document_id": "roadmap"}, dict(selection.arguments))
+
+    def test_observed_infinitive_split_roadmap_phrase_selects_same_tool(self):
+        selection = self.selector.select("bitte öffnen road map")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.open_project_document", selection.tool_name)
+        self.assertEqual({"document_id": "roadmap"}, dict(selection.arguments))
+
+    def test_project_document_open_with_extra_target_is_blocked(self):
+        selection = self.selector.select("Bitte öffnen Road Map und private Datei")
+
+        self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
+        self.assertIn("nicht eindeutig", selection.message)
+
+    def test_each_approved_document_has_one_fixed_open_intent(self):
+        phrases = {
+            "Öffne die Projektübersicht": "readme",
+            "Öffne die Roadmap": "roadmap",
+            "Öffne die Qualitätsregeln": "quality",
+            "Öffne die Werkzeugsicherheit": "tool-security",
+            "Öffne die Windows Startanleitung": "windows-startup",
+            "Öffne die Firmware Sicherheitsregeln": "firmware-safety",
+        }
+
+        for phrase, identifier in phrases.items():
+            with self.subTest(phrase=phrase):
+                selection = self.selector.select(phrase)
+                self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+                self.assertEqual({"document_id": identifier}, dict(selection.arguments))
 
     def test_latest_project_change_selects_fixed_read_only_tool(self):
         selection = self.selector.select("Was wurde zuletzt am Projekt geändert?")

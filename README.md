@@ -94,6 +94,8 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokaler Read-only-Dokumentationsstatus für sechs feste Kerndokumente
 - feste Read-only-Übersicht freigegebener Projektdokumente mit sicheren
   Anzeigenamen und IDs, jedoch ohne Pfad- oder Inhaltsausgabe
+- kontrolliertes Öffnen genau eines festen Projektdokuments erst nach separatem
+  Ja und erneuter lokaler Validierung, ohne freie Pfade oder Shellbefehle
 - lokaler Read-only-Codequalitätsstatus ausschließlich mit Regelzählern
 - feste Python.org-Recherchequelle mit separater Netzwerkbestätigung
 - aktuelle stabile Python-Version als streng gefilterte Python.org-Abfrage
@@ -104,7 +106,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - verbindlichen Regressionstest-Ablauf und deutsche Funktions-Docstrings
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
-- zuletzt 693 erfolgreich ausgeführte automatisierte Tests einschließlich
+- zuletzt 712 erfolgreich ausgeführte automatisierte Tests einschließlich
   Architektur-, Datenschutz- und Qualitätsregeln
 
 ## 🗣️ Deutsche Sprachausgabe
@@ -300,16 +302,27 @@ Nach einer kontrollierten Ja-Nein-Frage aktiviert die Anwendung nun automatisch
 ein fünf Sekunden langes Antwortfenster über das Standardmikrofon des
 Windows-Rechners. Der installierte deutsche Windows-Erkenner arbeitet lokal;
 Vectors Firmware und der inkompatible WirePod-Remote-Wakeword-Endpunkt bleiben
-unberührt. Das zweite `Hey Vector` entfällt, eine erkannte Antwort beendet die
+unberührt. Der Erkenner wird bereits beim Anwendungsstart vorgewärmt und hält das
+Mikrofon zwischen den Fragen geschlossen. Dadurch beginnt die begrenzte Aufnahme
+nach der Bestätigungsfrage ohne einen weiteren PowerShell-Anlauf. Das zweite
+`Hey Vector` entfällt, eine erkannte Antwort beendet die
 Aufnahme sofort. Bleibt sie aus, wird die offene Aktion ohne Ausführung
-verworfen. Natürliche Antworten wie „Ja, bitte schau nach oben“ werden
-akzeptiert, während ein widersprüchliches „Ja, doch nicht“ sicher als Ablehnung
-gilt. Ist die lokale Aufnahme nicht verfügbar, bleibt der bisherige
-Wakeword-Ablauf als sicherer Rückfall erhalten.
+verworfen. Natürliche Antworten wie „Ja, bitte schau nach oben“ und
+„Ja, bitte öffnen“ werden durch eine feste deutsche Grammatik bevorzugt,
+während ein widersprüchliches „Ja, doch nicht“ sicher als Ablehnung gilt. Ist
+die lokale Aufnahme nicht verfügbar, bleibt der bisherige Wakeword-Ablauf als
+sicherer Rückfall erhalten.
+
+Die Windows-Erkennungsschwelle wurde anhand des lokalen Mikrofontests auf `0,15`
+kalibriert. Sie ist keine Toolberechtigung: Erst die getrennte, konservative
+Wortprüfung akzeptiert ein eindeutiges Ja und verwirft unklare Fehltexte.
+Freie Windows-Diktaterkennung ist für dieses kurze Sicherheitsfenster
+deaktiviert; zugelassen ist ausschließlich die feste lokale Ja-/Nein-Grammatik.
 
 Das Antwortfenster erteilt selbst keine Berechtigung und wählt kein Tool aus.
-Datei- und Ordneraktionen sind weiterhin nicht frei verfügbar; sie benötigen
-später ein eigenes, pfadgebundenes Allowlist-Tool in der Tool Registry.
+Freie Datei- und Ordneraktionen bleiben gesperrt. Ausschließlich sechs fest im
+Quellcode freigegebene Projektdokumente besitzen ein pfadgebundenes Registry-Tool
+und benötigen vor jedem Öffnen ein separates Ja.
 
 ### Firmware-Entscheidung für direkte Folgeantworten
 
@@ -1078,7 +1091,7 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 693 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 712 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 
@@ -1095,8 +1108,10 @@ Die ausführliche, verbindliche Aufgabenübersicht steht in
 
 Nach RC2 werden weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln
 über die bestehende Tool Registry abgesichert. Die feste Übersicht der
-freigegebenen Projektdokumente ist umgesetzt; das kontrollierte Öffnen genau
-eines freigegebenen Dokuments bleibt der nächste getrennte Sicherheitsschritt.
+freigegebenen Projektdokumente und das bestätigungspflichtige Öffnen genau eines
+festen Dokuments sind umgesetzt. Die physische Windows-Abnahme des neuen
+Öffnungspfads wurde mit einem wakeword-freien einzelnen `Ja` erfolgreich
+bestätigt; Punkt 36 ist damit abgeschlossen.
 Ein Vergleich von ElevenLabs
 Multilingual v2 mit Flash v2.5 bleibt optional und erfolgt nur bei erkennbarem
 Qualitätsbedarf. Homeserver, FastAPI und Docker bleiben dokumentierte spätere

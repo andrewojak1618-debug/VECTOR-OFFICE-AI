@@ -959,3 +959,30 @@ Die deutsche TTS wurde schrittweise verbessert:
 - Dateiöffnung und Inhaltsausgabe bewusst als getrennten Folgepunkt zurückgestellt
 - 693 automatisierte Tests bestanden
 - schnelle und verständliche Ausgabe der festen Dokumentübersicht physisch bestätigt
+
+## Punkt 36 – Kontrolliertes Öffnen freigegebener Projektdokumente
+
+- `development.open_project_document` als veränderndes Registry-Tool ergänzt
+- genau sechs feste Dokument-IDs mit deterministischen deutschen Phrasen verbunden
+- freie Pfade, Dateinamen, URLs, Anwendungen und Shellbefehle ausgeschlossen
+- separate Ja-Nein-Bestätigung vor jedem Öffnungsvorgang erzwungen
+- Ablehnung und Gesprächsabbruch ohne Öffnung behandelt
+- Projektzugehörigkeit, Typ, Größe, UTF-8 und Überschrift unmittelbar erneut geprüft
+- Windows-Standardanwendung ohne Shell nur mit dem aufgelösten festen Pfad aufgerufen
+- Pfade, Inhalte und interne Öffnungsfehler aus Registry, Sprache und Audit entfernt
+- fehlende, ungültige und unbekannte Dokumente sicher blockiert
+- Auswahl-, Bestätigungs-, Runtime-, Datenschutz- und Fehlerpfade automatisiert getestet
+- Windows-Erkenner beim Anwendungsstart vorgewärmt und zwischen Fragen geschlossen
+- feste Grammatik um die konkrete Folgeantwort `Ja, bitte öffnen` ergänzt
+- Windows-Konfidenz nach lokal gemessenem Wert auf `0,15` kalibriert, ohne die
+  getrennte Ja-Nein-Berechtigungsprüfung zu lockern
+- freie Windows-Diktaterkennung aus dem Bestätigungsfenster entfernt und nur die
+  feste lokale Ja-/Nein-Grammatik beibehalten
+- vollständigen wakeword-freien Roadmap-Dialog mit einem Öffner-Testdouble abgesichert
+- 712 automatisierte Tests bestanden
+- beobachtete WirePod-Wortfolge `bitte öffne die roadmap` fest abgesichert
+- Infinitiv `öffnen`, getrennte Dokumentnamen und fehlende Artikel streng normalisiert
+- Öffnungsanfragen mit zusätzlichen Zielen vor dem Sprachmodell blockiert
+- wakeword-freies einzelnes `Ja` über das Laptop-Mikrofon physisch erkannt
+- genau einen erfolgreichen, fehlerfreien Roadmap-Öffnungsaufruf im redigierten
+  lokalen Tool-Audit bestätigt

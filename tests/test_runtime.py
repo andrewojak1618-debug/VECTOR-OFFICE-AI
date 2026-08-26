@@ -72,6 +72,7 @@ class RuntimeModeTests(unittest.TestCase):
                 "development.documentation_status",
                 "development.latest_change",
                 "development.next_roadmap_item",
+                "development.open_project_document",
                 "development.project_document_catalog",
                 "development.project_status",
                 "development.run_core_tests",
@@ -274,6 +275,7 @@ class RuntimeModeTests(unittest.TestCase):
             request_timeout=4.0,
         )
         follow_up_type.assert_called_once_with(min_confidence=0.42)
+        follow_up_type.return_value.prepare.assert_called_once_with()
         run_voice.assert_called_once_with(
             agent,
             speech,

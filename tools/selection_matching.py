@@ -5,6 +5,22 @@ from collections.abc import Callable
 
 
 IntentMatcher = Callable[[str], bool]
+DOCUMENT_OPEN_ACTIONS = frozenset({"öffne", "öffnen"})
+DOCUMENT_OPEN_FILLER = frozenset({"bitte", "die", "den", "das"})
+DOCUMENT_OPEN_TARGETS = {
+    "projektübersicht": "öffne die projektübersicht",
+    "projekt übersicht": "öffne die projektübersicht",
+    "roadmap": "öffne die roadmap",
+    "road map": "öffne die roadmap",
+    "qualitätsregeln": "öffne die qualitätsregeln",
+    "qualitäts regeln": "öffne die qualitätsregeln",
+    "werkzeugsicherheit": "öffne die werkzeugsicherheit",
+    "werkzeug sicherheit": "öffne die werkzeugsicherheit",
+    "windows startanleitung": "öffne die windows startanleitung",
+    "windows start anleitung": "öffne die windows startanleitung",
+    "firmware sicherheitsregeln": "öffne die firmware sicherheitsregeln",
+    "firmware sicherheits regeln": "öffne die firmware sicherheitsregeln",
+}
 
 
 def normalize_phrase(value: str) -> str:
@@ -17,6 +33,9 @@ def normalize_phrase(value: str) -> str:
 
 def canonical_phrase(value: str) -> str | None:
     """Liefert nur für eine begrenzt erkannte Absicht eine feste Repräsentativphrase."""
+    document_open = _canonical_document_open(value)
+    if document_open is not None:
+        return document_open
     for matcher, phrase in _CANONICAL_MATCHERS:
         if matcher(value):
             return phrase
@@ -25,6 +44,11 @@ def canonical_phrase(value: str) -> str | None:
 
 def unmatched_message(value: str) -> str | None:
     """Blockiert erkennbare Faktenabsichten, bevor ein Sprachmodell etwas erfindet."""
+    if _looks_like_document_open_request(value):
+        return (
+            "Ich habe die Dokumentaktion nicht eindeutig erkannt. "
+            "Bitte sage: Bitte öffne die Roadmap."
+        )
     if _looks_like_research_request(value):
         return (
             "Ich habe die Recherchefrage nicht eindeutig erkannt. "
@@ -41,6 +65,31 @@ def unmatched_message(value: str) -> str | None:
             "Bitte frage: Welcher Tag ist heute? Oder: Wie spät ist es?"
         )
     return None
+
+
+def _canonical_document_open(value: str) -> str | None:
+    """Normalisiert nur begrenzte Höflichkeits-, Flexions- und Worttrennvarianten."""
+    words = value.split()
+    actions = tuple(word for word in words if word in DOCUMENT_OPEN_ACTIONS)
+    if len(actions) != 1:
+        return None
+    target_words = tuple(
+        word
+        for word in words
+        if word not in DOCUMENT_OPEN_ACTIONS and word not in DOCUMENT_OPEN_FILLER
+    )
+    return DOCUMENT_OPEN_TARGETS.get(" ".join(target_words))
+
+
+def _looks_like_document_open_request(value: str) -> bool:
+    """Erkennt nicht eindeutig freigegebene Dateiaktionen für eine sichere Blockierung."""
+    words = set(value.split())
+    targets = {
+        "datei", "dokument", "firmware", "projekt", "projektübersicht",
+        "qualität", "qualitätsregeln", "road", "roadmap", "windows",
+        "werkzeug", "werkzeugsicherheit",
+    }
+    return bool(words & DOCUMENT_OPEN_ACTIONS) and bool(words & targets)
 
 
 def _looks_like_datetime_request(value: str) -> bool:

@@ -147,6 +147,7 @@ def run_voice_conversation(
         print("\nConversation ended.")
     finally:
         controllers.cancel_pending()
+        follow_up_window.close()
 
 
 def _run_voice_turns(

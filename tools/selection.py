@@ -5,6 +5,7 @@ from enum import Enum
 from types import MappingProxyType
 
 from tools.permissions import PermissionLevel
+from tools.project_documents import PROJECT_DOCUMENTS
 from tools.registry import ToolArguments, ToolRegistry, ToolValue
 from tools.selection_matching import (
     canonical_phrase,
@@ -45,6 +46,17 @@ class ToolIntentRule:
             raise ValueError("Tool intent argument names must be unique.")
 
 
+PROJECT_DOCUMENT_OPEN_RULES = tuple(
+    ToolIntentRule(
+        document.open_phrases,
+        "development.open_project_document",
+        f"{document.display_name} öffnen",
+        (("document_id", document.identifier),),
+    )
+    for document in PROJECT_DOCUMENTS
+)
+
+
 @dataclass(frozen=True)
 class ToolSelection:
     """Return a safe selection decision without retaining original user text."""
@@ -58,6 +70,7 @@ class ToolSelection:
 
 
 DEFAULT_INTENT_RULES = (
+    *PROJECT_DOCUMENT_OPEN_RULES,
     ToolIntentRule(
         (
             "projekt änderung",

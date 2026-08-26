@@ -140,6 +140,8 @@ und wird danach vergessen. Das Sprachmodell sieht keine Tooldefinitionen,
 wählt keinen Toolnamen und erzeugt weder Parameter noch Berechtigungen.
 Im WirePod-Modus öffnet die Anwendung nach der gesprochenen Frage ein lokales,
 standardmäßig fünf Sekunden langes Antwortfenster ohne erneutes Wakeword.
+Der deutsche Windows-Erkenner wird beim Start vorgewärmt, hält das Mikrofon bis
+zur Frage geschlossen und besitzt selbst weder Toolauswahl noch Berechtigung.
 Ein Timeout verwirft die offene Auswahl; eine nicht unterstützte
 Folgeaktivierung fällt sicher auf den bisherigen Wakeword-Ablauf zurück.
 
@@ -356,9 +358,34 @@ gelangen weder in den Gesprächskontext noch in das Audit.
 
 Der feste Sprachbefehl `Welche Projektdateien sind freigegeben?` benötigt
 keine Bestätigung, kein Sprachmodell und keinen Netzwerkzugriff. Das Werkzeug
-öffnet keine Datei für den Benutzer und gibt keinen Dokumentinhalt aus. Eine
-spätere Öffnungsfunktion bleibt ein getrennt zu prüfender, ausdrücklich zu
-bestätigender Projektpunkt.
+öffnet keine Datei für den Benutzer und gibt keinen Dokumentinhalt aus.
+
+### Kontrolliertes Öffnen
+
+`development.open_project_document` öffnet genau eines dieser sechs Dokumente
+über seine feste ID. Das Tool besitzt `MUTATING`, akzeptiert ausschließlich den
+Stringparameter `document_id` und löst diesen nochmals gegen dieselbe
+Quellcode-Allowlist auf. Freie Pfade, Dateinamen, URLs, Anwendungen,
+Shellbefehle und zusätzliche Argumente sind nicht vorgesehen.
+
+Die Gesprächsauswahl ordnet nur feste deutsche Öffnungsphrasen einer festen ID
+zu. Danach fragt Vector separat nach `Ja` oder `Nein`; vor dem `Ja` findet kein
+Dateizugriff und kein Anwendungsstart statt. `Nein`, Abbruch oder ein
+Gesprächsende verwerfen die offene Aktion. Sprachmodelle dürfen weder ID noch
+Pfad oder Anwendung erzeugen.
+
+Eine begrenzte lokale Normalisierung akzeptiert ausschließlich `öffne` oder
+`öffnen`, die Höflichkeitswörter und Artikel sowie fest hinterlegte getrennte
+Schreibweisen wie `road map`. Nach deren Entfernung muss exakt ein bekannter
+Dokumentname übrig bleiben. Zusätzliche Ziele oder Wörter werden als uneindeutig
+blockiert und gelangen nicht zum Sprachmodell.
+
+Unmittelbar vor dem Öffnen prüft das Tool Projektzugehörigkeit, regulären
+Dateityp, Größenlimit, UTF-8 und die erwartete Hauptüberschrift erneut. Erst
+danach übergibt es den aufgelösten Pfad ohne Shell an die Windows-
+Standardanwendung. Die Registry-Ausgabe enthält ausschließlich feste ID,
+Anzeigename, Erfolgskennzeichen und lokalen Sprechtext. Pfad, Inhalt und interne
+Fehler bleiben auch bei einer fehlenden Zuordnung oder Anwendung verborgen.
 
 ## Lokaler Codequalitätsstatus
 

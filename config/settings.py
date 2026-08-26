@@ -166,7 +166,7 @@ class Settings:
 
     VOICE_FOLLOWUP_MIN_CONFIDENCE = get_float_setting(
         "VOICE_FOLLOWUP_MIN_CONFIDENCE",
-        default=0.35,
+        default=0.15,
         minimum=0.0,
         maximum=1.0,
     )

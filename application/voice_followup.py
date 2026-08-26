@@ -20,6 +20,9 @@ class FollowUpCapture(Protocol):
     def capture(self, timeout: float) -> str | None:
         """Erfasst genau eine lokale Antwort innerhalb der Frist."""
 
+    def close(self) -> None:
+        """Gibt den lokalen Aufnahmeweg beim Sitzungsende frei."""
+
 
 class FollowUpCaptureUnavailable(RuntimeError):
     """Mark an unavailable local capture path without exposing details."""
@@ -75,6 +78,15 @@ class VoiceFollowUpWindow:
     def consume_transcript(self) -> None:
         """Beendet das Fenster unmittelbar nach einer erkannten Antwort."""
         self.active = False
+
+    def close(self) -> None:
+        """Schließt einen optional zustandsbehafteten lokalen Aufnahmeweg."""
+        self.active = False
+        if self.capture is None:
+            return
+        close = getattr(self.capture, "close", None)
+        if callable(close):
+            close()
 
 
 def receive_voice_turn(

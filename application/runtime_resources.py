@@ -19,7 +19,10 @@ from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
-from tools.project_documents import register_project_document_catalog_tool
+from tools.project_documents import (
+    register_project_document_catalog_tool,
+    register_project_document_open_tool,
+)
 from tools.project_status import register_project_status_tool
 from tools.python_release import register_python_latest_version_tool
 from tools.registry import ToolRegistry
@@ -47,6 +50,7 @@ def _create_tool_registry(
     register_documentation_status_tool(registry)
     register_latest_project_change_tool(registry)
     register_project_document_catalog_tool(registry)
+    register_project_document_open_tool(registry)
     register_project_status_tool(registry)
     register_next_roadmap_item_tool(registry)
     register_fixed_research_source_tool(registry)

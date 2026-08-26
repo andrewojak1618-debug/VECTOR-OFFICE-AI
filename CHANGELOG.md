@@ -18,6 +18,10 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Neuladen einer nach Prozessstart geänderten Authentifizierungszuordnung
 - feste lokale Übersicht freigegebener Projektdokumente mit sicheren IDs und
   Anzeigenamen ohne freie Pfade oder Inhaltsausgabe
+- bestätigungspflichtiges Öffnen genau eines festen Projektdokuments über die
+  Windows-Standardanwendung ohne freie Pfade oder Shellbefehle
+- beim Anwendungsstart vorgewärmter deutscher Windows-Erkenner für einen
+  unmittelbar verfügbaren, wakeword-freien Bestätigungsdialog
 
 ### Sicherheit
 
@@ -33,10 +37,23 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Dateinamen, Inhalte, Überschriften sowie interne Lesefehler
 - beobachtete WirePod-Transkription „projekt dateien“ führt deterministisch zum
   lokalen Katalog und nicht mehr zum Sprachmodell
+- Dokumente werden unmittelbar vor dem bestätigten Öffnen erneut validiert;
+  Ablehnung, unbekannte IDs und zusätzliche Argumente führen zu keiner Aktion
+- beobachtete WirePod-Wortfolge „bitte öffne“ für alle sechs festen
+  Dokumentaktionen deterministisch freigegeben
+- begrenzte Flexions- und Worttrennnormalisierung ergänzt; zusätzliche
+  Dokumentziele bleiben vor Sprachmodell und Toolausführung blockiert
+- Folgeaufnahme hält das Mikrofon zwischen Fragen geschlossen, startet keinen
+  neuen PowerShell-Prozess pro Bestätigung und gibt den Erkenner am Sitzungsende frei
+- lokale Windows-Konfidenz nach realer Messung auf `0,15` kalibriert; die
+  getrennte konservative Ja-Nein-Prüfung bleibt die Berechtigungsgrenze
+- freie Diktaterkennung im Folgefenster entfernt und Aufnahme auf feste lokale
+  Ja-, Nein- und Abbruchformulierungen begrenzt
 
 ### Abnahme
 
-- 693 automatisierte Tests einschließlich der festen Projektdokumentübersicht bestanden
+- 712 automatisierte Tests einschließlich vorgewärmter Folgeaufnahme und
+  kontrolliertem Öffnungspfad bestanden
 - 682 automatisierte Tests einschließlich WirePod-SDK-Preflight bestanden
 - deutscher Windows-Offline-Erkenner ohne Mikrofonöffnung als verfügbar bestätigt
 - Bestätigungsfrage, wakeword-freie Antwort und freigegebene Kopfaktion auf
@@ -49,6 +66,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   und Windows-Startabnahme mit zehn von zehn Prüfungen bestanden
 - feste Projektdokumentübersicht nach WirePod-Phrasenkorrektur schnell und
   verständlich am physischen Vector bestätigt
+- wakeword-freies einzelnes `Ja` über das Laptop-Mikrofon erkannt und genau eine
+  erfolgreiche Roadmap-Öffnung im redigierten lokalen Tool-Audit bestätigt
 
 ## [0.2.0-rc.2] – 2026-08-25
 

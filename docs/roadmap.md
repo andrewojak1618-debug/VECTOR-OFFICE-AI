@@ -107,7 +107,8 @@
 - ✅ kontrollierte letzte Projektänderung aus festem Changelog nennen
 - ✅ lokalen count-only Codequalitätsstatus ohne freie Pfade ergänzen
 - ✅ feste Übersicht freigegebener Projektdokumente ohne freie Pfade ergänzen
-- ⏳ kontrolliertes Öffnen genau eines freigegebenen Projektdokuments vorbereiten
+- ✅ kontrolliertes Öffnen genau eines freigegebenen Projektdokuments implementieren
+- ✅ bestätigtes Öffnen eines Projektdokuments am Windows-Desktop physisch abgenommen
 
 ## Codequalität und Dokumentation
 
