@@ -18,6 +18,23 @@ from tools.selection import (
 
 
 EMERGENCY_TOOL_NAME = "vector.emergency_stop"
+SPOKEN_RESULT_TOOLS = frozenset({
+    "development.latest_change",
+    "research.python_latest_version",
+    "research.python_source_status",
+    "development.code_quality_status",
+    "development.documentation_status",
+    "development.project_document_catalog",
+    "memory.local_status",
+    "knowledge.library_status",
+    "system.local_service_status",
+    "development.run_core_tests",
+    "development.project_status",
+    "development.next_roadmap_item",
+    "office.local_datetime",
+})
+
+
 class ToolTurnStatus(Enum):
     """Describe how a tool-related conversation turn was handled."""
 
@@ -173,29 +190,7 @@ def _success_message(
     result: ToolExecutionResult,
 ) -> str:
     """Wählt den begrenzten lokalen Erfolgstext für ein ausgeführtes Tool."""
-    if selection.tool_name == "development.latest_change":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "research.python_latest_version":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "research.python_source_status":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "development.code_quality_status":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "development.documentation_status":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "memory.local_status":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "knowledge.library_status":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "system.local_service_status":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "development.run_core_tests":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "development.project_status":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "development.next_roadmap_item":
-        return str(result.output["spoken_text"])
-    if selection.tool_name == "office.local_datetime":
+    if selection.tool_name in SPOKEN_RESULT_TOOLS:
         return str(result.output["spoken_text"])
     if selection.tool_name == "vector.list_actions":
         return f"Sichere Aktionen: {result.output['actions']}."

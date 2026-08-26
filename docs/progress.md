@@ -944,3 +944,18 @@ Die deutsche TTS wurde schrittweise verbessert:
 - 682 automatisierte Tests einschließlich aller neuen Fehlerpfade bestanden
 - passiven Live-Preflight als `ready` und Chipper-Startzeit als lesbar bestätigt
 - kontrollierten Aufgabenstart mit zehn von zehn Startprüfungen bestanden
+
+## Punkt 35 – Feste Übersicht freigegebener Projektdokumente
+
+- argumentloses Read-only-Tool `development.project_document_catalog` ergänzt
+- sechs öffentliche Projektdokumente mit festen IDs und Anzeigenamen freigegeben
+- freie Pfade, Dateinamen, Dokument-IDs, Suchtexte und Modellparameter ausgeschlossen
+- Projektzugehörigkeit, Dateityp, Größe, UTF-8 und Hauptüberschrift lokal geprüft
+- Ausgabe auf Zustandszähler sowie feste IDs und Anzeigenamen begrenzt
+- Pfade, Dateinamen, Inhalte, Überschriften und interne Fehler vollständig verworfen
+- festen Sprachbefehl `Welche Projektdateien sind freigegeben?` ohne Modellaufruf ergänzt
+- beobachtete WirePod-Trennung `projekt dateien` als feste Variante abgesichert
+- Registry-, Auswahl-, Dialog-, Runtime-, Datenschutz- und Fehlerpfade getestet
+- Dateiöffnung und Inhaltsausgabe bewusst als getrennten Folgepunkt zurückgestellt
+- 693 automatisierte Tests bestanden
+- schnelle und verständliche Ausgabe der festen Dokumentübersicht physisch bestätigt

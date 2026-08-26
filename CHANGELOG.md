@@ -16,6 +16,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - begrenzter Watchdog-Wiederanlauf nach vorübergehend blockiertem SDK-Kaltstart
 - passiver WirePod-SDK-Preflight vor jedem Anwendungsstart mit einmaligem
   Neuladen einer nach Prozessstart geänderten Authentifizierungszuordnung
+- feste lokale Übersicht freigegebener Projektdokumente mit sicheren IDs und
+  Anzeigenamen ohne freie Pfade oder Inhaltsausgabe
 
 ### Sicherheit
 
@@ -27,9 +29,14 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 - bestätigungspflichtige Aktionen werden nach einem Neustart niemals wiederholt
 - SDK-Preflight startet WirePod niemals während eines aktiven Gesprächs neu und
   blockiert bei ungültiger oder weiterhin nicht autorisierter Antwort sicher
+- Projektdokumentübersicht akzeptiert keine Argumente und verwirft Pfade,
+  Dateinamen, Inhalte, Überschriften sowie interne Lesefehler
+- beobachtete WirePod-Transkription „projekt dateien“ führt deterministisch zum
+  lokalen Katalog und nicht mehr zum Sprachmodell
 
 ### Abnahme
 
+- 693 automatisierte Tests einschließlich der festen Projektdokumentübersicht bestanden
 - 682 automatisierte Tests einschließlich WirePod-SDK-Preflight bestanden
 - deutscher Windows-Offline-Erkenner ohne Mikrofonöffnung als verfügbar bestätigt
 - Bestätigungsfrage, wakeword-freie Antwort und freigegebene Kopfaktion auf
@@ -40,6 +47,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   SDK-Kaltstart nach rund 1,2 Sekunden erfolgreich und Aufgabe dauerhaft aktiv
 - Punkt 34 live geladen: WirePod-SDK-Preflight `ready`, Prozessstartzeit lesbar
   und Windows-Startabnahme mit zehn von zehn Prüfungen bestanden
+- feste Projektdokumentübersicht nach WirePod-Phrasenkorrektur schnell und
+  verständlich am physischen Vector bestätigt
 
 ## [0.2.0-rc.2] – 2026-08-25
 

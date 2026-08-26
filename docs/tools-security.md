@@ -338,6 +338,28 @@ keine Interpretation durch OpenAI oder Ollama. Eine konfigurierte Cloud-TTS
 erhält höchstens die nicht sensible Zählerzusammenfassung, niemals gelesene
 Dokumentinhalte.
 
+## Freigegebene Projektdokumente
+
+`tools/project_documents.py` registriert
+`development.project_document_catalog` mit `READ_ONLY` und ohne Parameter.
+Die Allowlist enthält sechs bewusst öffentliche, versionierte Dokumente mit
+festen IDs, festen Anzeigenamen, festen relativen Pfaden und erwarteten
+Hauptüberschriften. Nutzer und Modell können weder Pfad noch Dokument-ID,
+Suchtext, Erweiterung oder Ausgabeformat ergänzen.
+
+Vor einer Meldung prüft das Tool jedes feste Dokument lokal auf
+Projektzugehörigkeit, regulären Dateityp, begrenzte Größe, UTF-8-Lesbarkeit und
+erwartete Hauptüberschrift. Die Ausgabe enthält ausschließlich Zustandszähler
+sowie die bereits im Code festgelegten IDs und Anzeigenamen der verfügbaren
+Dokumente. Dateinamen, Pfade, Überschriften, Inhalte und interne Lesefehler
+gelangen weder in den Gesprächskontext noch in das Audit.
+
+Der feste Sprachbefehl `Welche Projektdateien sind freigegeben?` benötigt
+keine Bestätigung, kein Sprachmodell und keinen Netzwerkzugriff. Das Werkzeug
+öffnet keine Datei für den Benutzer und gibt keinen Dokumentinhalt aus. Eine
+spätere Öffnungsfunktion bleibt ein getrennt zu prüfender, ausdrücklich zu
+bestätigender Projektpunkt.
+
 ## Lokaler Codequalitätsstatus
 
 `tools/code_quality_status.py` registriert

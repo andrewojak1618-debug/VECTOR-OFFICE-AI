@@ -77,6 +77,7 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("tools/inspection.py"): Path("docs/tools-security.md"),
     Path("tools/proposals.py"): Path("docs/tools-security.md"),
     Path("tools/python_release.py"): Path("docs/tools-security.md"),
+    Path("tools/project_documents.py"): Path("docs/tools-security.md"),
     Path("tools/selection.py"): Path("docs/tools-security.md"),
     Path("tools/selection_matching.py"): Path("docs/tools-security.md"),
     Path("tools/tool_values.py"): Path("docs/architecture.md"),

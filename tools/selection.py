@@ -120,6 +120,18 @@ DEFAULT_INTENT_RULES = (
     ),
     ToolIntentRule(
         (
+            "projektdateien übersicht",
+            "projektdatei übersicht",
+            "welche projektdateien sind freigegeben",
+            "welche projekt dateien sind freigegeben",
+            "welche dateien kannst du lesen",
+            "zeige die freigegebenen projektdateien",
+        ),
+        "development.project_document_catalog",
+        "freigegebene Projektdateien nennen",
+    ),
+    ToolIntentRule(
+        (
             "gedächtnis status",
             "gedächtnisstatus",
             "wie ist dein gedächtnis",

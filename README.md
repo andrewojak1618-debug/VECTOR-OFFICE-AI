@@ -92,6 +92,8 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokaler Read-only-Gedächtnisstatus ausschließlich mit bestätigten Zählern
 - lokaler Read-only-Roadmapstatus für den nächsten kontrollierten Projektpunkt
 - lokaler Read-only-Dokumentationsstatus für sechs feste Kerndokumente
+- feste Read-only-Übersicht freigegebener Projektdokumente mit sicheren
+  Anzeigenamen und IDs, jedoch ohne Pfad- oder Inhaltsausgabe
 - lokaler Read-only-Codequalitätsstatus ausschließlich mit Regelzählern
 - feste Python.org-Recherchequelle mit separater Netzwerkbestätigung
 - aktuelle stabile Python-Version als streng gefilterte Python.org-Abfrage
@@ -102,7 +104,7 @@ Der aktuelle Prototyp unterstützt bereits:
 - verbindlichen Regressionstest-Ablauf und deutsche Funktions-Docstrings
 - `/clear` zum Löschen des aktuellen Gesprächskontexts
 - `/exit` zum sauberen Beenden einer Sitzung
-- zuletzt 635 erfolgreich ausgeführte automatisierte Tests einschließlich
+- zuletzt 693 erfolgreich ausgeführte automatisierte Tests einschließlich
   Architektur-, Datenschutz- und Qualitätsregeln
 
 ## 🗣️ Deutsche Sprachausgabe
@@ -1076,7 +1078,7 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 682 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 693 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 
@@ -1092,7 +1094,10 @@ Die ausführliche, verbindliche Aufgabenübersicht steht in
 7. ✅ den geprüften annotierten Tag `v0.2.0-rc.2` setzen.
 
 Nach RC2 werden weitere Datei-, Recherche- und Entwicklungswerkzeuge einzeln
-über die bestehende Tool Registry abgesichert. Ein Vergleich von ElevenLabs
+über die bestehende Tool Registry abgesichert. Die feste Übersicht der
+freigegebenen Projektdokumente ist umgesetzt; das kontrollierte Öffnen genau
+eines freigegebenen Dokuments bleibt der nächste getrennte Sicherheitsschritt.
+Ein Vergleich von ElevenLabs
 Multilingual v2 mit Flash v2.5 bleibt optional und erfolgt nur bei erkennbarem
 Qualitätsbedarf. Homeserver, FastAPI und Docker bleiben dokumentierte spätere
 Optionen und sind für den aktuellen Windows-Betrieb nicht vorgesehen.
