@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 from application.conversation import run_conversation, run_voice_conversation
 from brain.agent import Agent
 from tools.project_documents import register_project_document_open_tool
+from tools.project_directories import register_project_directory_open_tool
 from tools.registry import ToolRegistry
 from tools.vector_actions import register_vector_action_tools
 
@@ -113,6 +114,8 @@ class ToolConversationIntegrationTests(unittest.TestCase):
         register_vector_action_tools(registry, self.actions)
         self.document_opener = MagicMock()
         register_project_document_open_tool(registry, opener=self.document_opener)
+        self.directory_opener = MagicMock()
+        register_project_directory_open_tool(registry, opener=self.directory_opener)
         self.model = RejectingLanguageModel()
         self.agent = Agent(self.model, tool_registry=registry)
         self.speech = RecordingSpeech()
@@ -198,6 +201,26 @@ class ToolConversationIntegrationTests(unittest.TestCase):
         self.assertEqual(1, follow_up.prepare_calls)
         self.assertEqual([5], follow_up.capture_timeouts)
         self.document_opener.assert_called_once()
+        self.assertEqual(0, self.model.calls)
+
+    def test_directory_open_uses_same_wakeword_free_confirmation_window(self):
+        listener = SequenceListener(("Bitte öffne den Dokumentationsordner",))
+        follow_up = RecordingFollowUp(transcripts=("Ja",))
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                listen_timeout=30,
+                max_turns=2,
+                follow_up=follow_up,
+                follow_up_timeout=5,
+            )
+
+        self.assertEqual(1, follow_up.prepare_calls)
+        self.assertEqual([5], follow_up.capture_timeouts)
+        self.directory_opener.assert_called_once()
         self.assertEqual(0, self.model.calls)
 
     def test_voice_confirmation_timeout_discards_pending_action(self):

@@ -19,6 +19,7 @@ from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
+from tools.project_directories import register_project_directory_open_tool
 from tools.project_documents import (
     register_project_document_catalog_tool,
     register_project_document_open_tool,
@@ -49,6 +50,7 @@ def _create_tool_registry(
     register_code_quality_status_tool(registry)
     register_documentation_status_tool(registry)
     register_latest_project_change_tool(registry)
+    register_project_directory_open_tool(registry)
     register_project_document_catalog_tool(registry)
     register_project_document_open_tool(registry)
     register_project_status_tool(registry)

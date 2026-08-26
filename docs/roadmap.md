@@ -109,6 +109,8 @@
 - ✅ feste Übersicht freigegebener Projektdokumente ohne freie Pfade ergänzen
 - ✅ kontrolliertes Öffnen genau eines freigegebenen Projektdokuments implementieren
 - ✅ bestätigtes Öffnen eines Projektdokuments am Windows-Desktop physisch abgenommen
+- ✅ kontrolliertes Öffnen des fest freigegebenen Dokumentationsordners implementieren
+- ✅ bestätigtes Öffnen des Dokumentationsordners am Windows-Desktop physisch abgenommen
 
 ## Codequalität und Dokumentation
 

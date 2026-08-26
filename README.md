@@ -1091,7 +1091,7 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 712 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 725 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 
@@ -1112,6 +1112,11 @@ freigegebenen Projektdokumente und das bestätigungspflichtige Öffnen genau ein
 festen Dokuments sind umgesetzt. Die physische Windows-Abnahme des neuen
 Öffnungspfads wurde mit einem wakeword-freien einzelnen `Ja` erfolgreich
 bestätigt; Punkt 36 ist damit abgeschlossen.
+Punkt 37 ergänzt darauf aufbauend das kontrollierte Öffnen des fest
+freigegebenen Dokumentationsordners. Freie Pfade und weitere Ordner bleiben
+gesperrt; vor dem tatsächlichen Öffnen ist ein separates Ja erforderlich. Die
+automatisierte Abnahme und die physische Windows-Ausführung mit der kurzen
+Phrase `Dokumentation öffnen` sind erfolgreich abgeschlossen.
 Ein Vergleich von ElevenLabs
 Multilingual v2 mit Flash v2.5 bleibt optional und erfolgt nur bei erkennbarem
 Qualitätsbedarf. Homeserver, FastAPI und Docker bleiben dokumentierte spätere

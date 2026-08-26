@@ -18,6 +18,7 @@ from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
+from tools.project_directories import register_project_directory_open_tool
 from tools.project_documents import (
     DOCUMENT_COUNT as PROJECT_DOCUMENT_COUNT,
     ProjectDocumentCatalogStatus,
@@ -93,6 +94,7 @@ class ToolIntentSelectorTests(unittest.TestCase):
         register_fixed_research_source_tool(self.registry, lambda: True)
         register_python_latest_version_tool(self.registry, lambda: "3.14.7")
         register_core_project_test_tool(self.registry)
+        register_project_directory_open_tool(self.registry, opener=MagicMock())
         register_local_service_status_tool(
             self.registry,
             lambda: True,
@@ -249,6 +251,51 @@ class ToolIntentSelectorTests(unittest.TestCase):
 
     def test_project_document_open_with_extra_target_is_blocked(self):
         selection = self.selector.select("Bitte öffnen Road Map und private Datei")
+
+        self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
+        self.assertIn("nicht eindeutig", selection.message)
+
+    def test_documentation_directory_selects_fixed_mutating_tool(self):
+        selection = self.selector.select("Bitte öffne den Dokumentationsordner")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.open_project_directory", selection.tool_name)
+        self.assertEqual(
+            {"directory_id": "documentation"},
+            dict(selection.arguments),
+        )
+        self.assertEqual(PermissionLevel.MUTATING, selection.permission)
+
+    def test_split_directory_phrase_selects_same_fixed_tool(self):
+        selection = self.selector.select("öffne bitte ordner dokumentation")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.open_project_directory", selection.tool_name)
+
+    def test_observed_split_documentation_directory_selects_same_tool(self):
+        selection = self.selector.select("bitte öffne den dokumentations ordner")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.open_project_directory", selection.tool_name)
+        self.assertEqual(
+            {"directory_id": "documentation"},
+            dict(selection.arguments),
+        )
+
+    def test_short_documentation_open_phrase_selects_same_fixed_tool(self):
+        selection = self.selector.select("Dokumentation öffnen")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.open_project_directory", selection.tool_name)
+        self.assertEqual(
+            {"directory_id": "documentation"},
+            dict(selection.arguments),
+        )
+
+    def test_directory_open_with_extra_target_is_blocked(self):
+        selection = self.selector.select(
+            "Öffne den Dokumentationsordner und private Dateien"
+        )
 
         self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
         self.assertIn("nicht eindeutig", selection.message)

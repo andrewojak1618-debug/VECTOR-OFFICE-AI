@@ -986,3 +986,30 @@ Die deutsche TTS wurde schrittweise verbessert:
 - wakeword-freies einzelnes `Ja` über das Laptop-Mikrofon physisch erkannt
 - genau einen erfolgreichen, fehlerfreien Roadmap-Öffnungsaufruf im redigierten
   lokalen Tool-Audit bestätigt
+
+## Punkt 37 – Kontrolliertes Öffnen eines freigegebenen Projektordners
+
+- `development.open_project_directory` als veränderndes Registry-Tool ergänzt
+- ausschließlich den festen Projektordner `docs` unter der abstrakten ID
+  `documentation` und dem Anzeigenamen `Dokumentationsordner` freigegeben
+- freie Pfade, Ordnernamen, Suchziele, Anwendungen und Shellbefehle ausgeschlossen
+- separate Ja-Nein-Bestätigung vor jedem Öffnungsvorgang erzwungen
+- Projektzugehörigkeit, Existenz und Verzeichnistyp unmittelbar vor dem Öffnen
+  erneut geprüft
+- Pfade und interne Fehlermeldungen vollständig aus Tool-Ergebnis und Dialog
+  entfernt
+- feste und beobachtbare deutsche Sprachvarianten lokal normalisiert
+- die reale WirePod-Trennung `dokumentations ordner` nach dem ersten physischen
+  Versuch als festen Regressionstest ergänzt
+- die akustisch kürzere feste Alternative `Dokumentation öffnen` ergänzt, weil
+  WirePod den langen Ordnerbegriff im zweiten Versuch wiederholt veränderte
+- zusätzliche oder unbekannte Öffnungsziele vor dem Sprachmodell blockiert
+- denselben wakeword-freien Fünf-Sekunden-Bestätigungsweg wie bei Dokumenten
+  automatisiert abgesichert
+- 723 automatisierte Tests einschließlich Datenschutz-, Fehler- und Dialogpfaden
+  bestanden
+- kurze Aktivierungsphrase `Dokumentation öffnen` am physischen Vector erfolgreich
+  erkannt und wakeword-frei bestätigt
+- genau einen erfolgreichen Ordneraufruf mit der abstrakten ID `documentation`
+  im redigierten lokalen Tool-Audit bestätigt
+- physische Windows-Abnahme vollständig abgeschlossen

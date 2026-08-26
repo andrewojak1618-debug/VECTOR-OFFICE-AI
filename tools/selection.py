@@ -5,6 +5,7 @@ from enum import Enum
 from types import MappingProxyType
 
 from tools.permissions import PermissionLevel
+from tools.project_directories import PROJECT_DIRECTORIES
 from tools.project_documents import PROJECT_DOCUMENTS
 from tools.registry import ToolArguments, ToolRegistry, ToolValue
 from tools.selection_matching import (
@@ -56,6 +57,16 @@ PROJECT_DOCUMENT_OPEN_RULES = tuple(
     for document in PROJECT_DOCUMENTS
 )
 
+PROJECT_DIRECTORY_OPEN_RULES = tuple(
+    ToolIntentRule(
+        directory.open_phrases,
+        "development.open_project_directory",
+        f"{directory.display_name} öffnen",
+        (("directory_id", directory.identifier),),
+    )
+    for directory in PROJECT_DIRECTORIES
+)
+
 
 @dataclass(frozen=True)
 class ToolSelection:
@@ -70,6 +81,7 @@ class ToolSelection:
 
 
 DEFAULT_INTENT_RULES = (
+    *PROJECT_DIRECTORY_OPEN_RULES,
     *PROJECT_DOCUMENT_OPEN_RULES,
     ToolIntentRule(
         (

@@ -569,6 +569,26 @@ Animationsnamen und Fahrbefehle erreichen die SDK-Grenze nicht. Die vollständig
 Allowlist, Timeouts und Hardwaretests sind unter
 [Kontrollierte Robot-Aktionen](robot-actions.md) dokumentiert.
 
+## Fest freigegebener Projektordner
+
+`tools/project_directories.py` enthält eine eigene, kleine Sicherheitsgrenze
+für lokale Projektordner. Freigegeben ist derzeit ausschließlich der Ordner
+`docs` unter der abstrakten ID `documentation`. Spracheingaben können weder
+einen Pfad noch einen anderen Ordnernamen, ein Programm oder einen Shellbefehl
+als Parameter übergeben.
+
+`development.open_project_directory` besitzt die Berechtigungsstufe
+`MUTATING`. Nach der erkannten Anfrage wird deshalb zunächst nur die feste
+Aktion angekündigt. Erst ein getrenntes Ja innerhalb des lokalen
+Bestätigungsfensters erzeugt einmalig die nötige Autorisierung. Unmittelbar vor
+dem Öffnen werden Projektzugehörigkeit, Existenz und Verzeichnistyp erneut
+geprüft. Tool-Ergebnis, Audit und Sprache enthalten nur feste IDs,
+Anzeigenamen und Zustände, niemals den lokalen absoluten Pfad.
+
+Zusätzliche Ziele, unbekannte Ordner und frei formulierte Pfade werden nicht an
+ein Sprachmodell zur Interpretation weitergegeben. Ein Öffnungsfehler wird als
+sicherer Fehlercode zurückgegeben und nicht automatisch wiederholt.
+
 ## Noch nicht freigegeben
 
 Folgende Funktionen sind weiterhin bewusst nicht freigegeben:

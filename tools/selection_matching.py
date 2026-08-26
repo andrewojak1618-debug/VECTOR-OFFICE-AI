@@ -8,6 +8,11 @@ IntentMatcher = Callable[[str], bool]
 DOCUMENT_OPEN_ACTIONS = frozenset({"öffne", "öffnen"})
 DOCUMENT_OPEN_FILLER = frozenset({"bitte", "die", "den", "das"})
 DOCUMENT_OPEN_TARGETS = {
+    "dokumentationsordner": "öffne den dokumentationsordner",
+    "dokumentations ordner": "öffne den dokumentationsordner",
+    "dokumentation": "öffne die dokumentation",
+    "dokumentation ordner": "öffne den dokumentationsordner",
+    "ordner dokumentation": "öffne den dokumentationsordner",
     "projektübersicht": "öffne die projektübersicht",
     "projekt übersicht": "öffne die projektübersicht",
     "roadmap": "öffne die roadmap",
@@ -46,8 +51,9 @@ def unmatched_message(value: str) -> str | None:
     """Blockiert erkennbare Faktenabsichten, bevor ein Sprachmodell etwas erfindet."""
     if _looks_like_document_open_request(value):
         return (
-            "Ich habe die Dokumentaktion nicht eindeutig erkannt. "
-            "Bitte sage: Bitte öffne die Roadmap."
+            "Ich habe die Datei- oder Ordneraktion nicht eindeutig erkannt. "
+            "Bitte sage: Bitte öffne die Roadmap. Oder: Bitte öffne den "
+            "Dokumentationsordner."
         )
     if _looks_like_research_request(value):
         return (
@@ -85,7 +91,8 @@ def _looks_like_document_open_request(value: str) -> bool:
     """Erkennt nicht eindeutig freigegebene Dateiaktionen für eine sichere Blockierung."""
     words = set(value.split())
     targets = {
-        "datei", "dokument", "firmware", "projekt", "projektübersicht",
+        "datei", "dokument", "dokumentation", "dokumentationsordner",
+        "firmware", "ordner", "projekt", "projektübersicht",
         "qualität", "qualitätsregeln", "road", "roadmap", "windows",
         "werkzeug", "werkzeugsicherheit",
     }

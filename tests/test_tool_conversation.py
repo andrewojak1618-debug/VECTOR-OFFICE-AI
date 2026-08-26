@@ -24,6 +24,7 @@ from tools.library_status import register_local_library_status_tool
 from tools.memory_status import register_local_memory_status_tool
 from tools.office import register_office_tools
 from tools.project_checks import CoreTestSummary, register_core_project_test_tool
+from tools.project_directories import register_project_directory_open_tool
 from tools.project_documents import (
     DOCUMENT_COUNT as PROJECT_DOCUMENT_COUNT,
     ProjectDocumentCatalogStatus,
@@ -92,6 +93,12 @@ class ControlledToolConversationTests(unittest.TestCase):
             self.registry,
             Path("."),
             self.document_opener,
+        )
+        self.directory_opener = MagicMock()
+        register_project_directory_open_tool(
+            self.registry,
+            Path("."),
+            self.directory_opener,
         )
         register_project_status_tool(
             self.registry,
@@ -221,6 +228,20 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.CANCELLED, cancelled.status)
         self.document_opener.assert_not_called()
+
+    def test_project_directory_open_waits_for_separate_yes(self):
+        proposed = self.controller.handle("Öffne bitte den Dokumentationsordner")
+
+        self.assertEqual(ToolTurnStatus.AWAITING_CONFIRMATION, proposed.status)
+        self.assertIn("Dokumentationsordner öffnen", proposed.message)
+        self.directory_opener.assert_not_called()
+
+        completed = self.controller.handle("Ja")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, completed.status)
+        self.assertIn("Dokumentationsordner wurde geöffnet", completed.message)
+        self.directory_opener.assert_called_once()
+        self.assertEqual(0, self.model.calls)
 
     def test_code_quality_status_executes_without_model_or_confirmation(self):
         result = self.controller.handle("Codequalität Status")
