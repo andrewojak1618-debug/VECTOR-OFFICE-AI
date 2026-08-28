@@ -22,7 +22,7 @@
 - ✅ Karte 39: begrenzte inhaltliche Folgefragen ohne erneutes Wakeword implementieren
 - ✅ Karte 39: defekten Windows-Erkenner durch lokalen Vosk-Adapter ersetzen
 - ✅ Karte 39: mehrturnigen Vosk-Folgepfad am physischen Vector abnehmen
-- ⏳ Karte 40: Intent-Erkennung und beobachtete Sprachvarianten absichern
+- ✅ Karte 40: Intent-Erkennung und beobachtete Sprachvarianten absichern
 - ⏳ Karte 41: freigegebene Projektdokumente lokal zusammenfassen
 - ⏳ Karte 44: Antwortlatenz und TTS-Übergänge inhaltsfrei messen
 - ⏳ Karte 42: kontrollierte lokale Erinnerungen vorbereiten

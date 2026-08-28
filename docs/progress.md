@@ -1067,3 +1067,27 @@ Die deutsche TTS wurde schrittweise verbessert:
 - anschließendes `Danke` innerhalb des fünfsekündigen Vosk-Fensters ohne
   erneutes Wakeword erkannt und unmittelbar mit „Gern.“ beantwortet
 - physische Vosk-Sprachabnahme reibungslos abgeschlossen
+
+## Karte 40 – Intent-Erkennung und Sprachvarianten absichern
+
+- reale WirePod- und Vosk-Transkriptvarianten in einer zentralen
+  Regressionstest-Matrix zusammengeführt
+- feste Zuordnung zu registriertem Tool, Berechtigungsstufe und vorhandenen
+  Argumenten unverändert erhalten
+- gesprochene Satzzeichen und abweichende Leerzeichen lokal und inhaltsfrei
+  normalisiert
+- kanonische Intent-Erkennung auf einen jeweils ausdrücklich erlaubten
+  deutschen Wortschatz begrenzt
+- angehängte fremde Anweisungen auch bei bekannten Schlüsselwörtern von der
+  Toolauswahl ausgeschlossen
+- ersten physischen Versuch als WirePod-Transkript
+  `was sagt der projekte einem status aktuell` reproduziert und genau diese
+  Variante dem rein lesenden lokalen Projektstatus zugeordnet
+- zuverlässige Kurzform `Wie ist der Projektstatus?` am physischen Vector
+  erfolgreich erkannt und verständlich beantwortet
+- lokalen Read-only-Aufruf als redigiertes Audit-Ereignis 30 mit Status
+  `success` bestätigt
+- freie unscharfe Erkennung und modellbasierte Toolauswahl weiterhin
+  ausgeschlossen
+- 754 automatisierte Tests, Python-Kompilierung, strikten MkDocs-Bau und
+  `git diff --check` bestanden

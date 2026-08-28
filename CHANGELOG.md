@@ -26,6 +26,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   ohne freie Pfade, Anwendungen oder Shellbefehle
 - lokale Read-only-Abfrage der letzten bekannten kontrollierten Tool-Aktion mit
   fester deutscher Bezeichnung und sicherem Ergebnisstatus
+- zentrale Regressionstests für real beobachtete WirePod- und
+  Vosk-Intentvarianten
 
 ### Sicherheit
 
@@ -55,6 +57,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Ja-, Nein- und Abbruchformulierungen begrenzt
 - letzte Tool-Aktion verwirft Parameter, Pfade, Inhalte, Zeitpunkte, Fehlercodes
   und unbekannte Toolnamen; die Abfrage selbst wird beim Rückblick übersprungen
+- kanonische Intent-Erkennung akzeptiert keine angehängten fremden
+  Anweisungen mehr und bleibt auf einen festen Wortschatz je Intent begrenzt
 
 ### Abnahme
 

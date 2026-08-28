@@ -26,6 +26,9 @@ DOCUMENT_OPEN_TARGETS = {
     "firmware sicherheitsregeln": "öffne die firmware sicherheitsregeln",
     "firmware sicherheits regeln": "öffne die firmware sicherheitsregeln",
 }
+OBSERVED_PROJECT_STATUS_PHRASES = frozenset(
+    {"was sagt der projekte einem status aktuell"}
+)
 
 
 def normalize_phrase(value: str) -> str:
@@ -33,7 +36,8 @@ def normalize_phrase(value: str) -> str:
     if not isinstance(value, str):
         return ""
     collapsed = " ".join(value.casefold().strip().split())
-    return re.sub(r"[.!?]+$", "", collapsed).strip()
+    without_punctuation = re.sub(r"[.,!?;:]+", " ", collapsed)
+    return " ".join(without_punctuation.split())
 
 
 def canonical_phrase(value: str) -> str | None:
@@ -126,6 +130,8 @@ def _looks_like_research_request(value: str) -> bool:
 
 def _references_project_status(value: str) -> bool:
     """Prüft, ob eine Phrase den festen Projektstatus bezeichnet."""
+    if value in OBSERVED_PROJECT_STATUS_PHRASES:
+        return True
     words = set(value.split())
     return "projektstatus" in words or {"projekt", "status"} <= words
 
@@ -189,16 +195,146 @@ def _references_next_project_item(value: str) -> bool:
     return target and sequence
 
 
+def _bounded_match(
+    value: str,
+    matcher: IntentMatcher,
+    allowed_words: frozenset[str],
+) -> bool:
+    """Akzeptiert eine kanonische Absicht nur ohne fremde Zusatzanweisungen."""
+    return matcher(value) and set(value.split()) <= allowed_words
+
+
+MEMORY_STATUS_WORDS = frozenset(
+    {"wie", "ist", "dein", "gedächtnis", "gedächtnisstatus", "status", "aktuell"}
+)
+CODE_QUALITY_WORDS = frozenset(
+    {
+        "wie", "ist", "die", "prüfe", "code", "qualität",
+        "codequalität", "codequalitätsstatus", "status",
+    }
+)
+DOCUMENTATION_STATUS_WORDS = frozenset(
+    {
+        "wie", "ist", "die", "dokumentation", "dokumentations",
+        "dokumentationsstatus", "projekt", "status", "vollständig",
+    }
+)
+PYTHON_VERSION_WORDS = frozenset(
+    {"python", "version", "aktuelle", "welche", "ist", "was", "die"}
+)
+RESEARCH_SOURCE_WORDS = frozenset(
+    {
+        "python", "recherche", "recherchequelle", "quelle", "status",
+        "prüfen", "überprüfen", "ist", "die", "erreichbar",
+    }
+)
+LATEST_CHANGE_WORDS = frozenset(
+    {
+        "projekt", "projektänderung", "änderung", "letzte", "was", "wurde",
+        "zuletzt", "am", "geändert", "ist", "die",
+    }
+)
+LIBRARY_STATUS_WORDS = frozenset(
+    {"wie", "ist", "der", "bibliothek", "bibliotheksstatus", "status", "aktuell"}
+)
+SYSTEM_STATUS_WORDS = frozenset(
+    {
+        "wie", "ist", "der", "system", "systemstatus", "status", "lokaler",
+        "sind", "alle", "dienste", "online", "aktuell",
+    }
+)
+PROJECT_TEST_WORDS = frozenset(
+    {
+        "bitte", "projekt", "test", "tests", "projekttest", "projekttests",
+        "starte", "führe", "die", "aus", "ausführen", "teste",
+    }
+)
+PROJECT_STATUS_WORDS = frozenset(
+    {
+        "wie", "ist", "ihr", "der", "das", "projekt", "projekte", "einem",
+        "projektstatus", "status", "was", "sagt", "aktuell", "nenne", "zeige",
+    }
+)
+NEXT_PROJECT_ITEM_WORDS = frozenset(
+    {
+        "was", "ist", "der", "welcher", "welches", "projektpunkt", "punkt",
+        "nächste", "nächster", "nächsten", "nächstes", "wäre", "als", "dran",
+        "kommt",
+    }
+)
+
+
 _CANONICAL_MATCHERS: tuple[tuple[IntentMatcher, str], ...] = (
-    (lambda value: _references_status(value, "gedächtnisstatus", "gedächtnis"), "gedächtnis status"),
-    (_references_code_quality_status, "codequalität status"),
-    (_references_documentation_status, "dokumentation status"),
-    (_references_python_version, "python version"),
-    (_references_research_source, "recherchequelle prüfen"),
-    (_references_latest_project_change, "projekt änderung"),
-    (lambda value: _references_status(value, "bibliotheksstatus", "bibliothek"), "bibliothek status"),
-    (lambda value: _references_status(value, "systemstatus", "system"), "system status"),
-    (_references_project_tests, "projekt test"),
-    (_references_project_status, "wie ist der projektstatus"),
-    (_references_next_project_item, "nächster projektpunkt"),
+    (
+        lambda value: _bounded_match(
+            value,
+            lambda text: _references_status(text, "gedächtnisstatus", "gedächtnis"),
+            MEMORY_STATUS_WORDS,
+        ),
+        "gedächtnis status",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_code_quality_status, CODE_QUALITY_WORDS
+        ),
+        "codequalität status",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_documentation_status, DOCUMENTATION_STATUS_WORDS
+        ),
+        "dokumentation status",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_python_version, PYTHON_VERSION_WORDS
+        ),
+        "python version",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_research_source, RESEARCH_SOURCE_WORDS
+        ),
+        "recherchequelle prüfen",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_latest_project_change, LATEST_CHANGE_WORDS
+        ),
+        "projekt änderung",
+    ),
+    (
+        lambda value: _bounded_match(
+            value,
+            lambda text: _references_status(text, "bibliotheksstatus", "bibliothek"),
+            LIBRARY_STATUS_WORDS,
+        ),
+        "bibliothek status",
+    ),
+    (
+        lambda value: _bounded_match(
+            value,
+            lambda text: _references_status(text, "systemstatus", "system"),
+            SYSTEM_STATUS_WORDS,
+        ),
+        "system status",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_project_tests, PROJECT_TEST_WORDS
+        ),
+        "projekt test",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_project_status, PROJECT_STATUS_WORDS
+        ),
+        "wie ist der projektstatus",
+    ),
+    (
+        lambda value: _bounded_match(
+            value, _references_next_project_item, NEXT_PROJECT_ITEM_WORDS
+        ),
+        "nächster projektpunkt",
+    ),
 )

@@ -173,6 +173,29 @@ Im selben Test wurden die tatsächlichen Vosk-Varianten `hebe deine Lift`,
 bestehenden Werkzeug-, Bestätigungs- und Sitzungs-Allowlists ergänzt; eine
 allgemeine unscharfe Aktionsauswahl bleibt weiterhin ausgeschlossen.
 
+## Abgesicherte Intent-Varianten
+
+Beobachtete WirePod- und Vosk-Transkripte werden nur dann dauerhaft
+übernommen, wenn ihr Ziel eindeutig und bereits in der Tool Registry
+freigegeben ist. `tests/test_intent_variants.py` hält diese real beobachteten
+Varianten als zentrale Regressionsmatrix fest. Satzzeichen und unterschiedliche
+Leerzeichen werden lokal normalisiert; der ursprüngliche Sprachtext wird dafür
+nicht gespeichert.
+
+Die kanonische Erkennung erlaubt je Intent nur einen eng begrenzten deutschen
+Wortschatz. Enthält ein Satz zusätzliche, fachfremde Wörter oder eine zweite
+Anweisung, wird kein Tool ausgewählt. Das gilt auch dann, wenn der Satz zugleich
+bekannte Schlüsselwörter wie `Projekt Status`, `Python Version` oder
+`Projekt Tests` enthält. Eine unscharfe Ähnlichkeitssuche, freie Toolparameter
+oder eine Intent-Entscheidung durch OpenAI beziehungsweise Ollama bleiben
+ausgeschlossen.
+
+Beim physischen Karte-40-Test transkribierte WirePod die Frage „Was sagt der
+Projektstatus aktuell?“ als `was sagt der projekte einem status aktuell`.
+Genau diese beobachtete Wortfolge ist zusätzlich auf den rein lesenden lokalen
+Projektstatus abgebildet. Andere Sätze mit `Projekte` oder `Status` erhalten
+daraus keine allgemeine Freigabe.
+
 ## Deutsche TTS
 
 Die Sprachpipeline besteht aus:
