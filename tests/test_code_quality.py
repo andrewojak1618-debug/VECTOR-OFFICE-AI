@@ -40,6 +40,7 @@ ENGLISH_DOCSTRING_PREFIXES = (
     "Write ",
 )
 ARCHITECTURE_MODULE_DOCS = {
+    Path("application/controlled_turn_delivery.py"): Path("docs/diagnostics.md"),
     Path("application/runtime_startup.py"): Path("docs/architecture.md"),
     Path("application/response_delivery.py"): Path("docs/architecture.md"),
     Path("application/contextual_tool_conversation.py"): Path(
@@ -73,6 +74,8 @@ ARCHITECTURE_MODULE_DOCS = {
     Path("memory/knowledge_records.py"): Path("docs/architecture.md"),
     Path("memory/knowledge_schema.py"): Path("docs/architecture.md"),
     Path("diagnostics/tool_audit.py"): Path("docs/tools-security.md"),
+    Path("diagnostics/response_latency.py"): Path("docs/diagnostics.md"),
+    Path("diagnostics/response_latency_report.py"): Path("docs/diagnostics.md"),
     Path("tools/audit_store.py"): Path("docs/tools-security.md"),
     Path("tools/changelog_status.py"): Path("docs/tools-security.md"),
     Path("tools/code_quality_status.py"): Path("docs/tools-security.md"),

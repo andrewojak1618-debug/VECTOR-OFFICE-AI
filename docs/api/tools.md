@@ -38,6 +38,14 @@
     options:
       members: true
 
+::: application.memory_conversation
+    options:
+      members: true
+
+::: tools.memory_write
+    options:
+      members: true
+
 ## Inaktive Modellvorschläge
 
 ::: tools.proposals

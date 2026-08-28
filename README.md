@@ -442,6 +442,15 @@ Zeitpunkte und IDs werden weder gesprochen noch als Toolergebnis ausgegeben.
 Der argumentlose Read-only-Aufruf verwendet kein Sprachmodell und benötigt
 keine Bestätigung.
 
+Mit dem bevorzugten Sprachalias `Erinnerung speichern: …` kann ein neuer Fakt
+für das lokale Langzeitgedächtnis vorgeschlagen werden. `Merke dir, dass …`
+bleibt als natürliche Variante erhalten. Vector wiederholt den Inhalt bewusst
+nicht, sondern fragt inhaltsfrei nach einer separaten Bestätigung. Nur ein
+eindeutiges `Ja` innerhalb des begrenzten lokalen Antwortfensters speichert
+genau diesen Fakt; `Nein`, ein Abbruch oder eine Zeitüberschreitung verwirft ihn.
+Der Inhalt ist in der Tool Registry als sensibel markiert und erscheint weder
+im Audit noch in Diagnosen.
+
 `Codequalität Status` prüft lokal die festen Python-Produktivpfade auf
 Modul- und Funktions-Docstrings sowie die 35- und 400-Zeilen-Grenzen. Vector
 nennt ausschließlich die Anzahl geprüfter Module und Funktionen sowie
@@ -886,6 +895,13 @@ Die Ausgabe verwendet ausschließlich feste Zustände und enthält keine
 API-Schlüssel, Stimmenkennung, Vector-Seriennummer oder privaten Endpunkte.
 Weitere Sicherheits- und Statusdetails stehen in
 [`docs/diagnostics.md`](docs/diagnostics.md).
+
+Die letzten inhaltsfreien Antwort- und TTS-Zeitwerte zeigt ein eigener lokaler
+Bericht ohne Fragen, Antworten oder Audiodaten:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.response_latency_report
+```
 
 ### Vollständige Systemabnahme
 

@@ -33,6 +33,38 @@ sind feste Klassen wie `request-timeout`, `provider-unavailable`,
 Antworten, Sprachtexte, Erinnerungen, Dokumentabschnitte, Embeddings und Secrets
 werden weder in Erfolgs- noch in Fehlerereignisse übernommen.
 
+## Antwortlatenz und TTS-Übergänge
+
+`diagnostics/response_latency.py` und
+`application/controlled_turn_delivery.py` erfassen die wahrnehmbare
+Antwortkette unabhängig vom gewählten Dialogpfad. Die Messung verwendet nur
+eine monotone Uhr, feste Ereigniscodes, Millisekunden und den Zustand `active`,
+`success` oder `failed`.
+
+| Ereignis | Gemessene Grenze |
+| --- | --- |
+| `response.started` | Beginn der lokalen Turnverarbeitung |
+| `response.prepared` | Antworttext und gegebenenfalls Audio sind vorbereitet |
+| `response.tts.started` | Übergang zur tatsächlichen Wiedergabe |
+| `response.tts.finished` | Ende oder Fehler der Wiedergabe |
+| `response.finished` | vollständige Dauer des Antwortturns |
+
+Frage, Antwort, Transkript, Dokumentinhalt, Audiopfad, Providertext und Secrets
+sind keine Parameter dieser Schnittstelle. Providerwechsel bleiben getrennte
+Ereignisse; dadurch lassen sich Modellzeit, TTS-Vorbereitung und Wiedergabe
+zeitlich vergleichen, ohne Gesprächsinhalte miteinander zu verknüpfen.
+
+Der argumentlose Bericht `diagnostics/response_latency_report.py` liest nur die
+letzten validierten Messwerte aus der begrenzten lokalen Diagnoseablage:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.response_latency_report
+```
+
+Er zeigt Vorbereitung, Zeit bis zum Wiedergabestart, TTS-Wiedergabe und gesamte
+Turnzeit in Millisekunden. Fremde Komponenten, unbekannte Codes, zusätzliche
+Inhaltsfelder und ungültige Werte werden nicht in die Ausgabe übernommen.
+
 ## Konfiguration
 
 ```env

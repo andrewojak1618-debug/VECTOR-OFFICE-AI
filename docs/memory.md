@@ -17,6 +17,20 @@ Nur der Benutzer entscheidet, was dauerhaft gespeichert wird:
 - `/forget ID` löscht einen Eintrag dauerhaft.
 - `/clear` entfernt nur den aktuellen Gesprächskontext.
 
+Im Sprachdialog bereitet der bevorzugte Alias `Erinnerung speichern: …` genau
+einen lokalen Fakt vor; `Merke dir, dass …` bleibt zusätzlich verfügbar. Der
+Inhalt bleibt zunächst nur im Arbeitsspeicher und wird in der anschließenden
+Frage nicht wiederholt. Erst ein getrenntes eindeutiges `Ja` übergibt ihn einmal
+an `memory.remember_confirmed`; `Nein`, Abbruch und Zeitüberschreitung verwerfen
+ihn. Die Spracheingabe ist auf 240 Zeichen und eine Zeile begrenzt. Freie
+Kategorien, Quellen, Datenbankpfade oder Memory-IDs sind dabei ausgeschlossen.
+
+Das Toolargument `content` ist als sensibel markiert. Das lokale Tool-Audit
+speichert deshalb ausschließlich `[REDACTED]`, Status und Werkzeugname. Die
+Registry-Ausgabe bestätigt nur den Speichervorgang und enthält weder Text noch
+ID. OpenAI, Ollama und Diagnosen werden für Vorbereitung und Speicherung nicht
+aufgerufen.
+
 Jeder Eintrag enthält Inhalt, Kategorie, Herkunft und Zeitstempel. Doppelte
 Inhalte werden nicht mehrfach angelegt. Feedback erhält die eigene Kategorie
 `feedback`, wird von der Faktensuche ausgeschlossen und kann weiterhin über
@@ -133,3 +147,5 @@ temporäres Wissen bis zur deutschen Sprachausgabe auf Vector getestet werden:
 - ✅ getrennte, Secret-bereinigte JSON-Exporte
 - ✅ vollständige Reindexierung und verifizierte Löschung
 - ✅ bestätigtes, getrennt behandeltes Stilfeedback für beide Provider
+- ✅ kontrollierter Sprachpfad für lokale Erinnerungen einschließlich
+  Speicherung und späterem Abruf am physischen Vector abgenommen

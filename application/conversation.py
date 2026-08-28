@@ -9,8 +9,17 @@ from application.connection_supervisor import ConnectionSupervisor
 from application.contextual_tool_conversation import (
     ControlledContextualToolConversation,
 )
+from application.controlled_turn_delivery import (
+    handle_contextual_tool_turn,
+    handle_expression_turn,
+    handle_tool_turn,
+)
 from application.expression_conversation import ControlledExpressionConversation
 from application.expression_delivery import ExpressionResponseCoordinator
+from application.memory_conversation import (
+    MEMORY_TOOL_NAME,
+    ControlledMemoryConversation,
+)
 from application.model_tool_proposals import ModelToolProposalService
 from application.response_delivery import (
     CLOUD_OFFLINE_NOTICE,
@@ -27,6 +36,8 @@ from application.voice_recovery import VoiceRecovery
 from application.voice_turn_loop import VoiceTurnCallbacks, run_voice_turns
 from brain.agent import Agent
 from brain.expression_actions import ExpressionActionMapper
+from diagnostics.events import StructuredDiagnosticReporter
+from diagnostics.response_latency import ResponseLatencyTrace
 from tools.proposals import (
     CONTEXTUAL_EXPRESSION_PROPOSAL_OPTIONS,
     ToolProposalReviewer,
@@ -47,10 +58,12 @@ TOOL_HELP = (
     "'Schau nach oben', 'Lift nach oben', or 'Stopp sofort'. "
     "Movements require a separate yes. Expressive response: "
     "'Mit Ausdruck was bedeutet Freiheit'. Contextual suggestion: "
-    "'Schlage eine passende Aktion vor: Ich denke nach'."
+    "'Schlage eine passende Aktion vor: Ich denke nach'. Local memory: "
+    "'Erinnerung speichern: ...'."
 )
 @dataclass(frozen=True)
 class _ConversationControllers:
+    memory: ControlledMemoryConversation | None
     tools: ControlledToolConversation | None
     expression: ControlledExpressionConversation | None
     contextual: ControlledContextualToolConversation | None
@@ -60,15 +73,29 @@ class _ConversationControllers:
         """Meldet eine offene Ja-Nein-Entscheidung eines Controllers."""
         return any(
             controller is not None and controller.awaiting_confirmation
-            for controller in (self.tools, self.expression, self.contextual)
+            for controller in (
+                self.memory,
+                self.tools,
+                self.expression,
+                self.contextual,
+            )
         )
 
     def cancel_pending(self) -> None:
         """Verwirft alle optional offenen Aktionen ohne Ausführung."""
-        _cancel_pending(self.tools, self.expression, self.contextual)
+        _cancel_pending(
+            self.memory,
+            self.tools,
+            self.expression,
+            self.contextual,
+        )
 
 
-def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
+def run_conversation(
+    agent: Agent,
+    speech: VectorSpeech,
+    diagnostics: StructuredDiagnosticReporter | None = None,
+) -> None:
     """Führt die interaktive Konsolenunterhaltung bis zum Nutzerabbruch aus."""
     print("\nConversation started.")
     print(COMMAND_HELP)
@@ -85,7 +112,7 @@ def run_conversation(agent: Agent, speech: VectorSpeech) -> None:
         if result is CommandResult.EXIT:
             return
         if result is CommandResult.NOT_HANDLED:
-            _handle_user_turn(agent, speech, controllers, user_text)
+            _handle_user_turn(agent, speech, controllers, user_text, diagnostics)
         else:
             controllers.cancel_pending()
 
@@ -110,13 +137,20 @@ def run_voice_conversation(
     follow_up: FollowUpCapture | None = None,
     follow_up_timeout: float = 5.0,
     conversation_follow_up: bool = True,
+    diagnostics: StructuredDiagnosticReporter | None = None,
 ) -> None:
     """Führt eine private WirePod-Unterhaltung bis zum Abbruch oder Turnlimit aus."""
     _print_voice_intro()
     controllers = _create_conversation_controllers(agent, speech)
     recovery = _create_voice_recovery(connections, speech)
     follow_up_window = VoiceFollowUpWindow(follow_up, follow_up_timeout)
-    callbacks = _create_voice_turn_callbacks(agent, speech, listener, controllers)
+    callbacks = _create_voice_turn_callbacks(
+        agent,
+        speech,
+        listener,
+        controllers,
+        diagnostics,
+    )
     _run_voice_session(
         listener,
         callbacks,
@@ -163,11 +197,18 @@ def _create_voice_turn_callbacks(
     speech: VectorSpeech,
     listener: WirePodTranscriptListener,
     controllers: _ConversationControllers,
+    diagnostics: StructuredDiagnosticReporter | None = None,
 ) -> VoiceTurnCallbacks:
     """Bindet den Voice-Loop an Listener, Agent und sichere Dialogcontroller."""
     return VoiceTurnCallbacks(
         partial(_listen_for_user_text, listener),
-        partial(_handle_user_turn, agent, speech, controllers),
+        partial(
+            _handle_user_turn,
+            agent,
+            speech,
+            controllers,
+            diagnostics=diagnostics,
+        ),
         lambda: controllers.awaiting_confirmation,
         controllers.cancel_pending,
         partial(_acknowledge_follow_up_end, speech),
@@ -216,6 +257,7 @@ def _print_voice_intro() -> None:
     print("Controlled movements require a separate spoken yes.")
     print("Say 'Mit Ausdruck' for confirmed head and eye expression.")
     print("Say 'Schlage eine passende Aktion vor' for a reviewed suggestion.")
+    print("Say 'Erinnerung speichern: ...' for confirmed local memory.")
     print("Say 'Vector beenden' to end the session.")
 
 
@@ -250,10 +292,23 @@ def _create_conversation_controllers(
 ) -> _ConversationControllers:
     """Setzt die optionalen Tool- und Ausdruckscontroller einer Sitzung zusammen."""
     return _ConversationControllers(
+        _create_memory_conversation(agent),
         _create_tool_conversation(agent),
         _create_expression_conversation(agent, speech),
         _create_contextual_tool_conversation(agent),
     )
+
+
+def _create_memory_conversation(
+    agent: Agent,
+) -> ControlledMemoryConversation | None:
+    """Erzeugt den Merkdialog nur mit registriertem lokalen Schreibwerkzeug."""
+    registry = getattr(agent, "tool_registry", None)
+    if not isinstance(registry, ToolRegistry):
+        return None
+    if MEMORY_TOOL_NAME not in {item.name for item in registry.definitions()}:
+        return None
+    return ControlledMemoryConversation(agent)
 
 
 def _create_expression_conversation(
@@ -291,74 +346,35 @@ def _handle_user_turn(
     speech: VectorSpeech,
     controllers: _ConversationControllers,
     user_text: str,
+    diagnostics: StructuredDiagnosticReporter | None = None,
 ) -> bool:
     """Leitet einen Nutzerturn geordnet durch Befehle und Dialoggrenzen."""
-    if _handle_tool_turn(controllers.tools, speech, user_text):
-        _cancel_pending(controllers.expression, controllers.contextual)
+    trace = ResponseLatencyTrace(diagnostics)
+    if handle_tool_turn(controllers.tools, speech, user_text, trace):
+        _cancel_pending(
+            controllers.memory,
+            controllers.expression,
+            controllers.contextual,
+        )
         return False
-    if _handle_expression_turn(controllers.expression, speech, user_text):
+    if handle_tool_turn(controllers.memory, speech, user_text, trace):
+        _cancel_pending(
+            controllers.expression,
+            controllers.contextual,
+        )
+        return False
+    if handle_expression_turn(controllers.expression, speech, user_text, trace):
         _cancel_pending(controllers.contextual)
         return False
-    if _handle_contextual_tool_turn(controllers.contextual, speech, user_text):
+    if handle_contextual_tool_turn(
+        controllers.contextual,
+        speech,
+        user_text,
+        trace,
+    ):
         _cancel_pending(controllers.expression)
         return False
-    return respond_and_speak(agent, speech, user_text)
-
-
-def _handle_tool_turn(
-    controller: ControlledToolConversation | None,
-    speech: VectorSpeech,
-    user_text: str,
-) -> bool:
-    """Verarbeitet einen kontrollierten Toolturn und spricht dessen Ergebnis."""
-    if controller is None:
-        return False
-    result = controller.handle(user_text)
-    if not result.handled:
-        return False
-    if result.message:
-        print(f"Vector: {result.message}")
-    if result.speak and result.message:
-        _speak_answer(speech, result.message)
-    return True
-
-
-def _handle_expression_turn(
-    controller: ControlledExpressionConversation | None,
-    speech: VectorSpeech,
-    user_text: str,
-) -> bool:
-    """Verarbeitet einen bestätigten Ausdrucksturn samt sicherer Ausgabe."""
-    if controller is None:
-        return False
-    result = controller.handle(user_text)
-    if not result.handled:
-        return False
-    if result.message:
-        print(f"Vector: {result.message}")
-    if result.speak and result.message:
-        _speak_answer(speech, result.message)
-    if result.delivery is not None and not result.delivery.speech_completed:
-        print("Vector could not play the prepared response.")
-    return True
-
-
-def _handle_contextual_tool_turn(
-    controller: ControlledContextualToolConversation | None,
-    speech: VectorSpeech,
-    user_text: str,
-) -> bool:
-    """Verarbeitet einen geprüften kontextbezogenen Toolvorschlag."""
-    if controller is None:
-        return False
-    result = controller.handle(user_text)
-    if not result.handled:
-        return False
-    if result.message:
-        print(f"Vector: {result.message}")
-    if result.speak and result.message:
-        _speak_answer(speech, result.message)
-    return True
+    return respond_and_speak(agent, speech, user_text, trace)
 
 
 def _cancel_pending(*controllers) -> None:

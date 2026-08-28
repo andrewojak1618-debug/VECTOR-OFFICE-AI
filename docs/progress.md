@@ -1127,3 +1127,55 @@ Die deutsche TTS wurde schrittweise verbessert:
   lokale Roadmap-Zusammenfassung verständlich wiedergegeben
 - 773 automatisierte Tests, Python-Kompilierung, strikten MkDocs-Bau und
   `git diff --check` bestanden
+
+## Karte 44 – Antwortlatenz und TTS-Übergänge inhaltsfrei messen
+
+- sequenzielle Messpunkte für Antwortstart, Vorbereitung, Wiedergabestart,
+  Wiedergabeende und vollständigen Turn ergänzt
+- monotone Zeitmessung auf Millisekunden, `active`, `success` und `failed`
+  begrenzt
+- Fragen, Antworten, Transkripte, Dokumente, Audiodaten, Pfade und Secrets aus
+  der Messschnittstelle ausgeschlossen
+- normale Modellantworten, kontrollierte Toolantworten und gesprochene
+  Bestätigungen an dieselbe Diagnosegrenze angebunden
+- kontrollierte Turn-Ausgabe aus `application/conversation.py` ausgelagert und
+  die verbindliche Grenze von weniger als 400 Modulzeilen wiederhergestellt
+- argumentlosen Bericht `python -m diagnostics.response_latency_report`
+  ergänzt; unbekannte Ereignisse und Inhaltsfelder gelangen nicht in die
+  Ausgabe
+- 779 automatisierte Tests und Python-Kompilierung bestanden
+- vollständigen realen Voice- und TTS-Messlauf erfasst: 21.453 Millisekunden
+  Vorbereitung, 6.719 Millisekunden Wiedergabe und 28.172 Millisekunden
+  Gesamtzeit; damit ist die Messgrundlage für spätere Optimierungen vorhanden
+
+## Karte 42 – Kontrollierte lokale Erinnerungen vorbereiten
+
+- vorhandene SQLite-Memory-Architektur und bestätigten Agentenkontext bewahrt
+- `memory.remember_confirmed` als veränderndes Registry-Tool mit genau einem
+  sensiblen Textparameter ergänzt
+- explizite Sprachpräfixe `Merke dir …` und `Bitte merke dir …` auf höchstens
+  240 einzeilige Zeichen begrenzt
+- real beobachtete WirePod-Variante `merkt ihr …` reproduziert und eng auf
+  denselben bestätigungspflichtigen Merkdialog abgebildet
+- zweite reale WirePod-Variante `jacke dir …` reproduziert und ebenfalls nur
+  auf diesen bestätigungspflichtigen Merkdialog begrenzt
+- dritte reale WirePod-Variante `merkel dir …` reproduziert und den stabileren
+  festen Alias `Erinnerung speichern: …` für den physischen Test ergänzt
+- vorgeschlagenen Inhalt bis zur Entscheidung nur im Arbeitsspeicher gehalten
+  und aus Bestätigungsfrage, Toolausgabe, TTS und Diagnosen ausgeschlossen
+- Speicherung erst nach getrenntem eindeutigem Ja im vorhandenen lokalen
+  Fünf-Sekunden-Folgefenster erlaubt
+- Nein, Abbruch, Zeitüberschreitung und Sitzungsende verwerfen den Vorschlag
+  ohne Datenbankänderung
+- Inhalt im Tool-Audit unabhängig vom Ergebnis als `[REDACTED]` behandelt
+- OpenAI, Ollama und freie Kategorien, Quellen, Pfade oder IDs vom Schreibpfad
+  ausgeschlossen
+- Notfallstopp erhält auch während eines offenen Erinnerungsvorschlags Vorrang
+- 792 automatisierte Tests, Python-Kompilierung, strikten MkDocs-Bau und
+  `git diff --check` bestanden
+- bevorzugten Alias `Erinnerung speichern: …` am physischen Vector erkannt,
+  wakeword-freies Ja angenommen und genau einen lokalen Eintrag gespeichert
+- gespeichertes Codewort anschließend über eine anders formulierte Frage aus
+  dem bestätigten Gedächtniskontext korrekt und verständlich wiedergegeben
+- Datenbankzähler und redigiertes Tool-Audit mit jeweils genau einem
+  erfolgreichen Voice-Memory-Eintrag inhaltsfrei verifiziert

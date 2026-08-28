@@ -308,6 +308,21 @@ Der feste Sprachbefehl `Gedächtnis Status` läuft ohne OpenAI, Ollama oder ande
 Netzwerkzugriffe und benötigt keine Bestätigung. Nutzer und Modell können weder
 Suchtext noch Memory-ID, Datenbankpfad oder Kategorie ergänzen.
 
+## Bestätigte lokale Erinnerung
+
+`tools/memory_write.py` registriert `memory.remember_confirmed` als veränderndes
+Werkzeug mit genau einem sensiblen Textparameter. Der vorgeschlagene Inhalt
+bleibt bis zur getrennten Ja-Nein-Entscheidung ausschließlich im Arbeitsspeicher
+von `application/memory_conversation.py`. Die Bestätigungsfrage wiederholt ihn
+nicht. Bei Ablehnung, Abbruch, unklarer Antwort oder Ablauf des lokalen
+Fünf-Sekunden-Fensters entsteht kein Datenbankeintrag.
+
+Nach einem eindeutigen Ja validiert die Registry höchstens 240 einzeilige
+Zeichen und speichert genau einmal mit der Herkunft `user-confirmed-voice`.
+Toolausgabe und Sprachantwort enthalten weder Inhalt noch Memory-ID. Das Audit
+ersetzt den Parameter mit `[REDACTED]`; Modellprovider und Providerdiagnosen sind
+an Vorbereitung, Bestätigung und Speicherung nicht beteiligt.
+
 ## Lokaler Roadmapstatus
 
 `tools/roadmap_status.py` registriert `development.next_roadmap_item` mit

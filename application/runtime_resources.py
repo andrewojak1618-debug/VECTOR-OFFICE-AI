@@ -21,6 +21,7 @@ from tools.latest_tool_status import (
     register_latest_tool_status_tool,
 )
 from tools.memory_status import register_local_memory_status_tool
+from tools.memory_write import register_confirmed_memory_write_tool
 from tools.office import register_office_tools
 from tools.project_checks import register_core_project_test_tool
 from tools.project_directories import register_project_directory_open_tool
@@ -46,6 +47,7 @@ def _create_tool_registry(
     ollama_checker=None,
     library_status_reader=None,
     memory_status_reader=None,
+    memory_writer=None,
     document_summarizer=None,
 ) -> ToolRegistry:
     """Registriert ausschließlich ausdrücklich geprüfte Produktivwerkzeuge."""
@@ -58,6 +60,7 @@ def _create_tool_registry(
         ollama_checker,
         library_status_reader,
         memory_status_reader,
+        memory_writer,
     )
     return registry
 
@@ -107,6 +110,7 @@ def _register_optional_status_tools(
     ollama_checker,
     library_status_reader,
     memory_status_reader,
+    memory_writer,
 ) -> None:
     """Registriert lokale Statuswerkzeuge nur mit vollständigen Abhängigkeiten."""
     if (wirepod_checker is None) != (ollama_checker is None):
@@ -121,6 +125,8 @@ def _register_optional_status_tools(
         register_local_library_status_tool(registry, library_status_reader)
     if memory_status_reader is not None:
         register_local_memory_status_tool(registry, memory_status_reader)
+    if memory_writer is not None:
+        register_confirmed_memory_write_tool(registry, memory_writer)
 
 
 def _create_audit_store(settings) -> SQLiteToolAuditStore | None:

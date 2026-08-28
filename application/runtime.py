@@ -109,6 +109,7 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
         ollama_status.is_available,
         library.list_document_statuses,
         memory_store.status,
+        memory_store.remember,
         _create_document_summarizer(settings, diagnostics),
     )
     return _create_agent(
@@ -286,10 +287,10 @@ def _run_input_mode(
     """Startet ausschließlich den konfigurierten Konsolen- oder WirePod-Eingabemodus."""
     _report_input_started(diagnostics, mode)
     if mode.input_mode == "console":
-        run_conversation(agent, speech)
+        run_conversation(agent, speech, diagnostics)
         return
     if mode.input_mode == "wirepod":
-        _run_wirepod_input(settings, agent, speech, connections)
+        _run_wirepod_input(settings, agent, speech, connections, diagnostics)
         return
     print("INPUT_MODE must be either 'console' or 'wirepod'.")
     diagnostics.emit(
@@ -312,7 +313,7 @@ def _report_input_started(diagnostics, mode) -> None:
     )
 
 
-def _run_wirepod_input(settings, agent, speech, connections) -> None:
+def _run_wirepod_input(settings, agent, speech, connections, diagnostics=None) -> None:
     """Startet die private WirePod-Transkription mit lokaler Verbindungsaufsicht."""
     listener = WirePodTranscriptListener(
         settings.WIREPOD_HOST,
@@ -332,6 +333,7 @@ def _run_wirepod_input(settings, agent, speech, connections) -> None:
             "VOICE_CONVERSATION_FOLLOWUP",
             True,
         ),
+        diagnostics=diagnostics,
     )
 
 

@@ -17,6 +17,7 @@ from application.runtime import (
 )
 from application.connection_supervisor import ConnectionSupervisor
 from brain.ollama_runtime import OllamaRuntime
+from memory.models import MemoryEntry
 from vector.client import VectorClient
 
 
@@ -64,6 +65,13 @@ class RuntimeModeTests(unittest.TestCase):
             ollama_checker=lambda: True,
             library_status_reader=lambda: (),
             memory_status_reader=lambda: None,
+            memory_writer=lambda content, **_values: MemoryEntry(
+                1,
+                content,
+                "fact",
+                "user-confirmed-voice",
+                "now",
+            ),
         )
 
         self.assertEqual(
@@ -81,6 +89,7 @@ class RuntimeModeTests(unittest.TestCase):
                 "development.summarize_project_document",
                 "knowledge.library_status",
                 "memory.local_status",
+                "memory.remember_confirmed",
                 "office.local_datetime",
                 "research.python_latest_version",
                 "research.python_source_status",
@@ -247,7 +256,13 @@ class RuntimeModeTests(unittest.TestCase):
             connections,
         )
 
-        run_input.assert_called_once_with(settings, agent, speech, connections)
+        run_input.assert_called_once_with(
+            settings,
+            agent,
+            speech,
+            connections,
+            diagnostics,
+        )
 
     @patch("application.runtime.run_voice_conversation")
     @patch("application.runtime.create_local_follow_up_capture")
@@ -288,6 +303,7 @@ class RuntimeModeTests(unittest.TestCase):
             follow_up=create_follow_up.return_value,
             follow_up_timeout=5,
             conversation_follow_up=True,
+            diagnostics=None,
         )
 
     @patch("application.runtime.create_local_follow_up_capture")

@@ -8,6 +8,18 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ### Hinzugefügt
 
+- inhaltsfreie Antwort- und TTS-Latenzereignisse sowie ein lokaler Bericht mit
+  ausschließlich festen Zeitwerten und Ergebnisstatus
+- bestätigungspflichtiger Sprachweg `Merke dir, dass …` für genau eine lokale
+  Erinnerung mit inhaltsfreier Rückfrage und redigiertem Tool-Audit
+- beobachtete WirePod-Transkription `merkt ihr …` als begrenzte Variante des
+  weiterhin separat zu bestätigenden Erinnerungsvorschlags abgesichert
+- beobachtete WirePod-Transkription `jacke dir …` derselben engen und
+  bestätigungspflichtigen Memory-Absicht zugeordnet
+- stabilen festen Sprachalias `Erinnerung speichern: …` ergänzt und die
+  beobachtete Variante `merkel dir …` kontrolliert abgesichert
+- bestätigte lokale Speicherung und späteren inhaltlichen Abruf am physischen
+  Vector erfolgreich abgenommen
 - firmwarefreies lokales Fünf-Sekunden-Antwortfenster über den deutschen
   Windows-Erkenner für kontrollierte Ja-Nein-Fragen ohne wiederholtes Wakeword
 - konservative Erkennung natürlicher Ja- und Nein-Sätze mit Vorrang für

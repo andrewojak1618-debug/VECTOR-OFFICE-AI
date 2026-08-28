@@ -11,6 +11,7 @@ from brain.response_quality import (
     ProviderResponseValidationError,
     safe_spoken_response,
 )
+from diagnostics.response_latency import ResponseLatencyTrace
 from vector.speech import (
     PreparedSpeech,
     SpeechProviderNotice,
@@ -48,8 +49,10 @@ def respond_and_speak(
     agent: Agent,
     speech: VectorSpeech,
     user_text: str,
+    trace: ResponseLatencyTrace | None = None,
 ) -> bool:
     """Erzeugt eine Antwort und gibt sie über Vector wieder."""
+    trace = trace or ResponseLatencyTrace(None)
     print("Thinking...")
     try:
         prepared = run_with_thinking(
@@ -57,25 +60,35 @@ def respond_and_speak(
             speech,
         )
     except ProviderResponseValidationError:
+        trace.prepared()
         _speak_provider_notice(agent, speech)
         print(f"Vector: {SAFE_PROVIDER_REPLACEMENT}")
-        return speak_answer(speech, SAFE_PROVIDER_REPLACEMENT)
+        completed = speak_answer(speech, SAFE_PROVIDER_REPLACEMENT, trace=trace)
+        trace.finish(completed)
+        return completed
     except (RuntimeError, ValueError) as exc:
         _speak_provider_notice(agent, speech)
         print(f"Brain request failed: {exc}")
+        trace.finish(False)
         return False
+    trace.prepared()
     print(f"Vector: {prepared.text}")
     _speak_provider_notice(agent, speech)
-    return _play_answer(speech, prepared)
+    completed = _play_answer(speech, prepared, trace)
+    trace.finish(completed)
+    return completed
 
 
 def speak_answer(
     speech: VectorSpeech,
     answer: str,
     style: SpeechStyle | None = None,
+    trace: ResponseLatencyTrace | None = None,
 ) -> bool:
     """Spricht eine Antwort und meldet Wiedergabefehler ohne sensible Details."""
     spoken_text = safe_spoken_response(answer)
+    if trace is not None:
+        trace.speech_started()
     try:
         completed = (
             speech.say(spoken_text)
@@ -84,6 +97,8 @@ def speak_answer(
         )
     except (OSError, RuntimeError, TypeError, ValueError):
         completed = False
+    if trace is not None:
+        trace.speech_finished(completed)
     if completed:
         return True
     print(VECTOR_UNAVAILABLE_MESSAGE)
@@ -109,15 +124,23 @@ def _prepare_answer(
     return _PreparedAnswer(answer, style, audio)
 
 
-def _play_answer(speech: VectorSpeech, prepared: _PreparedAnswer) -> bool:
+def _play_answer(
+    speech: VectorSpeech,
+    prepared: _PreparedAnswer,
+    trace: ResponseLatencyTrace | None = None,
+) -> bool:
     """Spielt vorbereitetes Audio oder kontrolliert die direkte Sprachausgabe ab."""
     if prepared.audio is None:
-        return speak_answer(speech, prepared.text, prepared.style)
+        return speak_answer(speech, prepared.text, prepared.style, trace)
+    if trace is not None:
+        trace.speech_started()
     try:
         completed = bool(speech.play_prepared(prepared.audio))
     except (OSError, RuntimeError, TypeError, ValueError):
         prepared.audio.close()
         completed = False
+    if trace is not None:
+        trace.speech_finished(completed)
     if not completed:
         print(VECTOR_UNAVAILABLE_MESSAGE)
     return completed
