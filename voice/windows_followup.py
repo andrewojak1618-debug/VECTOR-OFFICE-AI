@@ -40,16 +40,38 @@ try {
     ))
     $builder = [System.Speech.Recognition.GrammarBuilder]::new($choices)
     $builder.Culture = $recognizer.Culture
-    $engine.LoadGrammar([System.Speech.Recognition.Grammar]::new($builder))
+    $confirmationGrammar = [System.Speech.Recognition.Grammar]::new($builder)
+    $conversationChoices = [System.Speech.Recognition.Choices]::new()
+    $conversationChoices.Add([string[]]@(
+        'danke', 'danke dir', 'dankeschön', 'vielen dank',
+        'das reicht', 'stopp'
+    ))
+    $conversationBuilder = [System.Speech.Recognition.GrammarBuilder]::new(
+        $conversationChoices
+    )
+    $conversationBuilder.Culture = $recognizer.Culture
+    $conversationControlGrammar = [System.Speech.Recognition.Grammar]::new(
+        $conversationBuilder
+    )
+    $conversationControlGrammar.Priority = 127
     [Console]::Out.WriteLine('READY')
     [Console]::Out.Flush()
     while ($true) {
         $command = [Console]::In.ReadLine()
         if ($null -eq $command -or $command -eq 'STOP') { break }
-        if ($command -notmatch '^CAPTURE ([1-9][0-9]{2,4})$') { continue }
-        $milliseconds = [int]$Matches[1]
+        if ($command -notmatch '^CAPTURE (CONFIRMATION|CONVERSATION) ([1-9][0-9]{2,4})$') { continue }
+        $mode = $Matches[1]
+        $milliseconds = [int]$Matches[2]
         if ($milliseconds -lt 1000 -or $milliseconds -gt 10000) { continue }
         try {
+            $engine.UnloadAllGrammars()
+            if ($mode -eq 'CONVERSATION') {
+                $engine.LoadGrammar($conversationControlGrammar)
+                $engine.LoadGrammar([System.Speech.Recognition.DictationGrammar]::new())
+            }
+            else {
+                $engine.LoadGrammar($confirmationGrammar)
+            }
             $engine.SetInputToDefaultAudioDevice()
             [Console]::Out.WriteLine('LISTENING')
             [Console]::Out.Flush()
@@ -111,11 +133,14 @@ class WindowsSpeechFollowUpCapture:
         self.close()
         return False
 
-    def capture(self, timeout: float) -> str | None:
+    def capture(self, timeout: float, free_text: bool = False) -> str | None:
         """Erfasst unmittelbar eine kurze Antwort über den vorgewärmten Erkenner."""
         if not _valid_timeout(timeout):
             raise ValueError("Follow-up timeout must be between 1 and 10 seconds.")
-        if not self.prepare() or not self._write_command(_capture_command(timeout)):
+        if not isinstance(free_text, bool):
+            raise TypeError("Follow-up mode must be a boolean.")
+        command = _capture_command(timeout, free_text)
+        if not self.prepare() or not self._write_command(command):
             raise _unavailable()
         if self._next_response(RESPONSE_GRACE_SECONDS) != "LISTENING":
             self.close()
@@ -213,9 +238,10 @@ def _request_process_stop(process: subprocess.Popen[str]) -> None:
             pass
 
 
-def _capture_command(timeout: float) -> str:
+def _capture_command(timeout: float, free_text: bool) -> str:
     """Formt eine validierte Sekundenfrist in einen festen Millisekundenbefehl um."""
-    return f"CAPTURE {round(timeout * 1000)}"
+    mode = "CONVERSATION" if free_text else "CONFIRMATION"
+    return f"CAPTURE {mode} {round(timeout * 1000)}"
 
 
 def _decode_transcript(payload: str) -> str | None:

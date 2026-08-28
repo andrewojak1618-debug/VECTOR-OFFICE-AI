@@ -52,7 +52,18 @@ class WindowsSpeechFollowUpCaptureTests(unittest.TestCase):
         )
 
         self.assertEqual("Ja, bitte öffnen.", capture.capture(5))
-        self.assertIn("CAPTURE 5000\n", process.stdin.getvalue())
+        self.assertIn("CAPTURE CONFIRMATION 5000\n", process.stdin.getvalue())
+        capture.close()
+
+    def test_free_text_capture_selects_conversation_grammar(self):
+        encoded = base64.b64encode("Warum ist das so?".encode()).decode()
+        process = FakeProcess(("READY", "LISTENING", f"RESULT:{encoded}"))
+        capture = WindowsSpeechFollowUpCapture(
+            process_factory=MagicMock(return_value=process),
+        )
+
+        self.assertEqual("Warum ist das so?", capture.capture(5, free_text=True))
+        self.assertIn("CAPTURE CONVERSATION 5000\n", process.stdin.getvalue())
         capture.close()
 
     def test_empty_recognition_returns_none(self):
@@ -104,7 +115,9 @@ class WindowsSpeechFollowUpCaptureTests(unittest.TestCase):
         script = _decode_script(command)
         self.assertIn("de-DE", script)
         self.assertIn("ja bitte öffnen", script)
-        self.assertNotIn("DictationGrammar", script)
+        self.assertIn("DictationGrammar", script)
+        self.assertIn("conversationControlGrammar", script)
+        self.assertIn("vielen dank", script)
         capture.close()
 
     def test_close_releases_the_warmed_process(self):
@@ -125,6 +138,8 @@ class WindowsSpeechFollowUpCaptureTests(unittest.TestCase):
         capture = WindowsSpeechFollowUpCapture()
         with self.assertRaises(ValueError):
             capture.capture(11)
+        with self.assertRaises(TypeError):
+            capture.capture(5, free_text="yes")
         with self.assertRaises(ValueError):
             WindowsSpeechFollowUpCapture(culture="en-US").prepare()
 

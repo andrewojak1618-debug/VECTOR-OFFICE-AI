@@ -53,6 +53,7 @@ nav:
   - Persönlichkeit: personality.md
   - Systemabnahme: release-acceptance.md
   - Laufzeitdiagnose: diagnostics.md
+  - Fehler & Lösungen: troubleshooting.md
   - Provider-Sitzungen: provider-sessions.md
   - Verbindungsaufsicht: connections.md
   - Windows-Autostart: windows-startup.md

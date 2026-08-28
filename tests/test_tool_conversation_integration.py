@@ -91,7 +91,7 @@ class RecordingFollowUp:
         self.prepare_calls += 1
         return self.prepared
 
-    def capture(self, timeout):
+    def capture(self, timeout, free_text=False):
         self.capture_timeouts.append(timeout)
         return next(self.transcripts)
 

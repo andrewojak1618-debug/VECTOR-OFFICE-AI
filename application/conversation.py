@@ -1,6 +1,5 @@
 """Console and WirePod conversation loops."""
 
-import re
 import time
 from dataclasses import dataclass
 from functools import partial
@@ -23,9 +22,9 @@ from application.tool_conversation import ControlledToolConversation
 from application.voice_followup import (
     FollowUpCapture,
     VoiceFollowUpWindow,
-    receive_voice_turn,
 )
 from application.voice_recovery import VoiceRecovery
+from application.voice_turn_loop import VoiceTurnCallbacks, run_voice_turns
 from brain.agent import Agent
 from brain.expression_actions import ExpressionActionMapper
 from tools.proposals import (
@@ -50,20 +49,6 @@ TOOL_HELP = (
     "'Mit Ausdruck was bedeutet Freiheit'. Contextual suggestion: "
     "'Schlage eine passende Aktion vor: Ich denke nach'."
 )
-VOICE_EXIT_PHRASES = frozenset({
-    "beende das gespräch",
-    "bitte beenden",
-    "dialog beenden",
-    "gespräch abbrechen",
-    "gespräch beenden",
-    "programm beenden",
-    "vector bitte beenden",
-    "vector beenden",
-    "vektor bitte beenden",
-    "vektor beenden",
-})
-
-
 @dataclass(frozen=True)
 class _ConversationControllers:
     tools: ControlledToolConversation | None
@@ -124,67 +109,76 @@ def run_voice_conversation(
     connections: ConnectionSupervisor | None = None,
     follow_up: FollowUpCapture | None = None,
     follow_up_timeout: float = 5.0,
+    conversation_follow_up: bool = True,
 ) -> None:
     """Führt eine private WirePod-Unterhaltung bis zum Abbruch oder Turnlimit aus."""
     _print_voice_intro()
     controllers = _create_conversation_controllers(agent, speech)
     recovery = _create_voice_recovery(connections, speech)
     follow_up_window = VoiceFollowUpWindow(follow_up, follow_up_timeout)
+    callbacks = _create_voice_turn_callbacks(agent, speech, listener, controllers)
+    _run_voice_session(
+        listener,
+        callbacks,
+        controllers,
+        recovery,
+        follow_up_window,
+        listen_timeout,
+        max_turns,
+        conversation_follow_up,
+    )
+
+
+def _run_voice_session(
+    listener: WirePodTranscriptListener,
+    callbacks: VoiceTurnCallbacks,
+    controllers: _ConversationControllers,
+    recovery: VoiceRecovery,
+    follow_up: VoiceFollowUpWindow,
+    listen_timeout: float,
+    max_turns: int | None,
+    conversation_follow_up: bool,
+) -> None:
+    """Hält Initialisierung, Abbruch und Ressourcenfreigabe zusammen."""
     try:
         if not _prime_voice_listener(listener, recovery):
             return
-        _run_voice_turns(
-            agent,
-            speech,
-            listener,
-            controllers,
+        run_voice_turns(
+            callbacks,
+            follow_up,
+            recovery,
             listen_timeout,
             max_turns,
-            recovery,
-            follow_up_window,
+            conversation_follow_up,
         )
     except KeyboardInterrupt:
         print("\nConversation ended.")
     finally:
         controllers.cancel_pending()
-        follow_up_window.close()
+        follow_up.close()
 
 
-def _run_voice_turns(
+def _create_voice_turn_callbacks(
     agent: Agent,
     speech: VectorSpeech,
     listener: WirePodTranscriptListener,
     controllers: _ConversationControllers,
-    listen_timeout: float,
-    max_turns: int | None,
-    recovery: VoiceRecovery,
-    follow_up: VoiceFollowUpWindow,
-) -> None:
-    """Verarbeitet begrenzt aufeinanderfolgende Spracheingaben und Wiederholungen."""
-    completed_turns = 0
-    failures = 0
-    listen = partial(_listen_for_user_text, listener)
-    while max_turns is None or completed_turns < max_turns:
-        user_text, failures, keep_running = receive_voice_turn(
-            listen,
-            follow_up,
-            recovery,
-            controllers.cancel_pending,
-            listen_timeout,
-            failures,
-        )
-        if not keep_running:
-            return
-        if user_text is None:
-            continue
-        follow_up.consume_transcript()
-        if _is_voice_exit_signal(user_text):
-            print("Conversation ended.")
-            return
-        _handle_user_turn(agent, speech, controllers, user_text)
-        completed_turns += 1
-        if follow_up.update(controllers.awaiting_confirmation):
-            print("Listening for a confirmation without another wakeword...")
+) -> VoiceTurnCallbacks:
+    """Bindet den Voice-Loop an Listener, Agent und sichere Dialogcontroller."""
+    return VoiceTurnCallbacks(
+        partial(_listen_for_user_text, listener),
+        partial(_handle_user_turn, agent, speech, controllers),
+        lambda: controllers.awaiting_confirmation,
+        controllers.cancel_pending,
+        partial(_acknowledge_follow_up_end, speech),
+    )
+
+
+def _acknowledge_follow_up_end(speech: VectorSpeech) -> None:
+    """Bestätigt das lokale Gesprächsende einmalig ohne Modellaufruf."""
+    message = "Gern."
+    print(f"Vector: {message}")
+    _speak_answer(speech, message)
 
 
 def _create_voice_recovery(
@@ -213,13 +207,6 @@ def _prime_voice_listener(
             if not recovery.retry_failure(attempt):
                 return False
     return False
-
-
-def _is_voice_exit_signal(user_text: str) -> bool:
-    """Erkennt feste gesprochene Signale zum kontrollierten Sitzungsende."""
-    normalized = " ".join(user_text.casefold().strip().split())
-    normalized = re.sub(r"[.!?,;:]+$", "", normalized).strip()
-    return normalized in VOICE_EXIT_PHRASES
 
 
 def _print_voice_intro() -> None:
@@ -304,18 +291,18 @@ def _handle_user_turn(
     speech: VectorSpeech,
     controllers: _ConversationControllers,
     user_text: str,
-) -> None:
+) -> bool:
     """Leitet einen Nutzerturn geordnet durch Befehle und Dialoggrenzen."""
     if _handle_tool_turn(controllers.tools, speech, user_text):
         _cancel_pending(controllers.expression, controllers.contextual)
-        return
+        return False
     if _handle_expression_turn(controllers.expression, speech, user_text):
         _cancel_pending(controllers.contextual)
-        return
+        return False
     if _handle_contextual_tool_turn(controllers.contextual, speech, user_text):
         _cancel_pending(controllers.expression)
-        return
-    respond_and_speak(agent, speech, user_text)
+        return False
+    return respond_and_speak(agent, speech, user_text)
 
 
 def _handle_tool_turn(

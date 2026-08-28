@@ -22,39 +22,60 @@ Leere `intent_system_noaudio`-Ereignisse zählen nicht als Spracheingabe. Damit
 wartet die Anwendung nach einem fehlgeschlagenen Aufnahmeversuch auf den
 nächsten tatsächlichen Text.
 
-## Wakeword-freie Ja-Nein-Antwort
+## Wakeword-freie Bestätigungen und Folgefragen
 
 Stellt ein kontrollierter Tool-, Ausdrucks- oder Kontextdialog eine
-Bestätigungsfrage, öffnet `voice/windows_followup.py` genau einmal das
-Standardmikrofon des Windows-Rechners. Der installierte deutsche
-System-Speech-Erkenner verarbeitet die Antwort vollständig lokal. Vectors
-Firmware und WirePods Remote-Wakeword-Endpunkt werden dafür nicht verändert
-oder aufgerufen. Die Antwort kann unmittelbar ohne ein zweites „Hey Vector“
-gesprochen werden. `application/voice_followup.py` begrenzt dieses Fenster
-standardmäßig auf fünf Sekunden:
+Bestätigungsfrage, öffnet der ausgewählte lokale Folgeaufnahme-Provider genau
+einmal das Standardmikrofon des Windows-Rechners. Standardmäßig verarbeitet
+`voice/vosk_followup.py` die Antwort mit einem lokalen deutschen Vosk-Modell.
+`voice/followup_factory.py` hält die Auswahl zwischen Vosk und dem nur noch für
+Diagnosen verfügbaren Windows-Adapter an einer zentralen Stelle.
+Vectors Firmware und WirePods Remote-Wakeword-Endpunkt werden dafür nicht
+verändert oder aufgerufen. Die Antwort kann unmittelbar ohne ein zweites
+„Hey Vector“ gesprochen werden. `application/voice_followup.py` begrenzt
+dieses Fenster standardmäßig auf fünf Sekunden:
 
 ```env
 VOICE_FOLLOWUP_TIMEOUT=5
 VOICE_FOLLOWUP_LOCAL=true
+VOICE_FOLLOWUP_PROVIDER=vosk
+VOSK_MODEL_PATH=F:\Vosk\models\vosk-model-small-de-0.15
+VOSK_AUDIO_DEVICE=
+VOICE_CONVERSATION_FOLLOWUP=true
 VOICE_FOLLOWUP_MIN_CONFIDENCE=0.15
 ```
 
-Der verborgene Erkennungsprozess wird bereits beim Anwendungsstart einmal
-initialisiert. Zwischen Bestätigungsfragen bleibt das Mikrofon geschlossen; nur
-die geladene deutsche Grammatik bleibt im lokalen Prozess bereit. Nach einer
-Frage muss deshalb kein neuer PowerShell-Prozess mehr anlaufen. Die festen
-Varianten enthalten unter anderem „Ja, bitte öffnen“; anschließend entscheidet
-weiterhin die konservative Ja-Nein-Klassifikation über die Berechtigung.
+Das Vosk-Modell wird beim Anwendungsstart einmal geladen. Zwischen
+Bestätigungsfragen bleibt das Mikrofon geschlossen. Die festen Varianten
+enthalten unter anderem „Ja, bitte öffnen“; anschließend entscheidet weiterhin
+die konservative Ja-Nein-Klassifikation über die Berechtigung.
 Die lokale Erkennungsschwelle liegt nach der physischen Messung bei `0,15`.
 Dieser Wert erteilt keine Autorität: Falsch oder unklar erkannter Text wird von
 der nachgelagerten Wortprüfung weiterhin abgelehnt.
-Freie Windows-Diktaterkennung ist in diesem kurzen Fenster deaktiviert. Der
-Erkenner akzeptiert nur die feste lokale Liste aus eindeutigen Ja-, Nein- und
-Abbruchformulierungen; normale Gespräche bleiben Aufgabe von WirePod.
+`application/voice_turn_loop.py` öffnet nach einer erfolgreich gesprochenen
+normalen Antwort optional genau ein ebenso begrenztes Inhaltsfenster. Nur für
+dieses Fenster verwendet Vosk sein freies deutsches Sprachmodell. Eine
+kurze Folgefrage gelangt in denselben begrenzten Sitzungskontext, ohne erneut
+„Hey Vector“ zu benötigen. Nach jeder weiteren Antwort wird wieder nur ein
+einzelnes Fünf-Sekunden-Fenster geöffnet; außerhalb dieser Fenster bleibt das
+Mikrofon geschlossen. Die vorhandenen lokalen Abschlussregeln erkennen
+`Danke`, `Vielen Dank`, `Dankeschön`, `Danke dir`, `Das reicht` und `Stopp`.
+Eine Dankesform erhält einmalig die feste Antwort
+„Gern.“; sie benötigt keinen Modellaufruf und öffnet kein weiteres Fenster. Die
+übrigen Abschlüsse oder ein Timeout beenden den Folgemodus ebenfalls und kehren
+automatisch zum Wakeword-Betrieb zurück.
+
+Bestätigungen haben stets Vorrang. Sobald eine kontrollierte Aktion auf ein
+Ja oder Nein wartet, wird nur die feste Vosk-Bestätigungsliste verwendet. Der
+erkannte Text erteilt weiterhin keine
+Berechtigung; erst die konservative Klassifikation und die Tool Registry
+entscheiden über genau den vorgemerkten Aufruf. Ein Inhaltsfenster wird nur nach
+einer erfolgreich gesprochenen normalen Antwort angeboten, nicht automatisch
+nach Tool- oder Fehlerausgaben.
 
 Eine erkannte Antwort beendet das Fenster sofort. Bleibt sie aus, werden alle
 offenen Vorschläge ohne Toolausführung verworfen und die Anwendung kehrt zum
-normalen Wakeword-Betrieb zurück. Fehlt der deutsche Windows-Erkenner oder
+normalen Wakeword-Betrieb zurück. Fehlt das deutsche Vosk-Modell oder
 scheitert der lokale Aufnahmeprozess, bleibt die offene Bestätigung erhalten;
 der Nutzer kann sie weiterhin nach einem normalen Wakeword beantworten. Es
 gibt keine automatische Toolwiederholung.
@@ -69,13 +90,15 @@ physischen Vector zusammen mit der wakeword-freien Folgeantwort erfolgreich
 bestätigt. Sie verweist auf dieselbe Kopfaktion und benötigt weiterhin ein
 separates gesprochenes Ja.
 
-Die Folgeaufnahme läuft in einer verborgenen, nicht interaktiven Windows-
-PowerShell und besitzt zusätzlich zur Gesprächsfrist kurze technische
-Abbruchgrenzen für Start und Antwort. Beim Sitzungsende wird der Erkenner
-geschlossen und das Mikrofon freigegeben. Die Anwendung protokolliert weder
-Audio noch Transkript, Rohfehler oder andere Gesprächsinhalte. Der normale
-WirePod-Listener behält unabhängig davon seine begrenzte Wiederherstellung für
-temporäre Verbindungsfehler.
+Beide Folgeaufnahmen laufen direkt im lokalen Python-Prozess und besitzen
+zusätzlich zur Gesprächsfrist kurze technische Abbruchgrenzen. Audioblöcke
+liegen nur flüchtig im Arbeitsspeicher und werden unmittelbar nach Erkennung
+oder Timeout verworfen. Beim Sitzungsende werden Modellreferenzen freigegeben.
+Die Anwendung protokolliert weder Audio noch Transkript, Rohfehler oder andere
+Gesprächsinhalte. Der normale WirePod-Listener behält unabhängig davon seine
+begrenzte Wiederherstellung für temporäre Verbindungsfehler. Der frühere
+Windows-Adapter bleibt mit `VOICE_FOLLOWUP_PROVIDER=windows` nur für gezielte
+Diagnosen verfügbar.
 
 ## Wakeword-Annahme
 
@@ -124,6 +147,10 @@ INPUT_MODE=wirepod
 VOICE_LISTEN_TIMEOUT=120
 VOICE_FOLLOWUP_TIMEOUT=5
 VOICE_FOLLOWUP_LOCAL=true
+VOICE_FOLLOWUP_PROVIDER=vosk
+VOSK_MODEL_PATH=F:\Vosk\models\vosk-model-small-de-0.15
+VOSK_AUDIO_DEVICE=
+VOICE_CONVERSATION_FOLLOWUP=true
 VOICE_FOLLOWUP_MIN_CONFIDENCE=0.15
 VOICE_ALLOW_CLOUD=false
 ```

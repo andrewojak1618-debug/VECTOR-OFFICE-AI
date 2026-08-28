@@ -302,11 +302,10 @@ Benutzer: Ja
 
 Nach einer kontrollierten Ja-Nein-Frage aktiviert die Anwendung nun automatisch
 ein fünf Sekunden langes Antwortfenster über das Standardmikrofon des
-Windows-Rechners. Der installierte deutsche Windows-Erkenner arbeitet lokal;
+Windows-Rechners. Das deutsche Vosk-Modell arbeitet vollständig lokal;
 Vectors Firmware und der inkompatible WirePod-Remote-Wakeword-Endpunkt bleiben
-unberührt. Der Erkenner wird bereits beim Anwendungsstart vorgewärmt und hält das
-Mikrofon zwischen den Fragen geschlossen. Dadurch beginnt die begrenzte Aufnahme
-nach der Bestätigungsfrage ohne einen weiteren PowerShell-Anlauf. Das zweite
+unberührt. Das Modell wird bereits beim Anwendungsstart geladen und das
+Mikrofon bleibt zwischen den Fragen geschlossen. Das zweite
 `Hey Vector` entfällt, eine erkannte Antwort beendet die
 Aufnahme sofort. Bleibt sie aus, wird die offene Aktion ohne Ausführung
 verworfen. Natürliche Antworten wie „Ja, bitte schau nach oben“ und
@@ -315,11 +314,23 @@ während ein widersprüchliches „Ja, doch nicht“ sicher als Ablehnung gilt. 
 die lokale Aufnahme nicht verfügbar, bleibt der bisherige Wakeword-Ablauf als
 sicherer Rückfall erhalten.
 
-Die Windows-Erkennungsschwelle wurde anhand des lokalen Mikrofontests auf `0,15`
+Die lokale Erkennungsschwelle wurde anhand des Mikrofontests auf `0,15`
 kalibriert. Sie ist keine Toolberechtigung: Erst die getrennte, konservative
 Wortprüfung akzeptiert ein eindeutiges Ja und verwirft unklare Fehltexte.
-Freie Windows-Diktaterkennung ist für dieses kurze Sicherheitsfenster
+Freie Vosk-Erkennung ist für dieses kurze Sicherheitsfenster
 deaktiviert; zugelassen ist ausschließlich die feste lokale Ja-/Nein-Grammatik.
+
+Nach einer erfolgreich gesprochenen normalen Antwort kann zusätzlich ein
+einzelnes fünfsekündiges Inhaltsfenster geöffnet werden. Nur in diesem Modus
+verwendet derselbe lokale deutsche Erkenner sein freies Sprachmodell. Damit
+sind kurze inhaltliche Folgefragen ohne erneutes „Hey Vector“ möglich. `Danke`
+wird über eine bevorzugte lokale Kurzgrammatik erkannt und einmalig ohne
+Modellaufruf mit „Gern.“ beantwortet. Auch `Vielen Dank`, `Dankeschön` und
+`Danke dir` gelten als Abschluss. `Das reicht`, ein einzelnes `Stopp` oder der
+Ablauf der Frist schließen das Fenster ebenfalls und
+stellen den normalen Wakeword-Betrieb wieder her. Audio und Transkripte werden
+weiterhin nicht protokolliert. Sobald eine Aktion bestätigt werden muss, hat die
+feste Ja-/Nein-Grammatik Vorrang.
 
 Das Antwortfenster erteilt selbst keine Berechtigung und wählt kein Tool aus.
 Freie Datei- und Ordneraktionen bleiben gesperrt. Ausschließlich sechs fest im
@@ -593,6 +604,16 @@ uv venv --python 3.12
 uv pip install --python .venv\Scripts\python.exe -r requirements.txt
 ```
 
+Für lokale Folgeantworten wird das offizielle deutsche Kleinmodell
+`vosk-model-small-de-0.15` benötigt. Es bleibt außerhalb des Repositorys und
+kann beispielsweise unter `F:\Vosk\models` entpackt werden. Die auf diesem
+System geprüfte ZIP-Datei ist 46.499.967 Byte groß und besitzt den lokalen
+SHA-256-Wert
+`B7E53C90B1F0A38456F4CD62B366ECD58803CD97CD42B06438E2C131713D5E43`.
+Quelle und Modellvarianten sind auf der
+[offiziellen Vosk-Modellseite](https://alphacephei.com/vosk/models) aufgeführt.
+Modelldateien und heruntergeladene Archive dürfen nicht committed werden.
+
 ### Lokale Konfiguration
 
 Kopiere `.env.example` nach `.env` und trage nur deine lokalen Werte ein:
@@ -625,7 +646,11 @@ INPUT_MODE=console
 VOICE_LISTEN_TIMEOUT=120
 VOICE_FOLLOWUP_TIMEOUT=5
 VOICE_FOLLOWUP_LOCAL=true
-VOICE_FOLLOWUP_MIN_CONFIDENCE=0.35
+VOICE_FOLLOWUP_PROVIDER=vosk
+VOSK_MODEL_PATH=F:\Vosk\models\vosk-model-small-de-0.15
+VOSK_AUDIO_DEVICE=
+VOICE_CONVERSATION_FOLLOWUP=true
+VOICE_FOLLOWUP_MIN_CONFIDENCE=0.15
 VOICE_ALLOW_CLOUD=false
 REFLECTION_ENABLED=true
 
@@ -830,6 +855,13 @@ uv pip install --python .venv\Scripts\python.exe -r requirements-docs.txt
 
 Der statische Build wird mit `.venv\Scripts\python.exe -m mkdocs build`
 erzeugt. Das Ausgabe-Verzeichnis `site/` wird nicht committed.
+
+Bestätigte Störungen, ihre Ursachen, sichere Reparaturen und vorbeugende
+Prüfschritte werden zentral unter
+[`docs/troubleshooting.md`](docs/troubleshooting.md) festgehalten. Dazu gehört
+auch der Fehler, bei dem die registrierte Windows-Komponente
+`Language.Speech~~~de-DE~0.0.1.0` nicht geladen werden konnte und dadurch das
+firmwarefreie Folgefenster vor der Mikrofonaufnahme abbrach.
 
 ### Provider-Status ohne Cloud-Kosten prüfen
 
@@ -1092,8 +1124,9 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
+- ✅ lokalen Vosk-Folgepfad einschließlich „Danke“ ohne erneutes Wakeword physisch bestätigt
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 734 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ 751 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
 
 ## 🗺️ Roadmap
 

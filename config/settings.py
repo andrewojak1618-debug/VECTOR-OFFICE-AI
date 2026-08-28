@@ -20,6 +20,9 @@ DEFAULT_TOOL_AUDIT_RETENTION_DAYS = 30
 DEFAULT_TOOL_AUDIT_MAX_ENTRIES = 1_000
 DEFAULT_DIAGNOSTICS_ENABLED = True
 DEFAULT_DIAGNOSTICS_MAX_BYTES = 1_000_000
+DEFAULT_VOSK_MODEL_PATH = str(
+    BASE_DIR / "data" / "models" / "vosk-model-small-de-0.15"
+)
 
 load_dotenv(BASE_DIR / ".env", override=True)
 
@@ -161,6 +164,26 @@ class Settings:
 
     VOICE_FOLLOWUP_LOCAL = get_bool_setting(
         "VOICE_FOLLOWUP_LOCAL",
+        default=True,
+    )
+
+    VOICE_FOLLOWUP_PROVIDER = os.getenv(
+        "VOICE_FOLLOWUP_PROVIDER",
+        "vosk",
+    )
+
+    VOSK_MODEL_PATH = os.getenv(
+        "VOSK_MODEL_PATH",
+        DEFAULT_VOSK_MODEL_PATH,
+    )
+
+    VOSK_AUDIO_DEVICE = os.getenv(
+        "VOSK_AUDIO_DEVICE",
+        "",
+    )
+
+    VOICE_CONVERSATION_FOLLOWUP = get_bool_setting(
+        "VOICE_CONVERSATION_FOLLOWUP",
         default=True,
     )
 

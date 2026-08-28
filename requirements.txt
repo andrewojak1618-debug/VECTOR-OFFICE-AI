@@ -2,3 +2,5 @@ python-dotenv
 httpx
 openai==3.0.0
 wirepod-vector-sdk==0.8.1
+vosk==0.3.45
+sounddevice==0.5.6

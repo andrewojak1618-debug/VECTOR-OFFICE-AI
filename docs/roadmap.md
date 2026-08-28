@@ -17,6 +17,19 @@
 - ✅ Changelog und Versionsstand für `0.2.0-rc.2` festgelegt
 - ✅ geprüften annotierten Tag `v0.2.0-rc.2` gesetzt
 
+## RC3 – Natürlicher und kontrollierter Alltagsdialog
+
+- ✅ Karte 39: begrenzte inhaltliche Folgefragen ohne erneutes Wakeword implementieren
+- ✅ Karte 39: defekten Windows-Erkenner durch lokalen Vosk-Adapter ersetzen
+- ✅ Karte 39: mehrturnigen Vosk-Folgepfad am physischen Vector abnehmen
+- ⏳ Karte 40: Intent-Erkennung und beobachtete Sprachvarianten absichern
+- ⏳ Karte 41: freigegebene Projektdokumente lokal zusammenfassen
+- ⏳ Karte 44: Antwortlatenz und TTS-Übergänge inhaltsfrei messen
+- ⏳ Karte 42: kontrollierte lokale Erinnerungen vorbereiten
+- ⏳ Karte 43: ehrliches persönliches Gesprächsprofil erweitern
+- ⏳ Karte 45: sichere lokale Statusübersicht planen
+- ⏳ Karte 46: RC3 vollständig abnehmen und `v0.2.0-rc.3` setzen
+
 ## Release-Stabilisierung
 
 - ✅ zentrale mehrstufige Systemabnahme implementieren

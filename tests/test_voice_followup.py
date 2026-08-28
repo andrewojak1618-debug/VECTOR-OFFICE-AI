@@ -21,8 +21,9 @@ class RecordingCapture:
         self.prepare_calls += 1
         return self.prepared
 
-    def capture(self, timeout):
+    def capture(self, timeout, free_text=False):
         self.capture_timeouts.append(timeout)
+        self.free_text = free_text
         return self.transcript
 
     def close(self):
@@ -52,6 +53,43 @@ class VoiceFollowUpWindowTests(unittest.TestCase):
         self.assertFalse(window.update(awaiting_confirmation=True))
         self.assertEqual("normal", window.listen(listener, 120))
         listener.assert_called_once_with(120)
+
+    def test_conversational_window_uses_the_same_bounded_capture(self):
+        capture = RecordingCapture(transcript="warum denkst du das")
+        window = VoiceFollowUpWindow(capture, timeout=5)
+
+        self.assertTrue(
+            window.update(
+                awaiting_confirmation=False,
+                allow_conversation=True,
+            )
+        )
+        self.assertTrue(window.is_conversational)
+
+        self.assertEqual("warum denkst du das", window.listen(MagicMock(), 120))
+        self.assertEqual([5], capture.capture_timeouts)
+        self.assertTrue(capture.free_text)
+
+    def test_confirmation_has_priority_over_conversation_window(self):
+        window = VoiceFollowUpWindow(RecordingCapture(), timeout=5)
+
+        window.update(
+            awaiting_confirmation=True,
+            allow_conversation=True,
+        )
+
+        self.assertTrue(window.is_confirmation)
+        self.assertFalse(window.is_conversational)
+
+    def test_natural_thanks_variants_end_only_the_content_window(self):
+        window = VoiceFollowUpWindow(RecordingCapture(), timeout=5)
+        for text in ("Danke.", "Vielen Dank", "Dankeschön", "Danke dir"):
+            with self.subTest(text=text):
+                window.update(False, allow_conversation=True)
+                self.assertTrue(window.is_end_signal(text))
+
+        window.update(True, allow_conversation=False)
+        self.assertFalse(window.is_end_signal("Danke"))
 
     def test_capture_failure_falls_back_to_default_listener(self):
         capture = RecordingCapture()

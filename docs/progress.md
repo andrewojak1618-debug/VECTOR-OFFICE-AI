@@ -1035,3 +1035,35 @@ Die deutsche TTS wurde schrittweise verbessert:
 - genau einen erfolgreichen Aufruf von `development.latest_tool_status` ohne
   Argumente im redigierten lokalen Tool-Audit bestätigt
 - physische Sprachabnahme vollständig abgeschlossen
+
+## Karte 39 – Mehrturnige Gespräche erweitern
+
+- vorhandenes fünfsekündiges lokales Folgefenster auf normale Antworten
+  erweitert, ohne eine dauerhafte Mikrofonaufnahme einzuführen
+- Bestätigungs- und Inhaltsmodus in `application/voice_followup.py` eindeutig
+  getrennt; offene Ja-Nein-Entscheidungen besitzen immer Vorrang
+- Turn-Steuerung in `application/voice_turn_loop.py` unter den verbindlichen
+  Funktions- und Modulgrenzen gekapselt
+- feste Bestätigungsgrammatik und freie deutsche Diktiergrammatik im verborgenen
+  Windows-Erkenner nur passend zum aktuellen Modus geladen
+- `Danke` als lokalen Abschluss mit der festen modellfreien Antwort „Gern.“
+  ergänzt; kurze Dankesvarianten über eine bevorzugte feste Windows-Grammatik
+  gegenüber der freien Diktiergrammatik stabilisiert
+- `Das reicht` und ein einzelnes `Stopp` schließen ebenfalls
+- Timeout kehrt ohne Modellaufruf zum normalen Wakeword-Betrieb zurück
+- Tool Registry, gesonderte Bestätigung und konservative Ja-Nein-Klassifikation
+  unverändert als Berechtigungsgrenze erhalten
+- Audio, Transkripte und Gesprächsinhalte weiterhin aus Diagnosen und Logs
+  ausgeschlossen
+- 742 automatisierte Tests einschließlich Dialog-, Windows-Erkenner-,
+  Runtime-, Datenschutz- und Strukturpfaden bestanden
+- Windows-Speech-Capability kontrolliert neu installiert und nach Neustart
+  weiterhin mit `PREPARE=False` als ungeeignet bestätigt
+- lokalen Vosk-Adapter mit begrenzter Bestätigungsgrammatik und freiem
+  Inhaltsmodus ergänzt
+- offizielles deutsches Kleinmodell außerhalb von Git auf Laufwerk F: abgelegt
+- Vosk-Modell und Standardmikrofon isoliert mit `PREPARE=True` vorbereitet
+- normale Wakeword-Frage am physischen Vector erfolgreich beantwortet
+- anschließendes `Danke` innerhalb des fünfsekündigen Vosk-Fensters ohne
+  erneutes Wakeword erkannt und unmittelbar mit „Gern.“ beantwortet
+- physische Vosk-Sprachabnahme reibungslos abgeschlossen

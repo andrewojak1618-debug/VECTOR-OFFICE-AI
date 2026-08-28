@@ -49,6 +49,24 @@ class SequenceVoiceListener:
         return SimpleNamespace(text=event) if event is not None else None
 
 
+class SequenceFollowUpCapture:
+    def __init__(self, transcripts=()):
+        self.transcripts = iter(transcripts)
+        self.capture_timeouts = []
+        self.close_count = 0
+
+    def prepare(self):
+        return True
+
+    def capture(self, timeout, free_text=False):
+        self.capture_timeouts.append(timeout)
+        self.free_text = free_text
+        return next(self.transcripts)
+
+    def close(self):
+        self.close_count += 1
+
+
 class FakeExpressionConversation:
     def __init__(self):
         self.cancel_count = 0
@@ -251,6 +269,86 @@ class VoiceConversationRecoveryTests(unittest.TestCase):
             run_voice_conversation(self.agent, self.speech, listener)
 
         self.assertEqual(1, expression.cancel_count)
+
+    def test_ordinary_answer_accepts_one_follow_up_without_wakeword(self):
+        listener = SequenceVoiceListener(["was bedeutet freiheit"])
+        follow_up = SequenceFollowUpCapture(["warum denkst du das"])
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                max_turns=2,
+                follow_up=follow_up,
+            )
+
+        self.assertEqual(
+            ["was bedeutet freiheit", "warum denkst du das"],
+            self.agent.requests,
+        )
+        self.assertEqual(1, listener.wait_count)
+        self.assertEqual([5.0], follow_up.capture_timeouts)
+
+    def test_thanks_closes_follow_up_without_model_request(self):
+        listener = SequenceVoiceListener([
+            "was bedeutet freiheit",
+            "vector beenden",
+        ])
+        follow_up = SequenceFollowUpCapture(["danke"])
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                follow_up=follow_up,
+            )
+
+        self.assertEqual(["was bedeutet freiheit"], self.agent.requests)
+        self.assertEqual(
+            ["Antwort auf: was bedeutet freiheit", "Gern."],
+            self.speech.spoken,
+        )
+        self.assertEqual(2, listener.wait_count)
+        self.assertEqual(1, follow_up.close_count)
+
+    def test_disabled_conversation_follow_up_keeps_wakeword_listener(self):
+        listener = SequenceVoiceListener(["erste frage", "zweite frage"])
+        follow_up = SequenceFollowUpCapture(["nicht verwenden"])
+
+        with patch("sys.stdout", new_callable=io.StringIO):
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                max_turns=2,
+                follow_up=follow_up,
+                conversation_follow_up=False,
+            )
+
+        self.assertEqual(["erste frage", "zweite frage"], self.agent.requests)
+        self.assertEqual(2, listener.wait_count)
+        self.assertEqual([], follow_up.capture_timeouts)
+
+    def test_content_timeout_returns_to_wakeword_without_model_request(self):
+        listener = SequenceVoiceListener([
+            "erste frage",
+            "vector beenden",
+        ])
+        follow_up = SequenceFollowUpCapture([None])
+
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            run_voice_conversation(
+                self.agent,
+                self.speech,
+                listener,
+                follow_up=follow_up,
+            )
+
+        self.assertEqual(["erste frage"], self.agent.requests)
+        self.assertEqual(2, listener.wait_count)
+        self.assertIn("returning to wakeword mode", output.getvalue())
 
 
 if __name__ == "__main__":

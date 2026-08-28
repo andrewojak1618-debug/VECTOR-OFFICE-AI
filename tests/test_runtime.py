@@ -249,12 +249,12 @@ class RuntimeModeTests(unittest.TestCase):
         run_input.assert_called_once_with(settings, agent, speech, connections)
 
     @patch("application.runtime.run_voice_conversation")
-    @patch("application.runtime.WindowsSpeechFollowUpCapture")
+    @patch("application.runtime.create_local_follow_up_capture")
     @patch("application.runtime.WirePodTranscriptListener")
     def test_wirepod_runtime_wires_bounded_follow_up_capture(
         self,
         listener_type,
-        follow_up_type,
+        create_follow_up,
         run_voice,
     ):
         settings = make_settings(
@@ -264,6 +264,7 @@ class RuntimeModeTests(unittest.TestCase):
             VOICE_LISTEN_TIMEOUT=120,
             VOICE_FOLLOWUP_TIMEOUT=5,
             VOICE_FOLLOWUP_LOCAL=True,
+            VOICE_CONVERSATION_FOLLOWUP=True,
             VOICE_FOLLOWUP_MIN_CONFIDENCE=0.42,
         )
         agent = MagicMock()
@@ -276,24 +277,24 @@ class RuntimeModeTests(unittest.TestCase):
             settings.WIREPOD_HOST,
             request_timeout=4.0,
         )
-        follow_up_type.assert_called_once_with(min_confidence=0.42)
-        follow_up_type.return_value.prepare.assert_called_once_with()
+        create_follow_up.assert_called_once_with(settings)
         run_voice.assert_called_once_with(
             agent,
             speech,
             listener_type.return_value,
             listen_timeout=120,
             connections=connections,
-            follow_up=follow_up_type.return_value,
+            follow_up=create_follow_up.return_value,
             follow_up_timeout=5,
+            conversation_follow_up=True,
         )
 
-    @patch("application.runtime.WindowsSpeechFollowUpCapture")
-    def test_local_follow_up_can_be_disabled(self, follow_up_type):
+    @patch("application.runtime.create_local_follow_up_capture")
+    def test_local_follow_up_delegates_to_provider_factory(self, create_follow_up):
         settings = make_settings(VOICE_FOLLOWUP_LOCAL=False)
 
-        self.assertIsNone(_create_follow_up_capture(settings))
-        follow_up_type.assert_not_called()
+        self.assertIs(create_follow_up.return_value, _create_follow_up_capture(settings))
+        create_follow_up.assert_called_once_with(settings)
 
 
 if __name__ == "__main__":

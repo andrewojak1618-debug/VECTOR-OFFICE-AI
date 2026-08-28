@@ -19,7 +19,9 @@ from vector.client import VectorClient
 from vector.sdk_client import VectorSDKClient
 from vector.speech import VectorSpeech
 from vector.speech_factory import create_speech_output
-from voice.windows_followup import WindowsSpeechFollowUpCapture
+from voice.followup_factory import (
+    create_follow_up_capture as create_local_follow_up_capture,
+)
 from voice.wirepod_input import WirePodTranscriptListener
 
 from application.conversation import run_conversation, run_voice_conversation
@@ -304,19 +306,14 @@ def _run_wirepod_input(settings, agent, speech, connections) -> None:
         connections=connections,
         follow_up=follow_up,
         follow_up_timeout=settings.VOICE_FOLLOWUP_TIMEOUT,
+        conversation_follow_up=getattr(
+            settings,
+            "VOICE_CONVERSATION_FOLLOWUP",
+            True,
+        ),
     )
 
 
 def _create_follow_up_capture(settings):
     """Erzeugt den firmwarefreien lokalen Antwortweg nur bei Freigabe."""
-    if not getattr(settings, "VOICE_FOLLOWUP_LOCAL", True):
-        return None
-    capture = WindowsSpeechFollowUpCapture(
-        min_confidence=getattr(
-            settings,
-            "VOICE_FOLLOWUP_MIN_CONFIDENCE",
-            0.15,
-        ),
-    )
-    capture.prepare()
-    return capture
+    return create_local_follow_up_capture(settings)
