@@ -127,6 +127,36 @@ Fordert der Benutzer ausdrücklich eine ausführliche oder detaillierte Antwort,
 wird ausschließlich die Satzgrenze kontrolliert auf maximal acht Sätze
 erweitert.
 
+## Ehrliches persönliches Gesprächsprofil
+
+`brain/personal_profile.py` beantwortet eine kleine feste Menge eindeutiger
+Selbstfragen lokal vor dem Sprachmodell. Das Profil umfasst ausschließlich
+Zustand, Identität, Gefühle, Bewusstsein, Beziehung zum Nutzer, mögliche
+Nutzerurteile und kontrolliertes Lernen. Es verwendet exakte normalisierte
+Fragen und erlaubt nur Satzzeichen-, Leerraum- und Apostrophvarianten. Freie
+Schlüsselwortsuche oder unscharfe Bedeutungsableitung findet nicht statt.
+
+Die festen Antworten folgen denselben Qualitätsregeln wie Providerantworten:
+höchstens zwei kurze vollständige Sätze, keine echten Gefühle, kein Bewusstsein,
+kein verborgenes Urteil und kein autonomes Lernen. Jede lokale Antwort wird im
+normalen flüchtigen Sitzungsverlauf als Nutzer- und Assistententurn gespeichert
+und intern mit der Herkunft `local-profile` sowie `external_data=false`
+gekennzeichnet. Sie erzeugt weder Provideranfrage noch Toolberechtigung, Audit,
+Memory-Eintrag oder dauerhafte Profiländerung.
+
+Fragen mit zusätzlichen Inhalten oder persönlichem Kontext bleiben bewusst beim
+normalen Agenten. Dadurch ersetzt das Profil weder Ollama oder OpenAI noch die
+bestätigten Erinnerungen, sondern stabilisiert nur häufige ehrliche Selbstfragen.
+
+Die Antwort auf `Wie geht es dir?` darf den technischen Bereitschaftszustand
+metaphorisch beschreiben, etwa durch das Bild eines Sonnenaufgangs. Das ist als
+sprachliches Bild gekennzeichnet und keine Behauptung eines inneren Erlebens.
+Die enthaltene Rückfrage öffnet ausschließlich für den unmittelbar folgenden
+Turn ein begrenztes Wohlbefindensfenster. Dort erkennt das Profil feste positive
+und belastete Selbstaussagen des Benutzers und antwortet wertschätzend oder
+unterstützend. Ein Themenwechsel schließt dieses Fenster sofort; freie Deutung,
+Diagnose und dauerhafte Speicherung finden nicht statt.
+
 ## Verbindliche Antwortprüfung
 
 Ein Prompt allein garantiert keine Regelbefolgung. Deshalb prüft

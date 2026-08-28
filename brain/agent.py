@@ -7,6 +7,7 @@ from brain.contracts import KnowledgeLibrary, LanguageModel, MemoryStore
 from brain.context import ChatMessage, ConversationContext
 from brain.emotions import EmotionalStateModel
 from brain.personality import build_runtime_personality
+from brain.personal_profile import PersonalConversationProfile
 from brain.response_quality import (
     ProviderResponsePolicy,
     ValidatedProviderResponse,
@@ -43,6 +44,7 @@ class Agent:
         reflection_policy: ReflectionPolicy | None = None,
         response_policy: ResponseQualityPolicy | None = None,
         provider_response_policy: ProviderResponsePolicy | None = None,
+        personal_profile: PersonalConversationProfile | None = None,
     ):
         """Initialisiert Gespräch, lokales Wissen, Persönlichkeit und kontrollierte Tools."""
         self.language_model = language_model
@@ -60,6 +62,7 @@ class Agent:
             provider_response_policy or ProviderResponsePolicy()
         )
         self.last_provider_response: ValidatedProviderResponse | None = None
+        self.personal_profile = personal_profile or PersonalConversationProfile()
 
     def respond(self, user_text: str) -> str:
         """Erzeugt und speichert eine anhand der Persönlichkeitsregeln validierte Antwort."""
@@ -68,6 +71,9 @@ class Agent:
             raise ValueError("User text must not be empty.")
         checkpoint = self.context.checkpoint()
         self.emotional_state.observe(normalized_text)
+        personal_reply = self.personal_profile.reply(normalized_text)
+        if personal_reply is not None:
+            return self._store_personal_reply(normalized_text, personal_reply.text)
         reflection = self.reflection_policy.prepare(normalized_text)
         self.context.add_user_message(normalized_text)
         messages = self._messages_with_local_context(normalized_text, reflection)
@@ -80,6 +86,17 @@ class Agent:
             self.context.restore(checkpoint)
             raise
         self.context.add_assistant_message(response)
+        return response
+
+    def _store_personal_reply(self, user_text: str, response: str) -> str:
+        """Speichert eine feste lokale Selbstantwort im normalen Sitzungsverlauf."""
+        self.context.add_user_message(user_text)
+        self.context.add_assistant_message(response)
+        self.last_provider_response = ValidatedProviderResponse(
+            response,
+            "local-profile",
+            external_data=False,
+        )
         return response
 
     def execute_tool(

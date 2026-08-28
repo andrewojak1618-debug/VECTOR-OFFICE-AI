@@ -41,8 +41,9 @@ REFLECTIVE_RATE = SPEECH_PROSODY[SpeechStyle.REFLECTIVE].rate
 def normalize_speech_text(text: str) -> str:
     """Überführt modellorientierte Formatierung in eine zusammenhängende Sprechform."""
     normalized = re.sub(r"(?m)^\s*(?:[-*+]|\d+[.)])\s+", "", text)
-    normalized = normalized.replace("—", ", ").replace("–", ", ")
+    normalized = re.sub(r"\s*[—–]\s*", ", ", normalized)
     normalized = re.sub(r"[*_`#]+", "", normalized)
+    normalized = re.sub(r"\s+([,.;:!?])", r"\1", normalized)
     return re.sub(r"\s+", " ", normalized).strip()
 
 

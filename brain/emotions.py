@@ -58,6 +58,8 @@ STANCE_TERMS = {
         "angst",
         "einsam",
         "schwer",
+        "nicht gut",
+        "schlecht",
         "sorge",
         "traurig",
         "überfordert",

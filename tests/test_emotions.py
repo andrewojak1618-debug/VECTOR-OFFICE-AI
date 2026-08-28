@@ -29,6 +29,14 @@ class EmotionalStateModelTests(unittest.TestCase):
         self.assertEqual("keyword:supportive", transition.current.reason)
         self.assertNotIn("traurig", transition.current.reason)
 
+    def test_plain_negative_wellbeing_selects_supportive_stance(self):
+        model = EmotionalStateModel()
+
+        transition = model.observe("Mir geht es nicht gut.")
+
+        self.assertEqual(ConversationStance.SUPPORTIVE, transition.current.stance)
+        self.assertEqual(ExpressionCue.SUPPORTIVE, transition.current.expression_cue)
+
     def test_repeated_signal_never_exceeds_maximum_intensity(self):
         model = EmotionalStateModel()
 

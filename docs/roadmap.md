@@ -26,7 +26,7 @@
 - ✅ Karte 41: freigegebene Projektdokumente lokal zusammenfassen
 - ✅ Karte 44: Antwortlatenz und TTS-Übergänge inhaltsfrei messen
 - ✅ Karte 42: kontrollierte lokale Erinnerungen vorbereiten
-- ⏳ Karte 43: ehrliches persönliches Gesprächsprofil erweitern
+- ✅ Karte 43: ehrliches persönliches Gesprächsprofil erweitern
 - ⏳ Karte 45: sichere lokale Statusübersicht planen
 - ⏳ Karte 46: RC3 vollständig abnehmen und `v0.2.0-rc.3` setzen
 

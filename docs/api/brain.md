@@ -28,6 +28,8 @@
 
 ::: brain.personality
 
+::: brain.personal_profile
+
 ## Kontrolliertes Zustandsmodell
 
 ::: brain.emotions

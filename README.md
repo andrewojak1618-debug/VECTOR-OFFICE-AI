@@ -458,6 +458,21 @@ zusammengefasste Regelverstöße. Dateinamen, Pfade und Quelltexte verlassen die
 Prüfung nicht; der argumentlose Read-only-Aufruf benötigt weder Bestätigung
 noch Sprachmodell.
 
+Eindeutige persönliche Selbstfragen wie `Wie geht es dir?`, `Wer bist du?`,
+`Hast du Gefühle?` oder `Kannst du von mir lernen?` beantwortet Vector über ein
+festes lokales Gesprächsprofil. Die Antworten klingen persönlich und werden im
+normalen Sitzungsverlauf bewahrt, behaupten aber weder Gefühle noch Bewusstsein,
+verborgene Urteile oder autonomes Lernen. Erweiterte und individuelle Fragen
+bleiben beim normalen Sprachmodell; die feste Erkennung leitet keine Bedeutung
+aus bloßen Schlüsselwörtern ab.
+
+Auf die Statusfrage beschreibt Vector seine technische Bereitschaft bildhaft,
+ohne daraus ein eigenes Empfinden abzuleiten. Die anschließende Frage an den
+Benutzer öffnet genau für den nächsten Gesprächsschritt ein lokales Antwortfenster:
+eindeutige Aussagen wie `Mir geht es gut` oder `Mir geht es nicht gut` werden
+positiv beziehungsweise behutsam aufgegriffen. Außerhalb dieses direkten
+Zusammenhangs wird ein beiläufiges `gut` nicht als Gefühlsbericht interpretiert.
+
 ## 🛠️ Technik
 
 - **Python 3.12:** zentraler Application Core

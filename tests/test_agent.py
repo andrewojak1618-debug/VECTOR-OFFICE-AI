@@ -162,7 +162,7 @@ class AgentTests(unittest.TestCase):
         )
         agent = Agent(model)
 
-        response = agent.respond("Wie geht es dir?")
+        response = agent.respond("Nenne deinen aktuellen Systemzustand.")
 
         self.assertEqual(2, len(model.received_batches))
         self.assertIn("sentence_fragment", model.received_batches[1][0].content)

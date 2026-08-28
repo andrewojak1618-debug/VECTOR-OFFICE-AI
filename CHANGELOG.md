@@ -8,6 +8,11 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ### Hinzugefügt
 
+- lokales ehrliches Gesprächsprofil für eindeutig erkannte persönliche
+  Selbstfragen ohne Provideraufruf oder vorgetäuschte Gefühle; bildhafte
+  Bereitschaftsaussage und einmalige lokale Wohlbefindensantwort ergänzt und am
+  physischen Vector erfolgreich abgenommen
+
 - inhaltsfreie Antwort- und TTS-Latenzereignisse sowie ein lokaler Bericht mit
   ausschließlich festen Zeitwerten und Ergebnisstatus
 - bestätigungspflichtiger Sprachweg `Merke dir, dass …` für genau eine lokale
@@ -46,6 +51,15 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   bei einer Zeitüberschreitung der Roadmap-Zusammenfassung
 - physischen Roadmap-Test über `Projektbericht` korrekt und verständlich
   abgeschlossen
+
+### Behoben
+
+- unnatürliche ElevenLabs-Pause durch ein Leerzeichen vor normalisierten Kommas
+  entfernt und die bildhafte Statusantwort sprechfreundlich verkürzt
+- beobachtete WirePod-Fehltranskription `hier geht es dir` als enge Variante der
+  lokalen Statusfrage abgesichert
+- Status- und Wohlbefindenssätze für flüssige Vector-Wiedergabe sprachlich
+  vereinfacht und auf höchstens 16 Wörter begrenzt
 
 ### Sicherheit
 

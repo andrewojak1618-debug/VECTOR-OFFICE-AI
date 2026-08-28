@@ -1179,3 +1179,41 @@ Die deutsche TTS wurde schrittweise verbessert:
   dem bestätigten Gedächtniskontext korrekt und verständlich wiedergegeben
 - Datenbankzähler und redigiertes Tool-Audit mit jeweils genau einem
   erfolgreichen Voice-Memory-Eintrag inhaltsfrei verifiziert
+
+## Karte 43 – Ehrliches persönliches Gesprächsprofil erweitern
+
+- `brain/personal_profile.py` als providerunabhängigen lokalen Antwortpfad
+  ergänzt
+- ausschließlich sieben feste Selbstthemen zugelassen: Zustand, Identität,
+  Gefühle, Bewusstsein, Beziehung, Nutzerurteil und kontrolliertes Lernen;
+  zusätzlich zwei kontextgebundene Wohlbefindensantworten
+- Satzzeichen, Leerraum und Apostrophe normalisiert, aber unscharfe
+  Schlüsselwort- oder Bedeutungsableitung ausgeschlossen
+- Antworten auf höchstens zwei vollständige natürliche Sätze begrenzt und mit
+  der bestehenden Ehrlichkeits- und Qualitätsprüfung abgesichert
+- Gefühle, Bewusstsein, verborgene Nutzerurteile und autonomes Lernen
+  transparent ausgeschlossen
+- feste Antworten ohne OpenAI-, Ollama-, Tool-, Audit- oder Memory-Aufruf in
+  den flüchtigen normalen Gesprächsverlauf übernommen
+- technischen Bereitschaftszustand bildhaft statt mit einer paradox wirkenden
+  direkten Gefühlsverneinung formuliert
+- unmittelbare positive und belastete Nutzerantworten in einem einmaligen
+  lokalen Folgefenster erkannt und einfühlsam beantwortet
+- belastete Selbstaussagen zusätzlich der unterstützenden simulierten
+  Gesprächshaltung zugeordnet
+- fehlerhaftes Leerzeichen vor Kommas nach der Gedankenstrich-Normalisierung
+  als Ursache einer stockenden ElevenLabs-Prosodie behoben
+- bildhafte Statusantwort für flüssige deutsche TTS gekürzt und ohne
+  Gedankenstrich formuliert
+- real beobachtete WirePod-Fehltranskription `hier geht es dir` eng derselben
+  lokalen Statusfrage zugeordnet, damit sie nicht unbeabsichtigt Ollama erreicht
+- lokalen Profilpfad beim Wiederholungstest ohne Ollama-Aufruf bestätigt;
+  verbleibende zehn Sekunden Wiedergabe auf den zu dichten Antworttext eingegrenzt
+- Status- und Wohlbefindensantworten auf höchstens 16 einfache Wörter sowie
+  TTS-freundliche Satzzeichen begrenzt
+- offene oder erweiterte persönliche Fragen weiterhin an den normalen Agenten
+  übergeben
+- gezielte Profil-, Agenten-, Reflexions- und Strukturtests sowie die
+  vollständige Suite mit 806 Tests bestanden
+- Statusfrage sowie positive und belastete Folgeantwort ohne erneutes Wakeword
+  am physischen Vector korrekt, verständlich und ausreichend flüssig abgenommen

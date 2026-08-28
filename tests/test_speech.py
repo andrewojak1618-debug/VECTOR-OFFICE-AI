@@ -22,9 +22,17 @@ class VectorSpeechTests(unittest.TestCase):
         text = "## Antwort\n- Das ist **wichtig** — und verständlich."
 
         self.assertEqual(
-            "Antwort Das ist wichtig , und verständlich.",
+            "Antwort Das ist wichtig, und verständlich.",
             normalize_speech_text(text),
         )
+
+    def test_dash_normalization_never_leaves_space_before_comma(self):
+        text = "Wach und aufmerksam – wie ein heller Morgen."
+
+        normalized = normalize_speech_text(text)
+
+        self.assertEqual("Wach und aufmerksam, wie ein heller Morgen.", normalized)
+        self.assertNotIn(" ,", normalized)
 
     def test_say_rejects_empty_text(self):
         speech = VectorSpeech(FakeVectorClient())
