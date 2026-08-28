@@ -1029,4 +1029,9 @@ Die deutsche TTS wurde schrittweise verbessert:
 - festen Sprachbefehl `Was wurde zuletzt ausgeführt?` ohne Modellaufruf ergänzt
 - Registry-, Runtime-, Dialog-, Datenschutz- und Selbstbezugspfade
   automatisiert abgesichert
-- physische Sprachabnahme als letzter offener Schritt vorgemerkt
+- Statusfrage am physischen Vector erfolgreich erkannt und beantwortet
+- vorherige erfolgreiche Dokumentationsordneröffnung korrekt als letzte
+  kontrollierte Aufgabe wiedergegeben
+- genau einen erfolgreichen Aufruf von `development.latest_tool_status` ohne
+  Argumente im redigierten lokalen Tool-Audit bestätigt
+- physische Sprachabnahme vollständig abgeschlossen

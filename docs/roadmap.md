@@ -112,7 +112,7 @@
 - ✅ kontrolliertes Öffnen des fest freigegebenen Dokumentationsordners implementieren
 - ✅ bestätigtes Öffnen des Dokumentationsordners am Windows-Desktop physisch abgenommen
 - ✅ lokalen Read-only-Status der letzten kontrollierten Tool-Aktion ergänzen
-- ⏳ Statusabfrage der letzten Tool-Aktion am physischen Vector abnehmen
+- ✅ Statusabfrage der letzten Tool-Aktion am physischen Vector abnehmen
 
 ## Codequalität und Dokumentation
 
