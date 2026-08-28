@@ -28,6 +28,7 @@ from tools.project_documents import (
     register_project_document_catalog_tool,
     register_project_document_open_tool,
 )
+from tools.project_document_summary import register_project_document_summary_tool
 from tools.project_status import register_project_status_tool
 from tools.python_release import register_python_latest_version_tool
 from tools.registry import ToolRegistry
@@ -45,10 +46,29 @@ def _create_tool_registry(
     ollama_checker=None,
     library_status_reader=None,
     memory_status_reader=None,
+    document_summarizer=None,
 ) -> ToolRegistry:
     """Registriert ausschließlich ausdrücklich geprüfte Produktivwerkzeuge."""
     audit_sink = audit_store.record if audit_store is not None else None
     registry = ToolRegistry(audit_sink=audit_sink)
+    _register_required_tools(registry, actions, audit_store, document_summarizer)
+    _register_optional_status_tools(
+        registry,
+        wirepod_checker,
+        ollama_checker,
+        library_status_reader,
+        memory_status_reader,
+    )
+    return registry
+
+
+def _register_required_tools(
+    registry,
+    actions,
+    audit_store,
+    document_summarizer,
+) -> None:
+    """Registriert den festen Kernbestand kontrollierter Produktivwerkzeuge."""
     register_vector_action_tools(registry, actions)
     register_office_tools(registry)
     register_code_quality_status_tool(registry)
@@ -58,19 +78,15 @@ def _create_tool_registry(
     register_project_directory_open_tool(registry)
     register_project_document_catalog_tool(registry)
     register_project_document_open_tool(registry)
+    register_project_document_summary_tool(
+        registry,
+        summarizer=document_summarizer,
+    )
     register_project_status_tool(registry)
     register_next_roadmap_item_tool(registry)
     register_fixed_research_source_tool(registry)
     register_python_latest_version_tool(registry)
     register_core_project_test_tool(registry)
-    _register_optional_status_tools(
-        registry,
-        wirepod_checker,
-        ollama_checker,
-        library_status_reader,
-        memory_status_reader,
-    )
-    return registry
 
 
 def _latest_tool_status_reader(audit_store):

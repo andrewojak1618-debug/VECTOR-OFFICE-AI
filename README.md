@@ -94,6 +94,8 @@ Der aktuelle Prototyp unterstützt bereits:
 - lokaler Read-only-Dokumentationsstatus für sechs feste Kerndokumente
 - feste Read-only-Übersicht freigegebener Projektdokumente mit sicheren
   Anzeigenamen und IDs, jedoch ohne Pfad- oder Inhaltsausgabe
+- lokale Ollama-Kurzfassung genau eines fest freigegebenen Projektdokuments
+  mit höchstens zwei geprüften Sätzen und ohne Cloud-Weitergabe
 - kontrolliertes Öffnen genau eines festen Projektdokuments erst nach separatem
   Ja und erneuter lokaler Validierung, ohne freie Pfade oder Shellbefehle
 - lokaler Read-only-Codequalitätsstatus ausschließlich mit Regelzählern
@@ -335,7 +337,13 @@ feste Ja-/Nein-Grammatik Vorrang.
 Das Antwortfenster erteilt selbst keine Berechtigung und wählt kein Tool aus.
 Freie Datei- und Ordneraktionen bleiben gesperrt. Ausschließlich sechs fest im
 Quellcode freigegebene Projektdokumente besitzen ein pfadgebundenes Registry-Tool
-und benötigen vor jedem Öffnen ein separates Ja.
+und benötigen vor jedem Öffnen ein separates Ja. Dieselben sechs Dokumente
+können über feste Sprachphrasen rein lesend lokal zusammengefasst werden. Dafür
+erhält ausschließlich Ollama einen begrenzten, als unvertrauenswürdige Daten
+markierten Auszug; OpenAI wird an diesem Pfad nie angesprochen. Überschreitet
+Ollama die lokale 15-Sekunden-Frist, verwendet Vector eine sichere
+Überschriftenübersicht desselben geprüften Dokuments. Für die Roadmap steht
+zusätzlich der klar erkennbare Sprachalias `Projektbericht` bereit.
 
 ### Firmware-Entscheidung für direkte Folgeantworten
 

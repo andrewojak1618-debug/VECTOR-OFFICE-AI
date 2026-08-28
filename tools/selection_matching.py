@@ -195,6 +195,16 @@ def _references_next_project_item(value: str) -> bool:
     return target and sequence
 
 
+def _references_project_plan_summary(value: str) -> bool:
+    """Erkennt nur eine Zusammenfassung des fest freigegebenen Projektplans."""
+    words = set(value.split())
+    target = bool(words & {"roadmap", "projektplan", "projektplanung"}) or (
+        {"road", "map"} <= words
+    )
+    summary = bool(words & {"zusammen", "zusammenfassen", "zusammenfassung"})
+    return target and summary
+
+
 def _bounded_match(
     value: str,
     matcher: IntentMatcher,
@@ -262,9 +272,22 @@ NEXT_PROJECT_ITEM_WORDS = frozenset(
         "kommt",
     }
 )
+PROJECT_PLAN_SUMMARY_WORDS = frozenset(
+    {
+        "du", "hast", "fasse", "fasste", "die", "den", "der", "im", "in",
+        "was", "steht", "road", "map", "roadmap", "projekt", "projektplan",
+        "projektplanung", "zusammen", "zusammenfassen", "zusammenfassung",
+    }
+)
 
 
 _CANONICAL_MATCHERS: tuple[tuple[IntentMatcher, str], ...] = (
+    (
+        lambda value: _bounded_match(
+            value, _references_project_plan_summary, PROJECT_PLAN_SUMMARY_WORDS
+        ),
+        "fasse die roadmap zusammen",
+    ),
     (
         lambda value: _bounded_match(
             value,

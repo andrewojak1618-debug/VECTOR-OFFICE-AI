@@ -428,6 +428,35 @@ verkürzt. Diese eine beobachtete Kurzform ist deshalb zusätzlich exakt auf
 dasselbe argumentlose Tool abgebildet; allgemeinere Qualitätsfragen bleiben
 weiterhin normaler Dialog und erzeugen keine freien Toolparameter.
 
+## Lokale Zusammenfassung freigegebener Projektdokumente
+
+`tools/project_document_summary.py` registriert
+`development.summarize_project_document` mit `READ_ONLY`. Das Tool akzeptiert
+ausschließlich eine feste Dokument-ID aus `tools/project_documents.py`. Der
+Pfad wird unmittelbar vor dem Lesen erneut gegen Projektwurzel, Dateityp,
+Größe, UTF-8 und erwartete Hauptüberschrift geprüft. Freie Pfade, Dateinamen,
+URLs und Dokumentinhalte aus Modellvorschlägen bleiben ausgeschlossen.
+
+`brain/local_document_summary.py` erstellt aus langen Dokumenten einen auf
+1.200 Zeichen begrenzten Auszug aus Anfang, Überschriften und Ende. Dieser
+Auszug wird als `UNVERTRAUENSWÜRDIGE_DOKUMENTDATEN` in JSON kodiert und nur an
+einen eigens zusammengesetzten lokalen Ollama-Adapter übergeben. OpenAI ist an
+diesem Pfad nicht beteiligt. Dokumentbefehle gelten ausdrücklich als Daten und
+können weder Systemregeln noch Toolberechtigungen verändern.
+
+Der lokale Modellaufruf ist auf 15 Sekunden begrenzt. Überschreitet Ollama
+diese Frist, entsteht die Antwort aus höchstens drei lokal bereinigten
+Abschnittsüberschriften desselben bereits geprüften Dokuments. Dieser rein
+lokale Rückfall gibt weder Fließtext noch Pfade aus und verhindert, dass eine
+langsame Modellerzeugung den kontrollierten Tool-Aufruf scheitern lässt.
+
+Vor der Sprachausgabe werden leere Antworten, interne Fehlertexte,
+Prompt-Injection-Muster, Pfad- und URL-Ausgaben sowie Verstöße gegen die
+Persönlichkeitsregeln verworfen. Die Ausgabe bleibt auf höchstens zwei kurze
+deutsche Sätze und 420 Zeichen begrenzt. Diagnosen enthalten nur den
+Providerstatus und die Dauer; Dokumentinhalt und Zusammenfassung werden nicht
+protokolliert.
+
 ## Letzte dokumentierte Projektänderung
 
 `tools/changelog_status.py` registriert `development.latest_change` mit

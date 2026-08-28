@@ -32,6 +32,7 @@ from tools.project_documents import (
     register_project_document_catalog_tool,
     register_project_document_open_tool,
 )
+from tools.project_document_summary import register_project_document_summary_tool
 from tools.project_status import ProjectGitMetadata, register_project_status_tool
 from tools.python_release import register_python_latest_version_tool
 from tools.registry import ToolRegistry
@@ -95,6 +96,14 @@ class ControlledToolConversationTests(unittest.TestCase):
             self.registry,
             Path("."),
             self.document_opener,
+        )
+        self.document_summarizer = MagicMock(
+            return_value="Das Dokument beschreibt sichere nächste Projektschritte."
+        )
+        register_project_document_summary_tool(
+            self.registry,
+            Path("."),
+            self.document_summarizer,
         )
         self.directory_opener = MagicMock()
         register_project_directory_open_tool(
@@ -185,6 +194,41 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("Projektübersicht", result.message)
+        self.assertIn("Roadmap", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_project_document_summary_uses_local_callback_without_agent_model(self):
+        result = self.controller.handle("Fasse die Roadmap zusammen")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Roadmap", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_observed_roadmap_summary_transcript_never_reaches_agent_model(self):
+        result = self.controller.handle("sind die road map zusammen")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Roadmap", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_project_plan_alias_never_reaches_agent_model(self):
+        result = self.controller.handle("Fasse den Projektplan zusammen")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Roadmap", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_observed_project_planning_transcript_never_reaches_agent_model(self):
+        result = self.controller.handle("hast du den projektplanung zusammen")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("Roadmap", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_project_report_alias_never_reaches_agent_model(self):
+        result = self.controller.handle("Projektbericht")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertIn("Roadmap", result.message)
         self.assertEqual(0, self.model.calls)
 

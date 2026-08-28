@@ -57,6 +57,16 @@ PROJECT_DOCUMENT_OPEN_RULES = tuple(
     for document in PROJECT_DOCUMENTS
 )
 
+PROJECT_DOCUMENT_SUMMARY_RULES = tuple(
+    ToolIntentRule(
+        document.summary_phrases,
+        "development.summarize_project_document",
+        f"{document.display_name} lokal zusammenfassen",
+        (("document_id", document.identifier),),
+    )
+    for document in PROJECT_DOCUMENTS
+)
+
 PROJECT_DIRECTORY_OPEN_RULES = tuple(
     ToolIntentRule(
         directory.open_phrases,
@@ -83,6 +93,7 @@ class ToolSelection:
 DEFAULT_INTENT_RULES = (
     *PROJECT_DIRECTORY_OPEN_RULES,
     *PROJECT_DOCUMENT_OPEN_RULES,
+    *PROJECT_DOCUMENT_SUMMARY_RULES,
     ToolIntentRule(
         (
             "was wurde zuletzt ausgeführt",

@@ -28,6 +28,7 @@ SPOKEN_RESULT_TOOLS = frozenset({
     "development.project_document_catalog",
     "development.open_project_directory",
     "development.open_project_document",
+    "development.summarize_project_document",
     "memory.local_status",
     "knowledge.library_status",
     "system.local_service_status",

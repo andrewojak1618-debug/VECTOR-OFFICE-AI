@@ -1091,3 +1091,39 @@ Die deutsche TTS wurde schrittweise verbessert:
   ausgeschlossen
 - 754 automatisierte Tests, Python-Kompilierung, strikten MkDocs-Bau und
   `git diff --check` bestanden
+
+## Karte 41 – Freigegebene Projektdokumente lokal zusammenfassen
+
+- `development.summarize_project_document` als rein lesendes Registry-Tool
+  ergänzt
+- ausschließlich die sechs bereits freigegebenen Dokument-IDs zugelassen
+- Dokumentpfad, Dateityp, Größe, UTF-8 und Hauptüberschrift unmittelbar vor
+  jedem Lesen erneut geprüft
+- lange Markdown-Dokumente auf einen repräsentativen Auszug aus Anfang,
+  Überschriften und Ende mit höchstens 1.200 Zeichen begrenzt
+- Dokumentdaten als unvertrauenswürdiges JSON gekennzeichnet und ausschließlich
+  an einen eigenen lokalen Ollama-Adapter übergeben
+- OpenAI, freie Pfade, freie Dokumentnamen und modellbasierte Toolparameter
+  ausgeschlossen
+- lokale Modellantwort vor der TTS auf Prompt Injection, Fehlertexte, Pfade,
+  URLs, Persönlichkeitsregeln, zwei Sätze und 420 Zeichen geprüft
+- feste Zusammenfassungsphrasen für alle sechs Projektdokumente ergänzt
+- Fehler-, Datenschutz-, Auswahl-, Dialog- und Laufzeitpfade automatisiert
+  abgesichert
+- ersten vollständigen 8,8-KB-Modellkontext wegen praktisch ungeeigneter
+  Laufzeit kontrolliert abgebrochen und den lokalen Einzelversuch anschließend
+  auf 45 Sekunden begrenzt
+- realen lokalen Ollama-Aufruf mit der freigegebenen Roadmap erfolgreich
+  abgeschlossen; die geprüfte Ausgabe bestand aus zwei kurzen deutschen Sätzen
+- wiederholt beobachtete Kasusschwäche durch ein verbindliches Hauptsatzmuster
+  für den lokalen Modelltext vermieden
+- verbleibende lokale Laufzeit von rund 44 Sekunden transparent als Mess- und
+  Optimierungsbefund für Karte 44 festgehalten
+- real beobachtete WirePod-Varianten für Roadmap und Projektplan begrenzt
+  kanonisiert und den eindeutigen Alias `Projektbericht` ergänzt
+- Ollama-Zusammenfassung auf 15 Sekunden begrenzt und bei Zeitüberschreitung
+  durch eine sichere lokale Überschriftenübersicht abgesichert
+- Sprachalias `Projektbericht` am physischen Vector korrekt erkannt und die
+  lokale Roadmap-Zusammenfassung verständlich wiedergegeben
+- 773 automatisierte Tests, Python-Kompilierung, strikten MkDocs-Bau und
+  `git diff --check` bestanden

@@ -78,6 +78,7 @@ class RuntimeModeTests(unittest.TestCase):
                 "development.project_document_catalog",
                 "development.project_status",
                 "development.run_core_tests",
+                "development.summarize_project_document",
                 "knowledge.library_status",
                 "memory.local_status",
                 "office.local_datetime",

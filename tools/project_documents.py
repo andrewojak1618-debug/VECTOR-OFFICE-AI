@@ -30,6 +30,7 @@ class ProjectDocument:
     relative_path: Path
     heading: str
     open_phrases: tuple[str, ...]
+    summary_phrases: tuple[str, ...]
 
 
 PROJECT_DOCUMENTS = (
@@ -43,6 +44,11 @@ PROJECT_DOCUMENTS = (
             "öffne bitte die projektübersicht",
             "bitte öffne die projektübersicht",
         ),
+        (
+            "fasse die projektübersicht zusammen",
+            "projektübersicht zusammenfassen",
+            "was steht in der projektübersicht",
+        ),
     ),
     ProjectDocument(
         "roadmap",
@@ -55,6 +61,26 @@ PROJECT_DOCUMENTS = (
             "bitte öffne die roadmap",
             "roadmap öffnen",
         ),
+        (
+            "fasse die roadmap zusammen",
+            "fasste die roadmap zusammen",
+            "roadmap zusammenfassen",
+            "was steht in der roadmap",
+            "was steht in der road map",
+            "hast du die wort map zusammen",
+            "sind die road map zusammen",
+            "fazit überhaupt map zusammen",
+            "fasse den projektplan zusammen",
+            "fasse den projekt plan zusammen",
+            "fasste den projektplan zusammen",
+            "fasste den projekt plan zusammen",
+            "projektplan zusammenfassen",
+            "projekt plan zusammenfassen",
+            "was steht im projektplan",
+            "was steht im projekt plan",
+            "projektbericht",
+            "projekt bericht",
+        ),
     ),
     ProjectDocument(
         "quality",
@@ -65,6 +91,11 @@ PROJECT_DOCUMENTS = (
             "öffne die qualitätsregeln",
             "öffne bitte die qualitätsregeln",
             "bitte öffne die qualitätsregeln",
+        ),
+        (
+            "fasse die qualitätsregeln zusammen",
+            "qualitätsregeln zusammenfassen",
+            "was steht in den qualitätsregeln",
         ),
     ),
     ProjectDocument(
@@ -77,6 +108,11 @@ PROJECT_DOCUMENTS = (
             "öffne bitte die werkzeugsicherheit",
             "bitte öffne die werkzeugsicherheit",
         ),
+        (
+            "fasse die werkzeugsicherheit zusammen",
+            "werkzeugsicherheit zusammenfassen",
+            "was steht in der werkzeugsicherheit",
+        ),
     ),
     ProjectDocument(
         "windows-startup",
@@ -88,6 +124,11 @@ PROJECT_DOCUMENTS = (
             "öffne bitte die windows startanleitung",
             "bitte öffne die windows startanleitung",
         ),
+        (
+            "fasse die windows startanleitung zusammen",
+            "windows startanleitung zusammenfassen",
+            "was steht in der windows startanleitung",
+        ),
     ),
     ProjectDocument(
         "firmware-safety",
@@ -98,6 +139,11 @@ PROJECT_DOCUMENTS = (
             "öffne die firmware sicherheitsregeln",
             "öffne bitte die firmware sicherheitsregeln",
             "bitte öffne die firmware sicherheitsregeln",
+        ),
+        (
+            "fasse die firmware sicherheitsregeln zusammen",
+            "firmware sicherheitsregeln zusammenfassen",
+            "was steht in den firmware sicherheitsregeln",
         ),
     ),
 )
@@ -252,6 +298,22 @@ def _available_document_path(root: Path, document: ProjectDocument) -> Path:
     path = (resolved_root / document.relative_path).resolve()
     path.relative_to(resolved_root)
     return path
+
+
+def read_approved_project_document(
+    root: Path,
+    identifier: str,
+) -> tuple[ProjectDocument, str]:
+    """Liest Inhalt nur über eine erneut geprüfte feste Dokument-ID."""
+    document = _document_by_identifier(identifier)
+    path = _available_document_path(root, document)
+    content = path.read_text(encoding="utf-8")
+    encoded_size = len(content.encode("utf-8"))
+    if not 0 < encoded_size <= MAX_DOCUMENT_BYTES:
+        raise OSError("Approved project document changed during validation.")
+    if content.splitlines()[:1] != [document.heading]:
+        raise OSError("Approved project document changed during validation.")
+    return document, content
 
 
 def _open_local_document(path: Path) -> None:

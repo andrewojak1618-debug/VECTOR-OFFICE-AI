@@ -28,6 +28,12 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   fester deutscher Bezeichnung und sicherem Ergebnisstatus
 - zentrale Regressionstests für real beobachtete WirePod- und
   Vosk-Intentvarianten
+- lokale Ollama-Zusammenfassung fest freigegebener Projektdokumente mit
+  begrenzter, geprüfter deutscher Sprachausgabe
+- eindeutiger Sprachalias `Projektbericht` und lokaler Überschriften-Rückfall
+  bei einer Zeitüberschreitung der Roadmap-Zusammenfassung
+- physischen Roadmap-Test über `Projektbericht` korrekt und verständlich
+  abgeschlossen
 
 ### Sicherheit
 
@@ -59,6 +65,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   und unbekannte Toolnamen; die Abfrage selbst wird beim Rückblick übersprungen
 - kanonische Intent-Erkennung akzeptiert keine angehängten fremden
   Anweisungen mehr und bleibt auf einen festen Wortschatz je Intent begrenzt
+- Dokumentzusammenfassungen akzeptieren keine freien Pfade, behandeln Inhalte
+  als unvertrauenswürdige Daten und erreichen niemals OpenAI
 
 ### Abnahme
 

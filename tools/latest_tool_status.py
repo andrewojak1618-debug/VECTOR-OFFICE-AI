@@ -20,6 +20,7 @@ ACTION_LABELS = MappingProxyType({
     "development.open_project_directory": "Dokumentationsordner öffnen",
     "development.open_project_document": "Projektdokument öffnen",
     "development.project_document_catalog": "Projektdokumente auflisten",
+    "development.summarize_project_document": "Projektdokument zusammenfassen",
     "development.project_status": "Projektstatus prüfen",
     "development.run_core_tests": "Projekttests ausführen",
     "knowledge.library_status": "Bibliotheksstatus prüfen",

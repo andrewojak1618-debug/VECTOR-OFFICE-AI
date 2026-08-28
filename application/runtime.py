@@ -7,6 +7,7 @@ from application.runtime_startup import (
     ensure_ollama as _ensure_ollama,
 )
 from brain.agent import Agent
+from brain.local_document_summary import LocalDocumentSummarizer
 from brain.ollama_runtime import OllamaRuntime
 from brain.providers import OllamaProvider, create_language_model
 from brain.reflection import ReflectionPolicy
@@ -108,6 +109,7 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
         ollama_status.is_available,
         library.list_document_statuses,
         memory_store.status,
+        _create_document_summarizer(settings, diagnostics),
     )
     return _create_agent(
         settings,
@@ -117,6 +119,25 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
         library,
         memory_store,
     )
+
+
+def _create_document_summarizer(settings, diagnostics=None):
+    """Erzeugt eine ausschließlich lokale Ollama-Zusammenfassung für feste Dokumente."""
+    model = OllamaProvider(
+        settings.OLLAMA_HOST,
+        settings.OLLAMA_MODEL,
+        timeout=min(getattr(settings, "OLLAMA_REQUEST_TIMEOUT", 120.0), 15.0),
+        max_attempts=1,
+        retry_delay=getattr(settings, "LLM_RETRY_DELAY", 0.5),
+        temperature=0.1,
+        max_output_tokens=64,
+        context_window=min(
+            getattr(settings, "OLLAMA_CONTEXT_WINDOW", 4_096),
+            2_048,
+        ),
+        diagnostics=diagnostics,
+    )
+    return LocalDocumentSummarizer(model).summarize
 
 
 def register_provider_statuses(settings, mode, connections) -> None:

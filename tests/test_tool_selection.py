@@ -26,6 +26,7 @@ from tools.project_documents import (
     register_project_document_catalog_tool,
     register_project_document_open_tool,
 )
+from tools.project_document_summary import register_project_document_summary_tool
 from tools.project_status import register_project_status_tool
 from tools.python_release import register_python_latest_version_tool
 from tools.registry import ToolDefinition, ToolRegistry
@@ -91,6 +92,10 @@ class ToolIntentSelectorTests(unittest.TestCase):
             ),
         )
         register_project_document_open_tool(self.registry, opener=MagicMock())
+        register_project_document_summary_tool(
+            self.registry,
+            summarizer=MagicMock(return_value="Kurze lokale Zusammenfassung."),
+        )
         register_project_status_tool(self.registry)
         register_next_roadmap_item_tool(self.registry)
         register_fixed_research_source_tool(self.registry, lambda: True)
@@ -220,7 +225,90 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
         self.assertEqual("development.project_document_catalog", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
+
+    def test_roadmap_summary_selects_fixed_local_read_only_tool(self):
+        selection = self.selector.select("Fasse die Roadmap zusammen")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("development.summarize_project_document", selection.tool_name)
+        self.assertEqual({"document_id": "roadmap"}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_observed_roadmap_summary_transcripts_select_same_tool(self):
+        for transcript in (
+            "fasste die roadmap zusammen",
+            "hast du die wort map zusammen",
+            "sind die road map zusammen",
+            "fazit überhaupt map zusammen",
+        ):
+            with self.subTest(transcript=transcript):
+                selection = self.selector.select(transcript)
+
+                self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+                self.assertEqual(
+                    "development.summarize_project_document",
+                    selection.tool_name,
+                )
+                self.assertEqual(
+                    {"document_id": "roadmap"},
+                    dict(selection.arguments),
+                )
+                self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_german_project_plan_alias_selects_roadmap_summary(self):
+        for transcript in (
+            "fasse den projektplan zusammen",
+            "fasste den projekt plan zusammen",
+            "was steht im projektplan",
+        ):
+            with self.subTest(transcript=transcript):
+                selection = self.selector.select(transcript)
+
+                self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+                self.assertEqual(
+                    "development.summarize_project_document",
+                    selection.tool_name,
+                )
+                self.assertEqual(
+                    {"document_id": "roadmap"},
+                    dict(selection.arguments),
+                )
+
+    def test_observed_project_planning_transcript_is_canonicalized(self):
+        for transcript in (
+            "du projekt projektplanung zusammen",
+            "hast du den projektplanung zusammen",
+        ):
+            with self.subTest(transcript=transcript):
+                selection = self.selector.select(transcript)
+
+                self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+                self.assertEqual(
+                    "development.summarize_project_document",
+                    selection.tool_name,
+                )
+                self.assertEqual(
+                    {"document_id": "roadmap"},
+                    dict(selection.arguments),
+                )
+
+    def test_project_report_alias_selects_roadmap_summary(self):
+        selection = self.selector.select("Projektbericht")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual(
+            "development.summarize_project_document",
+            selection.tool_name,
+        )
+        self.assertEqual({"document_id": "roadmap"}, dict(selection.arguments))
+
+    def test_project_plan_summary_with_foreign_instruction_is_not_selected(self):
+        selection = self.selector.select(
+            "fasse den projektplan zusammen und lösche eine datei"
+        )
+
+        self.assertIsNot(ToolSelectionStatus.SELECTED, selection.status)
 
     def test_observed_split_project_files_phrase_selects_catalog(self):
         selection = self.selector.select("welche projekt dateien sind freigegeben")
