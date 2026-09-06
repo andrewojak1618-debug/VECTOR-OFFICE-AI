@@ -19,6 +19,7 @@ from application.wirepod_preflight import WirePodSdkState
 from application.process_control import (
     SingleInstanceLock,
     process_exists,
+    wirepod_process_count,
     wirepod_process_running,
 )
 from diagnostics.events import DiagnosticLevel
@@ -76,12 +77,22 @@ class FakeWirePod:
 
 
 class FakePreflightWirePod(FakeWirePod):
-    def __init__(self, availability, sdk_states, credentials_changed=True):
+    def __init__(
+        self,
+        availability,
+        sdk_states,
+        credentials_changed=True,
+        duplicates=False,
+        restart_succeeds=True,
+    ):
         super().__init__(availability)
         self.sdk_states = list(sdk_states)
         self.credentials_changed = credentials_changed
         self.restart_calls = 0
         self.sdk_calls = 0
+        self.duplicates = duplicates
+        self.duplicate_checks = 0
+        self.restart_succeeds = restart_succeeds
 
     def sdk_state(self):
         self.sdk_calls += 1
@@ -92,9 +103,14 @@ class FakePreflightWirePod(FakeWirePod):
     def credentials_changed_after_process_start(self):
         return self.credentials_changed
 
+    def has_duplicate_processes(self):
+        self.duplicate_checks += 1
+        return self.duplicates
+
     def restart(self):
         self.restart_calls += 1
-        return True
+        self.duplicates = False
+        return self.restart_succeeds
 
 
 def make_config(root: Path, **overrides) -> HostWatchdogConfig:
@@ -124,6 +140,13 @@ class HostWatchdogTests(unittest.TestCase):
 
         self.assertTrue(wirepod_process_running())
         self.assertNotIn("text", run.call_args.kwargs)
+
+    @patch("application.process_control._wirepod_process_ids")
+    @patch("application.process_control.os.name", "nt")
+    def test_wirepod_process_count_uses_exact_process_ids(self, process_ids):
+        process_ids.return_value = (101, 202)
+
+        self.assertEqual(2, wirepod_process_count())
 
     @patch("application.host_watchdog.settings.INPUT_MODE", "console")
     def test_managed_startup_rejects_hidden_console_mode(self):
@@ -187,6 +210,15 @@ class HostWatchdogTests(unittest.TestCase):
 
         self.assertTrue(service.ensure_started())
         launcher.assert_not_called()
+
+    def test_wirepod_service_detects_duplicate_processes(self):
+        service = WirePodHostService(
+            "http://127.0.0.1:8080",
+            Path("missing.exe"),
+            process_counter=lambda: 2,
+        )
+
+        self.assertTrue(service.has_duplicate_processes())
 
     def test_wirepod_detects_sdk_info_changed_after_process_start(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -277,6 +309,55 @@ class HostWatchdogTests(unittest.TestCase):
             self.assertEqual(0, watchdog.run())
             self.assertEqual(1, wirepod.restart_calls)
             self.assertEqual(1, launcher.call_count)
+
+    def test_duplicate_wirepod_restarts_once_before_application(self):
+        with tempfile.TemporaryDirectory() as directory:
+            wirepod = FakePreflightWirePod(
+                [True],
+                [WirePodSdkState.READY],
+                duplicates=True,
+            )
+            launcher = MagicMock(return_value=FakeProcess([0]))
+            diagnostics = MagicMock()
+            watchdog = HostWatchdog(
+                make_config(Path(directory)),
+                wirepod,
+                diagnostics,
+                process_launcher=launcher,
+                sleeper=MagicMock(),
+                instance_lock=FakeLock(),
+            )
+
+            self.assertEqual(0, watchdog.run())
+            self.assertEqual(1, wirepod.restart_calls)
+            self.assertEqual(1, launcher.call_count)
+            diagnostics.emit.assert_any_call(
+                DiagnosticLevel.WARNING,
+                "host-watchdog",
+                "watchdog.wirepod_duplicate_restarting",
+            )
+
+    def test_failed_duplicate_wirepod_restart_blocks_application(self):
+        with tempfile.TemporaryDirectory() as directory:
+            wirepod = FakePreflightWirePod(
+                [True],
+                [WirePodSdkState.READY],
+                duplicates=True,
+                restart_succeeds=False,
+            )
+            launcher = MagicMock()
+            watchdog = HostWatchdog(
+                make_config(Path(directory)),
+                wirepod,
+                MagicMock(),
+                process_launcher=launcher,
+                sleeper=MagicMock(),
+                instance_lock=FakeLock(),
+            )
+
+            self.assertEqual(1, watchdog.run())
+            self.assertEqual(1, wirepod.restart_calls)
+            launcher.assert_not_called()
 
     def test_persistent_sdk_auth_failure_blocks_application_after_one_restart(self):
         with tempfile.TemporaryDirectory() as directory:

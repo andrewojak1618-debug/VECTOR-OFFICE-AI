@@ -164,16 +164,27 @@ Weboberfläche erreichbar, während der SDK-Zugriff und BehaviorControl dennoch
 unzuverlässig blieben. Ein Browser-Neuladen beseitigt diesen Prozesskonflikt
 nicht.
 
-Der sichere Diagnoseweg zählt zunächst ausschließlich die unabhängigen
-WirePod-Prozesse. Sind mehrere aktiv, werden nur die eindeutig ermittelten
-WirePod-Instanzen beendet und anschließend genau eine ausgeblendete Instanz aus
-dem dokumentierten Installationspfad gestartet. Erst nach erfolgreichem
-WirePod-SDK-Preflight und erreichbarem Vector-Port wird die Anwendung erneut
-gestartet. Firmware, Zertifikate, Roboterdaten und `.env` bleiben unverändert.
+Der Watchdog zählt deshalb vor jedem Anwendungsstart ausschließlich Prozesse
+mit dem exakten Namen `chipper.exe`. Sind mehrere aktiv, verwendet er genau
+einmal den bereits begrenzten WirePod-Neustart: Die eindeutig ermittelten
+WirePod-Instanzen werden beendet und anschließend genau eine ausgeblendete
+Instanz aus dem dokumentierten Installationspfad gestartet. Erst nach
+erfolgreichem WirePod-SDK-Preflight wird die Anwendung gestartet. Schlägt Stopp
+oder Neustart fehl, bleibt sie sicher blockiert.
+
+Diese Reparatur wird während eines laufenden Gesprächs ausdrücklich nicht
+ausgeführt. Der einmalige Neustart ist außerdem dieselbe Grenze, die eine nach
+Prozessstart geänderte SDK-Zuordnung neu lädt; beide Ursachen können daher
+keine Neustartkette erzeugen. Firmware, Zertifikate, Roboterdaten und `.env`
+bleiben unverändert.
 
 Nach dieser Wiederherstellung liefen WirePod und die geplante Anwendung jeweils
 genau einmal; der semantische Sprachtest und die Statusausgabe bestanden. Die
-Startabnahme prüft deshalb weiterhin ausdrücklich auf doppelte Instanzen.
+Startabnahme prüft deshalb weiterhin ausdrücklich auf doppelte Instanzen. Die
+automatisierte Einzelinstanzkorrektur ist geprüft. Der kontrollierte
+Aufgaben-Neustart bestand anschließend zehn von zehn Startprüfungen mit jeweils
+genau einer WirePod-, Watchdog- und Anwendungsinstanz. Die normale Statusfrage
+wurde danach klar und verständlich beantwortet; Karte 47 ist damit abgenommen.
 
 ### WirePod-SDK-Preflight und einmalige Selbstheilung
 

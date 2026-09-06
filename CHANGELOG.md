@@ -6,6 +6,18 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- einmalige WirePod-Einzelinstanzkorrektur ausschließlich vor dem Start der
+  Anwendung; ein fehlgeschlagener Neustart blockiert sicher
+
+### Abnahme
+
+- gezielter Doppelinstanz-Regressionstest und vollständige Kernabnahme mit
+  824 automatisierten Tests sowie fünf von fünf Prüfschritten bestanden
+- kontrollierter Aufgaben-Neustart mit zehn von zehn lokalen Startprüfungen
+  bestanden; Statusantwort anschließend klar und verständlich bestätigt
+
 ## [0.2.0-rc.3] – 2026-09-06
 
 ### Hinzugefügt

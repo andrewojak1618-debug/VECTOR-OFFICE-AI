@@ -30,6 +30,17 @@
 - ✅ Karte 45: sichere lokale Statusübersicht implementieren und physisch abnehmen
 - ✅ Karte 46: RC3 vollständig abnehmen und `v0.2.0-rc.3` setzen
 
+## RC4 – Stabiler lokaler Langzeitbetrieb
+
+- ✅ Karte 47: doppelte WirePod-Instanzen vor dem Anwendungsstart kontrolliert
+  auf genau eine Instanz zurückführen und physisch abnehmen
+- ⏳ Karte 48: SDK-Verlust während eines Gesprächs passiv erkennen und ohne
+  automatische Prozessbeendigung sicher behandeln
+- ⏳ Karte 49: wiederholbaren lokalen Langzeitlauf mit inhaltsfreien
+  Stabilitätskennzahlen ergänzen
+- ⏳ Karte 50: RC4-Kaltstart, Wiederherstellung und Langzeitbetrieb vollständig
+  abnehmen
+
 ## Release-Stabilisierung
 
 - ✅ zentrale mehrstufige Systemabnahme implementieren

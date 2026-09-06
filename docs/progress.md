@@ -1260,3 +1260,30 @@ Die deutsche TTS wurde schrittweise verbessert:
   genau eine kontrolliert gestartete Instanz behoben
 - Quellversion `0.2.0-rc.3`, Release-Commit und annotierten Tag
   `v0.2.0-rc.3` als gemeinsam freizugebenden Stand festgelegt
+
+## Karte 47 – WirePod-Einzelinstanz beim Start absichern
+
+- tatsächlichen RC3-Störfall mit zwei unabhängigen `chipper.exe`-Prozessen als
+  reproduzierbare Startlücke eingegrenzt
+- vorhandene exakte WirePod-Prozessermittlung um einen inhaltsfreien Zähler
+  erweitert
+- Doppelinstanzprüfung in den bestehenden `WirePodHostService` integriert
+- Watchdog prüft ausschließlich vor einem Anwendungsstart, ob mehr als eine
+  Instanz läuft
+- bei Doppelinstanz höchstens einen bereits vorhandenen kontrollierten
+  WirePod-Neustart zugelassen
+- denselben einmaligen Neustart gemeinsam mit der bestehenden SDK-Reparatur
+  begrenzt, damit keine Neustartkette entstehen kann
+- Anwendung bleibt bei fehlgeschlagenem Stopp oder Neustart sicher blockiert
+- aktive Gespräche und die laufende Verfügbarkeitsüberwachung lösen keine
+  automatische Prozessbeendigung aus
+- Diagnose auf feste Codes ohne Prozess-ID, Pfad, Endpunkt oder Inhalt begrenzt
+- 39 gezielte Watchdog- und Codequalitätsprüfungen bestanden
+- gezielten Doppelinstanz-Regressionstest und vollständige Kernabnahme mit
+  824 Tests sowie fünf von fünf Prüfschritten bestanden
+- keine künstliche zweite WirePod-Instanz für den physischen Test erzeugt
+- kontrollierten Aufgaben-Neustart und anschließend zehn von zehn lokalen
+  Startprüfungen mit jeweils genau einer WirePod-, Watchdog- und App-Instanz
+  bestanden
+- normale Statusfrage nach dem Neustart klar beantwortet; Hinweis auf die
+  absichtlich nicht live geprüfte Cloud korrekt und verständlich ausgegeben

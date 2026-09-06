@@ -136,6 +136,13 @@ def wirepod_process_started_at() -> float | None:
     return min(start_times) if start_times else None
 
 
+def wirepod_process_count() -> int:
+    """Zählt ausschließlich lokale Prozesse mit dem exakten Namen Chipper."""
+    if os.name != "nt":
+        return 0
+    return len(_wirepod_process_ids())
+
+
 def stop_wirepod_processes() -> bool:
     """Beendet ausschließlich lokale Chipper-Prozesse samt Nachkommen."""
     if os.name != "nt" or not wirepod_process_running():

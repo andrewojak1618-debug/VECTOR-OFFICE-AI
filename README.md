@@ -1169,6 +1169,8 @@ markiert. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
 - ✅ Windows-Autostart, Host-Watchdog und vollständige Kaltstart-Abnahme
 - ✅ begrenzter automatischer Wiederanlauf nach temporär blockiertem SDK-Kaltstart
 - ✅ WirePod-SDK-Vorabprüfung mit einmaliger kontrollierter Selbstheilung
+- ✅ doppelte WirePod-Instanzen vor dem App-Start einmalig normalisieren und
+  nach kontrolliertem Aufgaben-Neustart physisch abgenommen
 - ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
 - ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
 - ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`

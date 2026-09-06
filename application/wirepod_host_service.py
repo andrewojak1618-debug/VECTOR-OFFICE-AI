@@ -9,6 +9,7 @@ import httpx
 from application.process_control import (
     hidden_process_flags,
     stop_wirepod_processes,
+    wirepod_process_count,
     wirepod_process_running,
     wirepod_process_started_at,
 )
@@ -32,6 +33,7 @@ class WirePodHostService:
         sdk_info_path: Path | None = None,
         process_started_at: Callable[[], float | None] | None = None,
         process_stopper: Callable[[], bool] | None = None,
+        process_counter: Callable[[], int] | None = None,
     ):
         """Initialisiert lokale HTTP-, Prozess- und SDK-Prüfgrenzen."""
         self.host = host.rstrip("/")
@@ -43,6 +45,7 @@ class WirePodHostService:
         self.sdk_info_path = sdk_info_path
         self.process_started_at = process_started_at or wirepod_process_started_at
         self.process_stopper = process_stopper or stop_wirepod_processes
+        self.process_counter = process_counter or wirepod_process_count
 
     def is_available(self) -> bool:
         """Prüft, ob WirePod aktuell am lokalen Log-Endpunkt antwortet."""
@@ -75,6 +78,14 @@ class WirePodHostService:
         except OSError:
             return False
         return started_at is not None and modified_at > started_at
+
+    def has_duplicate_processes(self) -> bool:
+        """Meldet ausschließlich, ob mehr als eine WirePod-Instanz aktiv ist."""
+        try:
+            count = self.process_counter()
+        except (OSError, TypeError, ValueError):
+            return False
+        return isinstance(count, int) and not isinstance(count, bool) and count > 1
 
     def restart(self) -> bool:
         """Startet ausschließlich den lokalen WirePod-Prozess kontrolliert neu."""

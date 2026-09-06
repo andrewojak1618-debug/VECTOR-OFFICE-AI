@@ -77,7 +77,7 @@ class HostWatchdog:
         self.process_stopper = process_stopper or stop_process_tree
         self.connections = ConnectionSupervisor(diagnostics, sleeper=sleeper)
         self._application_process = None
-        self._wirepod_sdk_restart_used = False
+        self._wirepod_restart_used = False
 
     def run(self) -> int:
         """Überwacht bis zum bewussten Anwendungsende oder begrenzten Fehler."""
@@ -112,6 +112,13 @@ class HostWatchdog:
 
     def _prepare_wirepod(self) -> bool:
         """Prüft WirePod-Prozess und SDK-Zugriff vor einem Anwendungsstart."""
+        if not self._normalize_wirepod_instances():
+            self._emit(
+                DiagnosticLevel.ERROR,
+                "watchdog.blocked",
+                status="wirepod-duplicate",
+            )
+            return False
         if not self._ensure_wirepod():
             self._emit(DiagnosticLevel.ERROR, "watchdog.blocked", status="wirepod")
             return False
@@ -119,6 +126,17 @@ class HostWatchdog:
             return True
         self._emit(DiagnosticLevel.ERROR, "watchdog.blocked", status="wirepod-sdk")
         return False
+
+    def _normalize_wirepod_instances(self) -> bool:
+        """Ersetzt erkannte Doppelinstanzen vor dem App-Start genau einmal."""
+        checker = getattr(self.wirepod, "has_duplicate_processes", None)
+        if checker is None or not checker():
+            return True
+        if self._wirepod_restart_used:
+            return False
+        self._wirepod_restart_used = True
+        self._emit(DiagnosticLevel.WARNING, "watchdog.wirepod_duplicate_restarting")
+        return self._restart_wirepod()
 
     def _ensure_wirepod(self) -> bool:
         """Versucht WirePod mit begrenzten Wiederholungen verfügbar zu machen."""
@@ -147,11 +165,11 @@ class HostWatchdog:
 
     def _repair_wirepod_sdk(self) -> bool:
         """Lädt eine nach Prozessstart geänderte WirePod-Zuordnung genau einmal neu."""
-        if self._wirepod_sdk_restart_used:
+        if self._wirepod_restart_used:
             return False
         if not self._credentials_changed_after_start():
             return False
-        self._wirepod_sdk_restart_used = True
+        self._wirepod_restart_used = True
         self._emit(DiagnosticLevel.WARNING, "watchdog.wirepod_sdk_restarting")
         if not self._restart_wirepod() or not self._ensure_wirepod():
             return False
