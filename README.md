@@ -430,6 +430,14 @@ lokalen WirePod- und Ollama-Dienste. Der rein lesende Aufruf benötigt keine
 Bestätigung und nennt weder URLs noch technische Fehlermeldungen. Er bewertet
 bewusst nicht die Internet-, OpenAI-, Akku- oder allgemeine Hardwareverbindung.
 
+`Status Übersicht` fasst dagegen die letzten bereits bekannten Zustände von
+Vector SDK, WirePod und Ollama zusammen, ohne einen neuen Healthcheck oder eine
+kostenpflichtige Anfrage auszulösen. OpenAI und ElevenLabs werden nur als lokal
+konfiguriert, deaktiviert oder unbekannt ausgewiesen und ausdrücklich nicht
+live geprüft. Der argumentlose Read-only-Aufruf verwendet kein Sprachmodell,
+nennt keine URLs, Schlüssel, Seriennummern, Pfade, Inhalte oder Fehlertexte und
+löst keine Roboteraktion aus.
+
 `Bibliothek Status` nennt ausschließlich die Anzahl lokaler Dokumente,
 Abschnitte sowie aktueller und veralteter Vektoren. Titel, Dateipfade,
 Prüfsummen, Modellnamen und Inhalte bleiben vollständig innerhalb der lokalen
@@ -1098,17 +1106,20 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | Deployment-Grenzen | `ea970c3` | Windows-, Homeserver- und spätere Docker-Grenzen dokumentiert |
 | Aktueller Qualitätsstand | `33a195e` | Grenznahe Kernmodule aufgeteilt und 635 Tests abgenommen |
 | Zweiter Release-Kandidat | `v0.2.0-rc.2` | Vollständig geprüfter RC2-Stand vom 25. August 2026 |
+| Dritter Release-Kandidat | `v0.2.0-rc.3` | Natürlicher Alltagsdialog und sichere lokale Statusübersicht |
 
-Der annotierte Git-Tag `v0.2.0-rc.1` bleibt der historisch geprüfte erste
-Release-Kandidat. Der aktuelle Stand ist als **0.2.0-rc.2** vollständig mit
-Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
-Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
+Die annotierten Git-Tags `v0.2.0-rc.1` und `v0.2.0-rc.2` bleiben als historisch
+geprüfte Release-Kandidaten erhalten. Der aktuelle Stand ist als
+**0.2.0-rc.3** mit Kern, Ollama, ElevenLabs sowie dem
+physischen Vector abgenommen. OpenAI bleibt im privaten Sprachbetrieb bewusst
+deaktiviert. Der geprüfte Stand ist mit dem annotierten Tag `v0.2.0-rc.3`
+markiert. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
 
 ## 🚧 Aktueller Projektstatus
 
 ### Aktuelle Phase
 
-**Release-Kandidat 0.2.0-rc.2 mit physischem Vector 2.0**
+**Release-Kandidat 0.2.0-rc.3 mit physischem Vector 2.0**
 
 - ✅ WirePod-Verbindung
 - ✅ direkte Vector-SDK-Verbindung
@@ -1164,8 +1175,13 @@ Kern, Ollama, OpenAI, ElevenLabs und dem physischen Vector abgenommen. Die
 - ✅ firmwarefreie lokale Folgeaufnahme für kontrollierte Ja-Nein-Fragen implementiert
 - ✅ wakeword-freie Folgeantwort mit lokaler Erkennung und Kopfaktion physisch bestätigt
 - ✅ lokalen Vosk-Folgepfad einschließlich „Danke“ ohne erneutes Wakeword physisch bestätigt
+- ✅ sichere lokale Statusübersicht ohne neue Provider- oder Cloud-Anfrage
+- ✅ natürliche Systemstatusfrage ohne LLM-Aufruf über ElevenLabs physisch bestätigt
+- ✅ ehrliches persönliches Gesprächsprofil und kontrollierte lokale Erinnerung
+- ✅ Antwort- und TTS-Latenzen inhaltsfrei messbar
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
-- ✅ 751 automatisierte Tests sowie Kompilierung und strikter MkDocs-Build bestanden
+- ✅ RC3-Kernabnahme mit 820 automatisierten Tests sowie Kompilierung,
+  strengem MkDocs-Bau und `git diff --check` bestanden
 
 ## 🗺️ Roadmap
 
@@ -1195,6 +1211,12 @@ Ein Vergleich von ElevenLabs
 Multilingual v2 mit Flash v2.5 bleibt optional und erfolgt nur bei erkennbarem
 Qualitätsbedarf. Homeserver, FastAPI und Docker bleiben dokumentierte spätere
 Optionen und sind für den aktuellen Windows-Betrieb nicht vorgesehen.
+
+Für RC3 sind die Karten 39 bis 45 implementiert und praktisch abgenommen. Die
+zentrale Kernabnahme bestand 5/5, die lokale Ollama-Abnahme 8/8 Prüfungen. Der
+semantische Wissenspfad, die kontrollierte Animation und die verkürzte lokale
+Statusübersicht wurden am physischen Vector bestätigt. Karte 46 ist mit dem
+Release-Commit und dem annotierten Tag `v0.2.0-rc.3` abgeschlossen.
 
 ## 🚀 Langfristige Vision
 

@@ -27,8 +27,8 @@
 - ✅ Karte 44: Antwortlatenz und TTS-Übergänge inhaltsfrei messen
 - ✅ Karte 42: kontrollierte lokale Erinnerungen vorbereiten
 - ✅ Karte 43: ehrliches persönliches Gesprächsprofil erweitern
-- ⏳ Karte 45: sichere lokale Statusübersicht planen
-- ⏳ Karte 46: RC3 vollständig abnehmen und `v0.2.0-rc.3` setzen
+- ✅ Karte 45: sichere lokale Statusübersicht implementieren und physisch abnehmen
+- ✅ Karte 46: RC3 vollständig abnehmen und `v0.2.0-rc.3` setzen
 
 ## Release-Stabilisierung
 
@@ -41,6 +41,9 @@
 - ✅ ersten geprüften Git-Tag `v0.2.0-rc.1` historisch setzen
 - ✅ Versionsnummer und Changelog für `0.2.0-rc.2` festlegen
 - ✅ zweiten geprüften Git-Tag `v0.2.0-rc.2` setzen
+- ✅ automatischen RC3-Kern mit 820 Tests vollständig abnehmen
+- ✅ lokalen Ollama-Pfad und physischen Vector-Pfad für RC3 abnehmen
+- ✅ RC3-Release-Commit und annotierten Tag `v0.2.0-rc.3` setzen
 
 ## Conversation Foundation
 

@@ -64,6 +64,11 @@ def unmatched_message(value: str) -> str | None:
             "Ich habe die Recherchefrage nicht eindeutig erkannt. "
             "Bitte sage: Python Status. Oder: Python Version."
         )
+    if _looks_like_status_overview_request(value):
+        return (
+            "Ich habe die Statusübersicht nicht eindeutig erkannt. "
+            "Bitte frage: Wie ist dein Systemzustand?"
+        )
     if _looks_like_project_status_request(value):
         return (
             "Ich habe die Projektstatusfrage nicht eindeutig erkannt. "
@@ -118,6 +123,11 @@ def _looks_like_project_status_request(value: str) -> bool:
     return _references_project_status(value) and request
 
 
+def _looks_like_status_overview_request(value: str) -> bool:
+    """Erkennt eine Statusübersicht auch mit nicht freigegebenen Zusatzwörtern."""
+    return _references_status_overview(value)
+
+
 def _looks_like_research_request(value: str) -> bool:
     """Erkennt unklare Python- oder Rechercheanfragen für eine sichere Wiederholung."""
     words = set(value.split())
@@ -148,6 +158,18 @@ def _references_status(value: str, combined: str, separated: str) -> bool:
     """Erkennt zusammengesetzte oder getrennte Statusbezeichnungen."""
     words = set(value.split())
     return combined in words or {separated, "status"} <= words
+
+
+def _references_status_overview(value: str) -> bool:
+    """Erkennt ausschließlich feste Bezeichnungen der sicheren Gesamtübersicht."""
+    words = set(value.split())
+    named = bool(words & {
+        "statusübersicht", "statusüberblick", "systemübersicht", "systemzustand",
+    })
+    separated = {"system", "zustand"} <= words
+    return named or separated or (
+        "status" in words and bool(words & {"übersicht", "überblick"})
+    )
 
 
 def _references_documentation_status(value: str) -> bool:
@@ -253,6 +275,11 @@ SYSTEM_STATUS_WORDS = frozenset(
         "sind", "alle", "dienste", "online", "aktuell",
     }
 )
+STATUS_OVERVIEW_WORDS = frozenset({
+    "bitte", "dein", "der", "die", "eine", "gib", "ist", "lokal", "lokale",
+    "mir", "nenne", "status", "statusüberblick", "statusübersicht", "system",
+    "systemübersicht", "systemzustand", "überblick", "übersicht", "wie", "zeige", "zustand",
+})
 PROJECT_TEST_WORDS = frozenset(
     {
         "bitte", "projekt", "test", "tests", "projekttest", "projekttests",
@@ -282,6 +309,12 @@ PROJECT_PLAN_SUMMARY_WORDS = frozenset(
 
 
 _CANONICAL_MATCHERS: tuple[tuple[IntentMatcher, str], ...] = (
+    (
+        lambda value: _bounded_match(
+            value, _references_status_overview, STATUS_OVERVIEW_WORDS
+        ),
+        "status übersicht",
+    ),
     (
         lambda value: _bounded_match(
             value, _references_project_plan_summary, PROJECT_PLAN_SUMMARY_WORDS

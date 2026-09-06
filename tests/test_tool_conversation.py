@@ -39,6 +39,7 @@ from tools.registry import ToolRegistry
 from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
+from tools.status_overview import register_status_overview_tool
 from tools.selection import ToolIntentSelector
 from tools.vector_actions import register_vector_action_tools
 
@@ -145,6 +146,13 @@ class ControlledToolConversationTests(unittest.TestCase):
             self.wirepod_status,
             self.ollama_status,
         )
+        register_status_overview_tool(self.registry, lambda: {
+            "vector-sdk": "healthy",
+            "wirepod": "healthy",
+            "ollama": "healthy",
+            "openai": "disabled",
+            "elevenlabs": "unavailable",
+        })
         self.library_status = MagicMock(return_value=(DocumentIndexStatus(
             KnowledgeDocument(1, "private.md", "Private", "a" * 64, "now"),
             1,
@@ -178,8 +186,30 @@ class ControlledToolConversationTests(unittest.TestCase):
 
         self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
         self.assertTrue(result.message.startswith("Es ist "))
+
+    def test_status_overview_uses_shared_snapshot_without_model(self):
+        result = self.controller.handle("Status Übersicht")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("sind bereit", result.message)
+        self.assertIn("Die Cloud wurde nicht geprüft", result.message)
+        self.assertEqual(0, self.model.calls)
         self.assertTrue(result.execution.succeeded)
         self.actions.perform.assert_not_called()
+        self.assertEqual(0, self.model.calls)
+
+    def test_natural_system_state_question_never_reaches_model(self):
+        result = self.controller.handle("Wie ist dein Systemzustand?")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("sind bereit", result.message)
+        self.assertEqual(0, self.model.calls)
+
+    def test_split_system_state_transcript_never_reaches_model(self):
+        result = self.controller.handle("Wie ist dein System Zustand?")
+
+        self.assertEqual(ToolTurnStatus.COMPLETED, result.status)
+        self.assertIn("sind bereit", result.message)
         self.assertEqual(0, self.model.calls)
 
     def test_documentation_status_executes_without_model_or_confirmation(self):

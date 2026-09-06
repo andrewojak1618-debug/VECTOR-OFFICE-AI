@@ -6,8 +6,13 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+## [0.2.0-rc.3] – 2026-09-06
+
 ### Hinzugefügt
 
+- sichere lokale `Status Übersicht` aus bereits bekannten
+  ConnectionSupervisor-Zuständen ohne neue Provider-, Cloud- oder
+  kostenpflichtige Anfrage
 - lokales ehrliches Gesprächsprofil für eindeutig erkannte persönliche
   Selbstfragen ohne Provideraufruf oder vorgetäuschte Gefühle; bildhafte
   Bereitschaftsaussage und einmalige lokale Wohlbefindensantwort ergänzt und am
@@ -96,6 +101,13 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ### Abnahme
 
+- RC3-Kernabnahme mit Status-Regressionstest, 820 automatisierten Tests und
+  fünf von fünf Prüfschritten bestanden
+- lokale RC3-Ollama-Abnahme mit acht von acht Prüfschritten bestanden
+- semantischen Wissenspfad, kontrollierte Begrüßungsanimation und verkürzte
+  Statusübersicht am physischen Vector technisch sowie subjektiv bestätigt
+- normale Statusfrage ohne LLM-Aufruf in 15 Millisekunden vorbereitet und über
+  ElevenLabs klar verständlich ausgegeben
 - 712 automatisierte Tests einschließlich vorgewärmter Folgeaufnahme und
   kontrolliertem Öffnungspfad bestanden
 - 682 automatisierte Tests einschließlich WirePod-SDK-Preflight bestanden

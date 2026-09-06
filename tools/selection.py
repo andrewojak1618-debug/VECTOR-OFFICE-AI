@@ -201,6 +201,10 @@ DEFAULT_INTENT_RULES = (
         "lokalen Bibliotheksstatus nennen",
     ),
     ToolIntentRule(
+        ("status übersicht", "statusübersicht"),
+        "system.safe_status_overview", "sichere lokale Statusübersicht nennen",
+    ),
+    ToolIntentRule(
         (
             "system status",
             "systemstatus",

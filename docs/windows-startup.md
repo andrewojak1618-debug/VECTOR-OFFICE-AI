@@ -156,6 +156,25 @@ Nach Aktivierung dieser Korrektur wurde die geplante Aufgabe kontrolliert neu
 gestartet. WirePod und Ollama waren verfügbar, der Vector-SDK-Test endete nach
 rund 1,2 Sekunden erfolgreich und der Sprachdialog blieb anschließend aktiv.
 
+### Doppelte WirePod-Instanz nach einem Neustart
+
+Bei der RC3-Abnahme blieb nach einem Rechner- und Vector-Neustart zeitweise
+mehr als ein unabhängiger `chipper.exe`-Prozess aktiv. Dadurch war WirePods
+Weboberfläche erreichbar, während der SDK-Zugriff und BehaviorControl dennoch
+unzuverlässig blieben. Ein Browser-Neuladen beseitigt diesen Prozesskonflikt
+nicht.
+
+Der sichere Diagnoseweg zählt zunächst ausschließlich die unabhängigen
+WirePod-Prozesse. Sind mehrere aktiv, werden nur die eindeutig ermittelten
+WirePod-Instanzen beendet und anschließend genau eine ausgeblendete Instanz aus
+dem dokumentierten Installationspfad gestartet. Erst nach erfolgreichem
+WirePod-SDK-Preflight und erreichbarem Vector-Port wird die Anwendung erneut
+gestartet. Firmware, Zertifikate, Roboterdaten und `.env` bleiben unverändert.
+
+Nach dieser Wiederherstellung liefen WirePod und die geplante Anwendung jeweils
+genau einmal; der semantische Sprachtest und die Statusausgabe bestanden. Die
+Startabnahme prüft deshalb weiterhin ausdrücklich auf doppelte Instanzen.
+
 ### WirePod-SDK-Preflight und einmalige Selbstheilung
 
 `application/wirepod_preflight.py` prüft vor jedem Anwendungsstart ausschließlich

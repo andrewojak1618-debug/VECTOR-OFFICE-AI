@@ -36,6 +36,7 @@ from tools.registry import ToolRegistry
 from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
+from tools.status_overview import register_status_overview_tool
 from tools.vector_actions import register_vector_action_tools
 from vector.actions import VectorActions
 
@@ -49,6 +50,7 @@ def _create_tool_registry(
     memory_status_reader=None,
     memory_writer=None,
     document_summarizer=None,
+    status_overview_reader=None,
 ) -> ToolRegistry:
     """Registriert ausschließlich ausdrücklich geprüfte Produktivwerkzeuge."""
     audit_sink = audit_store.record if audit_store is not None else None
@@ -61,6 +63,7 @@ def _create_tool_registry(
         library_status_reader,
         memory_status_reader,
         memory_writer,
+        status_overview_reader,
     )
     return registry
 
@@ -111,6 +114,7 @@ def _register_optional_status_tools(
     library_status_reader,
     memory_status_reader,
     memory_writer,
+    status_overview_reader,
 ) -> None:
     """Registriert lokale Statuswerkzeuge nur mit vollständigen Abhängigkeiten."""
     if (wirepod_checker is None) != (ollama_checker is None):
@@ -127,6 +131,8 @@ def _register_optional_status_tools(
         register_local_memory_status_tool(registry, memory_status_reader)
     if memory_writer is not None:
         register_confirmed_memory_write_tool(registry, memory_writer)
+    if status_overview_reader is not None:
+        register_status_overview_tool(registry, status_overview_reader)
 
 
 def _create_audit_store(settings) -> SQLiteToolAuditStore | None:

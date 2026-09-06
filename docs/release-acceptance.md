@@ -109,3 +109,22 @@ anschließend Aussprache, Lautstärke, Wissensantwort, ElevenLabs-Stimme und
 Animation. Auch der vollständige Windows-Kaltstart mit WirePod, Ollama und
 Vector SDK wurde vor der Freigabe praktisch bestätigt. Damit erfüllt
 `0.2.0-rc.2` alle Freigabekriterien.
+
+## Ergebnis des dritten Release-Kandidaten
+
+Am 6. September 2026 bestand der vorbereitete RC3-Stand den gezielten
+Status-Regressionstest und den vollständigen automatischen Kern mit 5/5
+Prüfungen und 820 automatisierten Tests. Die lokale Ollama-Abnahme erreichte
+8/8 Prüfungen. OpenAI blieb im privaten Sprachbetrieb mit
+`VOICE_ALLOW_CLOUD=false` deaktiviert und wurde deshalb nicht durch eine
+zusätzliche kostenpflichtige Live-Anfrage angesprochen.
+
+Der semantische Wissenspfad bis zur deutschen Vector-TTS und die kontrollierte
+Begrüßungsanimation wurden in getrennten physischen Läufen erfolgreich
+abgeschlossen. Nach einer kontrollierten WirePod-Wiederherstellung bestätigte
+der Nutzer die Wissensausgabe als klar und verständlich. Die natürliche Frage
+„Wie ist dein Systemzustand?“ wurde anschließend ohne LLM-Aufruf in 15
+Millisekunden lokal vorbereitet, über ElevenLabs ausgegeben und ebenfalls klar
+verstanden. Damit sind die technischen und subjektiven RC3-Kriterien erfüllt
+und der gemeinsame Release-Stand für Commit und annotierten Tag
+`v0.2.0-rc.3` freigegeben.

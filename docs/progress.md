@@ -1217,3 +1217,46 @@ Die deutsche TTS wurde schrittweise verbessert:
   vollständige Suite mit 806 Tests bestanden
 - Statusfrage sowie positive und belastete Folgeantwort ohne erneutes Wakeword
   am physischen Vector korrekt, verständlich und ausreichend flüssig abgenommen
+
+## Karte 45 – Sichere lokale Statusübersicht
+
+- `system.safe_status_overview` als argumentloses Read-only-Werkzeug in der
+  bestehenden Tool Registry ergänzt
+- letzten bekannten, inhaltsfreien Snapshot des gemeinsamen
+  `ConnectionSupervisor` wiederverwendet, statt weitere Providerprüfungen zu
+  starten
+- Vector SDK, WirePod und Ollama auf feste lokale Zustände begrenzt und
+  ungültige oder private Werte zu `unknown` reduziert
+- OpenAI und ElevenLabs ausschließlich als konfiguriert, deaktiviert oder
+  unbekannt ausgewiesen und nicht live oder kostenpflichtig geprüft
+- URLs, Schlüssel, Seriennummern, Pfade, Inhalte, Providerantworten und
+  Fehlertexte vollständig aus Registry- und Sprachausgabe ausgeschlossen
+- feste Sprachbefehle `Status Übersicht`, `System Zustand` und die natürliche
+  Frage `Wie ist dein Systemzustand?` ohne Agentenmodell, Bestätigung oder
+  Roboteraktion ergänzt
+- Ausfall des Snapshot-Lesers und einzelne sowie mehrere eingeschränkte
+  Provider mit sicheren deutschen Antworten abgesichert
+- Statusantwort für die Sprachausgabe auf zwei kurze, TTS-freundliche Sätze
+  verdichtet
+- 820 automatisierte Tests, Python-Kompilierung, strikten MkDocs-Bau und
+  `git diff --check` bestanden
+- normale Sprachfrage in 15 Millisekunden rein lokal vorbereitet; kein Ollama-
+  oder OpenAI-Aufruf, ElevenLabs-Erzeugung in 891 Millisekunden abgeschlossen
+- verkürzte Statusantwort am physischen Vector klar und verständlich bestätigt
+
+## Karte 46 – RC3 vollständig abnehmen
+
+- gezielten Status-Regressionstest und vollständigen automatischen Kern mit
+  fünf von fünf Prüfschritten bestanden
+- lokale Ollama-Abnahme mit acht von acht Prüfschritten bestanden
+- semantischen Wissenspfad bis zur deutschen Vector-TTS technisch bestanden
+- kontrollierte Begrüßungsanimation in einem getrennten physischen Lauf
+  bestanden
+- Aussprache und Verständlichkeit der Wissens- und Statusausgabe subjektiv
+  bestätigt
+- OpenAI im privaten Sprachbetrieb mit `VOICE_ALLOW_CLOUD=false` deaktiviert;
+  deshalb bewusst keine zusätzliche kostenpflichtige OpenAI-Anfrage ausgeführt
+- vorübergehenden doppelten WirePod-Prozess als Startstörung erkannt und durch
+  genau eine kontrolliert gestartete Instanz behoben
+- Quellversion `0.2.0-rc.3`, Release-Commit und annotierten Tag
+  `v0.2.0-rc.3` als gemeinsam freizugebenden Stand festgelegt

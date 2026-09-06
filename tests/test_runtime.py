@@ -72,6 +72,11 @@ class RuntimeModeTests(unittest.TestCase):
                 "user-confirmed-voice",
                 "now",
             ),
+            status_overview_reader=lambda: {
+                "vector-sdk": "healthy",
+                "wirepod": "healthy",
+                "ollama": "healthy",
+            },
         )
 
         self.assertEqual(
@@ -94,6 +99,7 @@ class RuntimeModeTests(unittest.TestCase):
                 "research.python_latest_version",
                 "research.python_source_status",
                 "system.local_service_status",
+                "system.safe_status_overview",
                 "vector.emergency_stop",
                 "vector.list_actions",
                 "vector.perform_action",

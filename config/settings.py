@@ -31,7 +31,7 @@ class Settings:
     """Application settings loaded once from the local environment."""
 
     APP_NAME = "Vector Office AI"
-    VERSION = "0.2.0-rc.2"
+    VERSION = "0.2.0-rc.3"
 
     VECTOR_NAME = os.getenv("VECTOR_NAME", "Vector")
 

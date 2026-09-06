@@ -270,6 +270,27 @@ Die feste Formulierung `System Status` wird ohne Modellaufruf und ohne
 Bestätigung ausgeführt. Weitere beobachtete Vosk-Varianten werden nur nach
 einem realen Test einzeln ergänzt.
 
+## Sichere lokale Statusübersicht
+
+`tools/status_overview.py` registriert `system.safe_status_overview` mit
+`READ_ONLY` und ohne Parameter. Das Tool liest ausschließlich den letzten
+bereits bekannten, inhaltsfreien Zustands-Snapshot des gemeinsamen
+`ConnectionSupervisor`. Es startet weder einen neuen Healthcheck noch eine
+OpenAI-, ElevenLabs-, Ollama-, WirePod- oder Vector-Anfrage.
+
+Für Vector SDK, WirePod und Ollama werden nur feste Zustände wie `healthy`,
+`degraded`, `unavailable`, `disabled` oder der sichere Rückfall `unknown`
+übernommen. OpenAI und ElevenLabs erscheinen ausschließlich als lokal
+`configured`, `disabled` oder `unknown`; daraus wird ausdrücklich keine
+Erreichbarkeit abgeleitet. Die Ausgabe enthält keine Providerantworten, URLs,
+Ports, Seriennummern, Pfade, API-Schlüssel, Fehlermeldungen oder Inhalte.
+
+Der feste Sprachbefehl `Status Übersicht` läuft ohne Agentenmodell und ohne
+Bestätigung. Die Antwort umfasst höchstens zwei lokal erzeugte Sätze, löst
+keine physische Aktion aus und nennt bei Einschränkungen nur feste
+Dienstbezeichnungen. Damit ergänzt die Übersicht den aktiven lokalen
+`System Status`, ersetzt ihn aber nicht.
+
 ## Lokaler Bibliotheksstatus
 
 `tools/library_status.py` registriert `knowledge.library_status` mit

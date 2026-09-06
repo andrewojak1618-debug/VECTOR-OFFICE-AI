@@ -33,6 +33,7 @@ SPOKEN_RESULT_TOOLS = frozenset({
     "memory.local_status",
     "knowledge.library_status",
     "system.local_service_status",
+    "system.safe_status_overview",
     "development.run_core_tests",
     "development.project_status",
     "development.next_roadmap_item",

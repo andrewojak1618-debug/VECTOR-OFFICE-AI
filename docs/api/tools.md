@@ -32,6 +32,10 @@
     options:
       members: true
 
+::: tools.status_overview
+    options:
+      members: true
+
 ## Bestätigung im Gespräch
 
 ::: application.tool_conversation

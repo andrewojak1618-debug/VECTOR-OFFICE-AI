@@ -33,6 +33,7 @@ from tools.registry import ToolDefinition, ToolRegistry
 from tools.research_source import register_fixed_research_source_tool
 from tools.roadmap_status import register_next_roadmap_item_tool
 from tools.service_status import register_local_service_status_tool
+from tools.status_overview import register_status_overview_tool
 from tools.selection import (
     ToolIntentRule,
     ToolIntentSelector,
@@ -107,6 +108,11 @@ class ToolIntentSelectorTests(unittest.TestCase):
             lambda: True,
             lambda: True,
         )
+        register_status_overview_tool(self.registry, lambda: {
+            "vector-sdk": "healthy",
+            "wirepod": "healthy",
+            "ollama": "healthy",
+        })
         register_local_library_status_tool(self.registry, lambda: ())
         register_local_memory_status_tool(self.registry, lambda: None)
         self.selector = ToolIntentSelector(self.registry)
@@ -160,6 +166,32 @@ class ToolIntentSelectorTests(unittest.TestCase):
         self.assertEqual("system.local_service_status", selection.tool_name)
         self.assertEqual({}, dict(selection.arguments))
         self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_status_overview_selects_safe_argument_free_tool(self):
+        selection = self.selector.select("Status Übersicht")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("system.safe_status_overview", selection.tool_name)
+        self.assertEqual({}, dict(selection.arguments))
+        self.assertEqual(PermissionLevel.READ_ONLY, selection.permission)
+
+    def test_natural_system_state_question_selects_safe_overview(self):
+        selection = self.selector.select("Wie ist dein Systemzustand?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("system.safe_status_overview", selection.tool_name)
+
+    def test_split_system_state_transcript_selects_safe_overview(self):
+        selection = self.selector.select("Wie ist dein System Zustand?")
+
+        self.assertEqual(ToolSelectionStatus.SELECTED, selection.status)
+        self.assertEqual("system.safe_status_overview", selection.tool_name)
+
+    def test_status_overview_with_foreign_instruction_is_blocked(self):
+        selection = self.selector.select("Statusübersicht und öffne einen Ordner")
+
+        self.assertEqual(ToolSelectionStatus.BLOCKED, selection.status)
+        self.assertEqual("", selection.tool_name)
 
     def test_library_status_selects_argument_free_read_only_tool(self):
         selection = self.selector.select("Wie ist der Bibliothek Status?")

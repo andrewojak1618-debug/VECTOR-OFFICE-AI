@@ -81,7 +81,7 @@ def run_application(settings) -> bool:
         return False
     speech = create_speech_output(settings, vector, diagnostics)
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
-    agent = _create_runtime_agent(settings, mode, actions, diagnostics)
+    agent = _create_runtime_agent(settings, mode, actions, diagnostics, connections)
     _run_input_mode(settings, mode, agent, speech, diagnostics, connections)
     diagnostics.emit(
         DiagnosticLevel.INFO,
@@ -92,7 +92,7 @@ def run_application(settings) -> bool:
     return True
 
 
-def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
+def _create_runtime_agent(settings, mode, actions, diagnostics, connections) -> Agent:
     """Setzt einen Agenten mit gemeinsamem lokalen Speicher und Statuslesern zusammen."""
     audit_store = _create_audit_store(settings)
     memory_store = SQLiteMemoryStore(settings.MEMORY_DB_PATH)
@@ -111,6 +111,7 @@ def _create_runtime_agent(settings, mode, actions, diagnostics) -> Agent:
         memory_store.status,
         memory_store.remember,
         _create_document_summarizer(settings, diagnostics),
+        connections.provider_overview,
     )
     return _create_agent(
         settings,
