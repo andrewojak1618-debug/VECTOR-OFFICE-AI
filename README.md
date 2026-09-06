@@ -1171,6 +1171,8 @@ markiert. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
 - ✅ WirePod-SDK-Vorabprüfung mit einmaliger kontrollierter Selbstheilung
 - ✅ doppelte WirePod-Instanzen vor dem App-Start einmalig normalisieren und
   nach kontrolliertem Aufgaben-Neustart physisch abgenommen
+- ✅ Vector-SDK-Verlust bei der Audioausgabe passiv erfassen, ohne Antworten zu
+  wiederholen oder laufende Prozesse zu beenden
 - ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
 - ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
 - ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`

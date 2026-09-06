@@ -2,19 +2,21 @@ import tempfile
 import unittest
 import wave
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from application.connection_supervisor import ConnectionSupervisor
 from vector.speech import REFLECTIVE_PRELUDES, SpeechStyle, VectorSpeech
 from vector.speech_prosody import normalize_speech_text
 
 
 class FakeVectorClient:
-    def __init__(self):
+    def __init__(self, completed=True):
         self.calls = []
+        self.completed = completed
 
     def play_wav(self, path, volume=50):
         self.calls.append((Path(path), volume))
-        return True
+        return self.completed
 
 
 class VectorSpeechTests(unittest.TestCase):
@@ -41,7 +43,8 @@ class VectorSpeechTests(unittest.TestCase):
 
     def test_say_prepares_and_plays_audio(self):
         client = FakeVectorClient()
-        speech = VectorSpeech(client, volume=90)
+        observed = []
+        speech = VectorSpeech(client, volume=90, availability_observer=observed.append)
 
         with patch.object(speech, "_synthesize_german_wav") as synthesize, patch.object(
             speech, "_convert_for_vector"
@@ -56,6 +59,60 @@ class VectorSpeechTests(unittest.TestCase):
         convert.assert_called_once()
         validate.assert_called_once()
         self.assertEqual(90, client.calls[0][1])
+        self.assertEqual([True], observed)
+
+    def test_failed_playback_marks_sdk_unavailable_without_retry(self):
+        client = FakeVectorClient(completed=False)
+        observed = []
+        speech = VectorSpeech(client, availability_observer=observed.append)
+
+        with patch.object(speech, "_synthesize_german_wav"), patch.object(
+            speech,
+            "_convert_for_vector",
+        ), patch.object(speech, "_validate_vector_wav"):
+            self.assertFalse(speech.say("Guten Tag"))
+
+        self.assertEqual(1, len(client.calls))
+        self.assertEqual([False], observed)
+
+    def test_playback_exception_marks_sdk_unavailable_and_is_not_retried(self):
+        client = FakeVectorClient()
+        client.play_wav = MagicMock(side_effect=RuntimeError("offline"))
+        observed = []
+        speech = VectorSpeech(client, availability_observer=observed.append)
+
+        with patch.object(speech, "_synthesize_german_wav"), patch.object(
+            speech,
+            "_convert_for_vector",
+        ), patch.object(speech, "_validate_vector_wav"):
+            self.assertFalse(speech.say("Guten Tag"))
+
+        client.play_wav.assert_called_once()
+        self.assertEqual([False], observed)
+
+    def test_playback_updates_shared_sdk_state_and_recovery_once(self):
+        client = FakeVectorClient(completed=False)
+        connections = ConnectionSupervisor()
+        connections.register_provider("vector-sdk", enabled=True)
+        speech = VectorSpeech(
+            client,
+            availability_observer=lambda available: connections.observe(
+                "vector-sdk",
+                available,
+            ),
+        )
+
+        with patch.object(speech, "_synthesize_german_wav"), patch.object(
+            speech,
+            "_convert_for_vector",
+        ), patch.object(speech, "_validate_vector_wav"):
+            self.assertFalse(speech.say("Erster Versuch"))
+            client.completed = True
+            self.assertTrue(speech.say("Nächster eigenständiger Turn"))
+
+        self.assertEqual("healthy", connections.provider_overview()["vector-sdk"])
+        self.assertTrue(connections.consume_provider_recovery("vector-sdk"))
+        self.assertFalse(connections.consume_provider_recovery("vector-sdk"))
 
     def test_say_returns_false_when_synthesis_fails(self):
         speech = VectorSpeech(FakeVectorClient())

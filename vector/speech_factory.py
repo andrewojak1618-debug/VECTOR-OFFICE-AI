@@ -1,5 +1,7 @@
 """Compose the configured German speech provider with safe cloud defaults."""
 
+from collections.abc import Callable
+
 from diagnostics.events import StructuredDiagnosticReporter
 from vector.elevenlabs_speech import ElevenLabsSpeech, ElevenLabsVoiceSettings
 from vector.sdk_client import VectorSDKClient
@@ -10,9 +12,15 @@ def create_speech_output(
     settings,
     vector: VectorSDKClient,
     diagnostics: StructuredDiagnosticReporter | None = None,
+    availability_observer: Callable[[bool], object] | None = None,
 ) -> VectorSpeech:
     """Erzeugt lokale Sprache oder ausdrücklich freigegebenes ElevenLabs mit Rückfall."""
-    local = VectorSpeech(vector, settings.TTS_VOICE, settings.TTS_VOLUME)
+    local = VectorSpeech(
+        vector,
+        settings.TTS_VOICE,
+        settings.TTS_VOLUME,
+        availability_observer,
+    )
     provider = getattr(settings, "TTS_PROVIDER", "onecore").casefold().strip()
     if provider == "onecore":
         return local

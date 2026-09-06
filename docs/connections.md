@@ -92,6 +92,18 @@ abgespielt werden, bleibt der Fehler an der Auslieferungsgrenze. Die laufende
 Anwendung kann den nächsten Turn weiter verarbeiten; Tool-Aufrufe und
 verändernde Aktionen werden wegen eines Ausgabefehlers niemals wiederholt.
 
+Ab Karte 48 aktualisiert jede tatsächliche Audioübertragung außerdem passiv den
+bereits vorhandenen Providerzustand `vector-sdk`. Ein negatives Ergebnis oder
+eine abgefangene SDK-Ausnahme setzt ihn auf `unavailable`; ein späterer
+eigenständiger erfolgreicher Turn setzt ihn auf `healthy` zurück. Das gilt für
+lokale OneCore-Ausgabe, Denkphasen und ElevenLabs-Audio gleichermaßen.
+
+Diese Beobachtung startet keinen zusätzlichen Healthcheck, wiederholt kein
+Audio und beendet weder WirePod noch die Anwendung. Text, Audio, Dateipfad,
+Seriennummer und SDK-Fehler bleiben außerhalb der Zustandsdiagnose. Während die
+Hardware nicht erreichbar ist, kann Vector naturgemäß keine Offline-Meldung
+sprechen; der Gesprächsprozess bleibt jedoch für einen späteren Turn aktiv.
+
 ## Optionale Firmware-Forschung
 
 Echte Logik direkt auf Vector erfordert einen OSKR-/Dev-Unlock, den individuellen

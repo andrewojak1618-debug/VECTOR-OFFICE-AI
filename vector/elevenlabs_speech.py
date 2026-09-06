@@ -112,6 +112,7 @@ class ElevenLabsSpeech(VectorSpeech):
             local_speech.vector_client,
             local_speech.voice,
             local_speech.volume,
+            local_speech.availability_observer,
         )
         self.local_speech = local_speech
         self.api_key = api_key.strip()

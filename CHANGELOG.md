@@ -10,6 +10,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 - einmalige WirePod-Einzelinstanzkorrektur ausschließlich vor dem Start der
   Anwendung; ein fehlgeschlagener Neustart blockiert sicher
+- passive Aktualisierung des Vector-SDK-Zustands anhand jeder tatsächlichen
+  Audioübertragung ohne automatische Wiederholung oder Prozessaktion
 
 ### Abnahme
 
@@ -17,6 +19,10 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   824 automatisierten Tests sowie fünf von fünf Prüfschritten bestanden
 - kontrollierter Aufgaben-Neustart mit zehn von zehn lokalen Startprüfungen
   bestanden; Statusantwort anschließend klar und verständlich bestätigt
+- gezielter SDK-Zustandsregressionstest und vollständige Kernabnahme mit
+  827 automatisierten Tests sowie fünf von fünf Prüfschritten bestanden
+- normaler ElevenLabs-zu-Vector-Erfolgsweg nach kontrolliertem Neuladen ohne
+  Wiederholung physisch bestätigt
 
 ## [0.2.0-rc.3] – 2026-09-06
 

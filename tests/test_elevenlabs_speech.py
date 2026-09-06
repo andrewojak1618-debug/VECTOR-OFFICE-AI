@@ -296,11 +296,18 @@ class SpeechFactoryTests(unittest.TestCase):
         self.assertIs(type(speech), VectorSpeech)
 
     def test_complete_cloud_settings_create_elevenlabs_with_fallback(self):
-        speech = create_speech_output(cloud_settings(), FakeVectorClient())
+        observer = MagicMock()
+        speech = create_speech_output(
+            cloud_settings(),
+            FakeVectorClient(),
+            availability_observer=observer,
+        )
 
         self.assertIsInstance(speech, ElevenLabsSpeech)
         self.assertEqual("felix-id", speech.voice_id)
         self.assertEqual("Microsoft Stefan", speech.local_speech.voice)
+        self.assertIs(observer, speech.availability_observer)
+        self.assertIs(observer, speech.local_speech.availability_observer)
 
     def test_unknown_tts_provider_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "TTS_PROVIDER"):

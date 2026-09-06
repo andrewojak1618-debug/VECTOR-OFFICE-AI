@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import threading
 import wave
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -86,11 +87,13 @@ class VectorSpeech:
         vector_client: VectorSDKClient,
         voice: str = "Microsoft Stefan",
         volume: int = 50,
+        availability_observer: Callable[[bool], object] | None = None,
     ):
         """Initialisiert deutsche TTS mit lokaler Stimme, Lautstärke und Synthesesperre."""
         self.vector_client = vector_client
         self.voice = voice
         self.volume = volume
+        self.availability_observer = availability_observer
         self._synthesis_lock = threading.Lock()
 
     def say(
@@ -142,10 +145,7 @@ class VectorSpeech:
         if not isinstance(prepared, PreparedSpeech):
             raise TypeError("Prepared speech has an invalid type.")
         try:
-            return self.vector_client.play_wav(
-                prepared.path,
-                volume=self.volume,
-            )
+            return self._play_vector_audio(prepared.path)
         finally:
             prepared.close()
 
@@ -167,7 +167,26 @@ class VectorSpeech:
             self._synthesize_german_ssml_wav(content, source_path)
             self._convert_for_vector(source_path, vector_path)
             self._validate_vector_wav(vector_path)
-            return self.vector_client.play_wav(vector_path, volume=self.volume)
+            return self._play_vector_audio(vector_path)
+
+    def _play_vector_audio(self, path: Path) -> bool:
+        """Überträgt Audio einmalig und meldet nur den SDK-Verfügbarkeitszustand."""
+        try:
+            completed = bool(self.vector_client.play_wav(path, volume=self.volume))
+        except Exception:
+            self._report_vector_availability(False)
+            raise
+        self._report_vector_availability(completed)
+        return completed
+
+    def _report_vector_availability(self, available: bool) -> None:
+        """Aktualisiert optional den inhaltsfreien SDK-Zustand ohne Audiowiederholung."""
+        if self.availability_observer is None:
+            return
+        try:
+            self.availability_observer(available)
+        except (RuntimeError, TypeError, ValueError):
+            pass
 
     def _synthesize_german_wav(
         self,

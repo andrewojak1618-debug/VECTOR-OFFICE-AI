@@ -1287,3 +1287,25 @@ Die deutsche TTS wurde schrittweise verbessert:
   bestanden
 - normale Statusfrage nach dem Neustart klar beantwortet; Hinweis auf die
   absichtlich nicht live geprüfte Cloud korrekt und verständlich ausgegeben
+
+## Karte 48 – SDK-Verlust im Gespräch passiv behandeln
+
+- vorhandenen Wiedergabepfad als zuverlässigste passive SDK-Signalquelle
+  ausgewählt; keine zusätzliche Hardwareabfrage pro Antwort eingeführt
+- lokale und ElevenLabs-basierte Ausgabe melden nur Erfolg oder Fehlschlag der
+  tatsächlichen Audioübertragung an den gemeinsamen `ConnectionSupervisor`
+- fehlgeschlagene Übertragung wird weder automatisch wiederholt noch erneut
+  synthetisiert
+- Gespräch, WirePod und Host-Prozesse bleiben bei einem Wiedergabefehler aktiv
+- Denkphase und normale Antwort verwenden dieselbe inhaltsfreie Zustandsgrenze
+- Diagnose erhält weder Antworttext noch Audio, Pfad, Seriennummer oder
+  SDK-Fehlermeldung
+- gezielte Unit-Tests für Erfolg, negatives Ergebnis, Ausnahme und genau einen
+  Übertragungsversuch ergänzt
+- vollständige Kernabnahme mit 827 Tests und fünf von fünf Prüfschritten
+  bestanden
+- kontrolliertes Neuladen mit zehn von zehn Startprüfungen bestanden
+- normalen Statusdialog in 16 Millisekunden vorbereitet, ElevenLabs in 1.094
+  Sekunden abgeschlossen und Vector-Wiedergabe erfolgreich beendet
+- physischer Erfolgsweg ohne Wiederholung bestätigt; absichtlicher
+  Hardware-Verbindungsabbruch bleibt aus Sicherheitsgründen ausgeschlossen

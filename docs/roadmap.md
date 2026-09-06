@@ -34,7 +34,7 @@
 
 - ✅ Karte 47: doppelte WirePod-Instanzen vor dem Anwendungsstart kontrolliert
   auf genau eine Instanz zurückführen und physisch abnehmen
-- ⏳ Karte 48: SDK-Verlust während eines Gesprächs passiv erkennen und ohne
+- ✅ Karte 48: SDK-Verlust während eines Gesprächs passiv erkennen und ohne
   automatische Prozessbeendigung sicher behandeln
 - ⏳ Karte 49: wiederholbaren lokalen Langzeitlauf mit inhaltsfreien
   Stabilitätskennzahlen ergänzen

@@ -79,7 +79,12 @@ def run_application(settings) -> bool:
     vector = _prepare_vector(settings, mode, diagnostics, connections)
     if vector is None:
         return False
-    speech = create_speech_output(settings, vector, diagnostics)
+    speech = create_speech_output(
+        settings,
+        vector,
+        diagnostics,
+        lambda available: connections.observe("vector-sdk", available),
+    )
     actions = VectorActions(vector, settings.ROBOT_ACTION_TIMEOUT)
     agent = _create_runtime_agent(settings, mode, actions, diagnostics, connections)
     _run_input_mode(settings, mode, agent, speech, diagnostics, connections)
