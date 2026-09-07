@@ -36,8 +36,8 @@
   auf genau eine Instanz zurückführen und physisch abnehmen
 - ✅ Karte 48: SDK-Verlust während eines Gesprächs passiv erkennen und ohne
   automatische Prozessbeendigung sicher behandeln
-- ⏳ Karte 49: wiederholbaren lokalen Langzeitlauf mit inhaltsfreien
-  Stabilitätskennzahlen ergänzen
+- ✅ Karte 49: wiederholbaren lokalen Langzeitlauf mit inhaltsfreien
+  Stabilitätskennzahlen ergänzen und im fünfminütigen Standardlauf abnehmen
 - ⏳ Karte 50: RC4-Kaltstart, Wiederherstellung und Langzeitbetrieb vollständig
   abnehmen
 

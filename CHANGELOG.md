@@ -12,6 +12,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Anwendung; ein fehlgeschlagener Neustart blockiert sicher
 - passive Aktualisierung des Vector-SDK-Zustands anhand jeder tatsächlichen
   Audioübertragung ohne automatische Wiederholung oder Prozessaktion
+- begrenzter lokaler Stabilitätslauf für Vector SDK, WirePod und Ollama mit
+  ausschließlich aggregierten Verfügbarkeitskennzahlen
 
 ### Abnahme
 
@@ -23,6 +25,10 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   827 automatisierten Tests sowie fünf von fünf Prüfschritten bestanden
 - normaler ElevenLabs-zu-Vector-Erfolgsweg nach kontrolliertem Neuladen ohne
   Wiederholung physisch bestätigt
+- Stabilitäts-Regressionstest und vollständige Kernabnahme mit 833
+  automatisierten Tests sowie fünf von fünf Prüfschritten bestanden
+- fünfminütiger Standardlauf mit jeweils zehn erfolgreichen Messungen für
+  Vector SDK, WirePod und Ollama ohne Ausfall oder Zustandswechsel bestanden
 
 ## [0.2.0-rc.3] – 2026-09-06
 

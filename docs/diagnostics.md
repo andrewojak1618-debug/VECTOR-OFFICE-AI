@@ -118,3 +118,34 @@ erscheinen als `disabled`.
 Der Prozess liefert Statuscode `0`, wenn alle benötigten Dienste mindestens
 kontrolliert verfügbar oder konfiguriert sind. Ein benötigter Zustand
 `unavailable` führt zu Statuscode `1`.
+
+## Begrenzter lokaler Stabilitätslauf
+
+Karte 49 ergänzt denselben passiven lokalen Prüfpfad um wiederholte Messungen:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.stability_run `
+  --samples 10 `
+  --interval-seconds 30
+```
+
+Geprüft werden ausschließlich Vector SDK ohne BehaviorControl, WirePods lokaler
+SDK-Lesezugriff und Ollama. OpenAI und ElevenLabs werden weder angesprochen noch
+als Laufzeitmessung ausgegeben. Die Grenzen erlauben 1 bis 120 Messungen, 1 bis
+60 Sekunden Abstand und höchstens eine Stunde theoretische Gesamtdauer. Nach der
+letzten Messung wird nicht mehr gewartet.
+
+Die Terminalausgabe und der feste lokale Bericht
+`data/acceptance/stability.json` enthalten pro Provider ausschließlich:
+
+- Anzahl verfügbarer Messungen,
+- Anzahl nicht verfügbarer Messungen,
+- Anzahl der Zustandswechsel,
+- längste zusammenhängende Ausfallserie.
+
+Zusätzlich werden Messanzahl, Intervall, technische Gesamtdauer und das feste
+Ergebnis `bestanden` oder `auffällig` gespeichert. Zeitpunkte, Fragen,
+Antworten, Audio, Dokumente, Speicherinhalte, Endpunkte, Prozess-IDs,
+Seriennummern, Schlüssel und interne Fehlertexte sind ausgeschlossen. Ein
+unerwarteter Prüffehler zählt sicher als nicht verfügbar. Der Bericht liegt
+unter `data/` und bleibt dadurch außerhalb von Git.

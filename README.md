@@ -926,6 +926,20 @@ Bericht ohne Fragen, Antworten oder Audiodaten:
 .venv\Scripts\python.exe -m diagnostics.response_latency_report
 ```
 
+Ein begrenzter Stabilitätslauf prüft ausschließlich Vector SDK, WirePod und
+Ollama wiederholt und speichert nur aggregierte Zähler unter dem von Git
+ignorierten Pfad `data/acceptance/stability.json`:
+
+```powershell
+.venv\Scripts\python.exe -m diagnostics.stability_run `
+  --samples 10 `
+  --interval-seconds 30
+```
+
+Die Voreinstellung dauert rund fünf Minuten. Es gibt keine Cloud-Anfrage,
+Sprachausgabe, Bewegung oder Tool-Ausführung. Fragen, Antworten, Dokumente,
+Endpunkte, Seriennummern und Fehlertexte werden weder angezeigt noch gespeichert.
+
 ### Vollständige Systemabnahme
 
 Der sichere Standardlauf prüft Tests, Python-Syntax, Dokumentation und Git,
@@ -1173,6 +1187,8 @@ markiert. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
   nach kontrolliertem Aufgaben-Neustart physisch abgenommen
 - ✅ Vector-SDK-Verlust bei der Audioausgabe passiv erfassen, ohne Antworten zu
   wiederholen oder laufende Prozesse zu beenden
+- ✅ inhaltsfreier lokaler Stabilitätslauf für Vector SDK, WirePod und Ollama;
+  fünfminütige Abnahme mit jeweils 10/10 erfolgreichen Messungen bestanden
 - ✅ Homeserver- und Docker-Grenzen dokumentiert, noch ohne produktive Migration
 - ✅ alle produktiven Funktionen und Methoden mit deutschen Docstrings erklärt
 - ✅ Firmware-Sicherheitsregel sowie kryptografisch geprüfte `6076ep` und `6085ep`

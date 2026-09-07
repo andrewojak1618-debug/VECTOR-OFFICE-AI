@@ -1309,3 +1309,31 @@ Die deutsche TTS wurde schrittweise verbessert:
   Sekunden abgeschlossen und Vector-Wiedergabe erfolgreich beendet
 - physischer Erfolgsweg ohne Wiederholung bestätigt; absichtlicher
   Hardware-Verbindungsabbruch bleibt aus Sicherheitsgründen ausgeschlossen
+
+## Karte 49 – Inhaltsfreien lokalen Stabilitätslauf ergänzen
+
+- vorhandenen ungefährlichen Provider-Status als einzige Messquelle
+  wiederverwendet
+- Vector SDK ohne BehaviorControl, WirePod-SDK-Lesezugriff und Ollama als feste
+  lokale Prüfziele festgelegt
+- OpenAI, ElevenLabs, Sprachausgabe, Bewegungen und Tools vollständig aus dem
+  Lauf ausgeschlossen
+- Standardlauf auf zehn Messungen im Abstand von 30 Sekunden festgelegt
+- Messanzahl, Intervall und theoretische Gesamtdauer hart begrenzt
+- Bericht auf Erfolgs- und Fehlerzähler, Zustandswechsel sowie längste
+  Ausfallserie je festem Provider reduziert
+- fehlende Ergebnisse und interne Prüfausnahmen ohne Fehlerinhalt als nicht
+  verfügbar gewertet
+- Ausgabe fest unter `data/acceptance/stability.json` gespeichert und damit von
+  Git ausgeschlossen
+- sechs neue Unit-Tests sowie bestehende Provider- und Qualitätsprüfungen mit
+  insgesamt 24 gezielten Tests bestanden
+- gezielten Stabilitäts-Regressionstest und vollständige Kernabnahme mit 833
+  Tests sowie fünf von fünf Prüfschritten bestanden
+- kurzen realen Lauf mit jeweils zwei von zwei erfolgreichen Messungen für
+  Vector SDK, WirePod und Ollama bestanden
+- dokumentierten fünfminütigen Standardlauf mit jeweils zehn von zehn
+  erfolgreichen Messungen bestanden; keine Ausfälle, Zustandswechsel oder
+  Ausfallserien beobachtet
+- gespeicherten Bericht auf ausschließlich vorgesehene Aggregatfelder geprüft
+  und seinen Ausschluss aus Git bestätigt
