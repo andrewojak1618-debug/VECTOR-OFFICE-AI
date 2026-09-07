@@ -1337,3 +1337,29 @@ Die deutsche TTS wurde schrittweise verbessert:
   Ausfallserien beobachtet
 - gespeicherten Bericht auf ausschließlich vorgesehene Aggregatfelder geprüft
   und seinen Ausschluss aus Git bestätigt
+
+## Karte 50 – RC4-Kaltstart und Wiederherstellung abnehmen
+
+- beim ersten Kaltstartversuch eine erreichbare WirePod-Weboberfläche bei
+  gleichzeitig blockiertem SDK-Lesezugriff festgestellt
+- beobachteten Zustand durch genau einen manuellen WirePod-Neustart behoben;
+  Vector SDK, WirePod und Ollama waren danach gemeinsam verfügbar
+- Regressionstest ergänzt, der denselben Authentifizierungsfehler auch bei
+  unveränderter `botSdkInfo.json` reproduziert
+- Watchdog-Reparatur auf genau einen kontrollierten Startneustart erweitert;
+  die bestehende gemeinsame Neustartsperre bleibt unverändert erhalten
+- weiterhin fehlerhaften SDK-Zustand nach diesem Versuch sicher blockiert
+- automatische SDK-bedingte Prozessaktion während aktiver Gespräche weiterhin
+  ausgeschlossen
+- vorhandene Erkennung der lokalen ARM64-Ollama-Installation mit einem eigenen
+  Regressionstest dauerhaft abgesichert
+- 49 gezielte Watchdog-, Ollama-, Qualitäts- und Regelprüfungen bestanden
+- neuen Kaltstart-Regressionstest und vollständige Kernabnahme mit 834 Tests
+  sowie fünf von fünf Prüfschritten bestanden
+- kontrollierten Wiederanlauf mit zehn von zehn Startprüfungen bestanden
+- anschließenden fünfminütigen Lauf mit jeweils zehn von zehn erfolgreichen
+  Messungen für Vector SDK, WirePod und Ollama bestanden
+- echten Windows-Kaltstart mit zehn von zehn Startprüfungen bestanden; WirePod,
+  Ollama und Vector SDK waren ohne Reparatureingriff unmittelbar verfügbar
+- anschließende lokale Systemstatusfrage am physischen Vector klar und
+  verständlich beantwortet; Karte 50 ist damit vollständig abgenommen

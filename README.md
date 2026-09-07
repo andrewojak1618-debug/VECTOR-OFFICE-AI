@@ -1029,11 +1029,12 @@ erzeugt werden.
 Vorbeugend wird WirePod nach jeder erneuten SDK-Aktivierung oder Änderung der
 lokalen Robot-Zuordnung neu gestartet, bevor Vector Office AI gestartet wird.
 Punkt 34 automatisiert diese Startgrenze: Der Host-Watchdog prüft vor dem
-Anwendungsstart den rein lesenden Batterieendpunkt. Erkennt er den bestätigten
-Authentifizierungsfehler und ist `botSdkInfo.json` neuer als der laufende
-`chipper.exe`-Prozess, lädt er WirePod genau einmal kontrolliert neu und prüft
-den SDK-Zugriff erneut. Ein ungültiges Ergebnis oder ein weiterhin bestehender
-Fehler blockiert den Anwendungsstart sicher.
+Anwendungsstart den rein lesenden Batterieendpunkt. Erkennt er einen bestätigten
+Authentifizierungsfehler, lädt er WirePod unabhängig vom Dateizeitstempel genau
+einmal kontrolliert neu und prüft den SDK-Zugriff erneut. Damit wird auch eine
+beim Windows-Kaltstart beobachtete blockierte Sitzung mit unveränderter
+`botSdkInfo.json` repariert. Ein ungültiges Ergebnis oder ein weiterhin
+bestehender Fehler blockiert den Anwendungsstart sicher.
 
 Diese Selbstheilung läuft ausschließlich vor einem Anwendungsstart. Während
 eines Gesprächs startet der Watchdog WirePod nicht wegen eines SDK-Ergebnisses
@@ -1043,6 +1044,11 @@ Zertifikaten oder eine Firmwareänderung beantwortet werden. Bleibt der Fehler
 nach dem kontrollierten Neustart bestehen, wird die Zuordnung zunächst
 inhaltsfrei anhand von Seriennummer, IP, GUID-Gleichheit und
 Zertifikat-Fingerabdruck diagnostiziert.
+
+Die lokale Ollama-Suche berücksichtigt neben der üblichen Installation auch
+den auf diesem Rechner verwendeten ARM64-Pfad unter
+`%LOCALAPPDATA%\Programs\OllamaArm64\ollama.exe`. Der Pfad wird nur lokal
+aufgelöst und ist durch einen eigenen Regressionstest abgesichert.
 
 ## 🔐 Sicherheit und Secrets
 
@@ -1121,19 +1127,21 @@ Repository enthält ausschließlich `.env.example` ohne echte Zugangsdaten.
 | Aktueller Qualitätsstand | `33a195e` | Grenznahe Kernmodule aufgeteilt und 635 Tests abgenommen |
 | Zweiter Release-Kandidat | `v0.2.0-rc.2` | Vollständig geprüfter RC2-Stand vom 25. August 2026 |
 | Dritter Release-Kandidat | `v0.2.0-rc.3` | Natürlicher Alltagsdialog und sichere lokale Statusübersicht |
+| Vierter Release-Kandidat | `v0.2.0-rc.4` | Stabiler lokaler Langzeitbetrieb und gehärteter Kaltstart |
 
-Die annotierten Git-Tags `v0.2.0-rc.1` und `v0.2.0-rc.2` bleiben als historisch
-geprüfte Release-Kandidaten erhalten. Der aktuelle Stand ist als
-**0.2.0-rc.3** mit Kern, Ollama, ElevenLabs sowie dem
-physischen Vector abgenommen. OpenAI bleibt im privaten Sprachbetrieb bewusst
-deaktiviert. Der geprüfte Stand ist mit dem annotierten Tag `v0.2.0-rc.3`
-markiert. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
+Die annotierten Git-Tags `v0.2.0-rc.1`, `v0.2.0-rc.2` und `v0.2.0-rc.3`
+bleiben als historisch geprüfte Release-Kandidaten erhalten. Der aktuelle Stand
+ist als **0.2.0-rc.4** mit gehärtetem Kaltstart, Wiederherstellung und lokalem
+Stabilitätslauf abgenommen. OpenAI bleibt im privaten Sprachbetrieb bewusst
+deaktiviert. Der geprüfte Stand ist mit dem annotierten Tag `v0.2.0-rc.4`
+markiert. Die Änderungen stehen im
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ## 🚧 Aktueller Projektstatus
 
 ### Aktuelle Phase
 
-**Release-Kandidat 0.2.0-rc.3 mit physischem Vector 2.0**
+**Release-Kandidat 0.2.0-rc.4 mit physischem Vector 2.0**
 
 - ✅ WirePod-Verbindung
 - ✅ direkte Vector-SDK-Verbindung
@@ -1202,6 +1210,9 @@ markiert. Die Änderungen stehen im [`CHANGELOG.md`](CHANGELOG.md).
 - ⏸️ Firmwareupdate bis zum bestätigten Recovery-Weg gesperrt
 - ✅ RC3-Kernabnahme mit 820 automatisierten Tests sowie Kompilierung,
   strengem MkDocs-Bau und `git diff --check` bestanden
+- ✅ RC4-Kernabnahme mit 834 automatisierten Tests und 5/5 Prüfschritten bestanden
+- ✅ RC4-Kaltstart mit 10/10 Startprüfungen und klarer physischer
+  Systemstatusantwort abgeschlossen
 
 ## 🗺️ Roadmap
 
@@ -1237,6 +1248,12 @@ zentrale Kernabnahme bestand 5/5, die lokale Ollama-Abnahme 8/8 Prüfungen. Der
 semantische Wissenspfad, die kontrollierte Animation und die verkürzte lokale
 Statusübersicht wurden am physischen Vector bestätigt. Karte 46 ist mit dem
 Release-Commit und dem annotierten Tag `v0.2.0-rc.3` abgeschlossen.
+
+Für RC4 sind die Karten 47 bis 50 implementiert und abgenommen. Der lokale
+Stabilitätslauf blieb über zehn Messungen ohne Ausfall, und der abschließende
+Windows-Kaltstart bestand zehn von zehn Prüfungen. Die Systemstatusfrage wurde
+am physischen Vector klar und verständlich beantwortet. Der Stand
+`0.2.0-rc.4` ist mit Release-Commit und annotiertem Tag abgeschlossen.
 
 ## 🚀 Langfristige Vision
 

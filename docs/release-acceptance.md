@@ -128,3 +128,20 @@ Millisekunden lokal vorbereitet, über ElevenLabs ausgegeben und ebenfalls klar
 verstanden. Damit sind die technischen und subjektiven RC3-Kriterien erfüllt
 und der gemeinsame Release-Stand für Commit und annotierten Tag
 `v0.2.0-rc.3` freigegeben.
+
+## Ergebnis des vierten Release-Kandidaten
+
+Am 7. September 2026 bestand der vorbereitete RC4-Stand den gezielten
+Kaltstart-Regressionstest und den vollständigen automatischen Kern mit 5/5
+Prüfungen und 834 automatisierten Tests. Der begrenzte lokale Stabilitätslauf
+erreichte für Vector SDK, WirePod und Ollama jeweils zehn von zehn erfolgreiche
+Messungen ohne Ausfall oder Zustandswechsel.
+
+Ein zunächst blockierter WirePod-SDK-Zugriff ließ sich durch genau einen
+kontrollierten Neustart wiederherstellen und wurde anschließend als dauerhafte,
+einmalig begrenzte Startreparatur abgesichert. Der folgende echte
+Windows-Kaltstart bestand zehn von zehn Prüfungen ohne notwendigen
+Reparatureingriff. Watchdog, Anwendung und WirePod liefen jeweils genau einmal;
+Vector SDK, WirePod und Ollama waren verfügbar. Der Nutzer bestätigte die
+anschließende Systemstatusantwort als klar und verständlich. Damit ist Karte 50
+abgenommen und `0.2.0-rc.4` für Release-Commit und annotierten Tag freigegeben.

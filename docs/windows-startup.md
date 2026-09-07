@@ -173,10 +173,10 @@ erfolgreichem WirePod-SDK-Preflight wird die Anwendung gestartet. Schlägt Stopp
 oder Neustart fehl, bleibt sie sicher blockiert.
 
 Diese Reparatur wird während eines laufenden Gesprächs ausdrücklich nicht
-ausgeführt. Der einmalige Neustart ist außerdem dieselbe Grenze, die eine nach
-Prozessstart geänderte SDK-Zuordnung neu lädt; beide Ursachen können daher
-keine Neustartkette erzeugen. Firmware, Zertifikate, Roboterdaten und `.env`
-bleiben unverändert.
+ausgeführt. Der einmalige Neustart ist außerdem dieselbe Grenze für doppelte
+Instanzen und einen bestätigten SDK-Authentifizierungsfehler; beide Ursachen
+können daher keine Neustartkette erzeugen. Firmware, Zertifikate, Roboterdaten
+und `.env` bleiben unverändert.
 
 Nach dieser Wiederherstellung liefen WirePod und die geplante Anwendung jeweils
 genau einmal; der semantische Sprachtest und die Statusausgabe bestanden. Die
@@ -195,18 +195,25 @@ Zertifikate gelangen weder in Diagnoseereignisse noch in die Terminalausgabe.
 
 `application/wirepod_host_service.py` trennt Prozesssteuerung und SDK-Preflight
 vom eigentlichen Host-Watchdog. Meldet WirePod `401 Unauthorized` oder
-`Unauthenticated`, vergleicht der Dienst nur die Änderungszeit der lokalen
-`botSdkInfo.json` mit der Startzeit von `chipper.exe`. Ist die Zuordnung neuer,
-wird ausschließlich vor dem Anwendungsstart genau ein kontrollierter
-WirePod-Neustart ausgeführt. Danach gelten erneut dieselben begrenzten
-Startversuche.
+`Unauthenticated`, wird ausschließlich vor dem Anwendungsstart genau ein
+kontrollierter WirePod-Neustart ausgeführt. Danach gelten erneut dieselben
+begrenzten Startversuche. Diese Reparatur hängt bewusst nicht mehr von der
+Änderungszeit der lokalen `botSdkInfo.json` ab: Am 7. September 2026 trat die
+blockierte SDK-Sitzung nach einem Windows-Kaltstart trotz unveränderter
+Zuordnungsdatei auf und ließ sich durch genau diesen Neustart beheben.
 
-Ein unveränderter, ungültiger oder nach dem Neustart weiterhin nicht
-autorisierter Zustand blockiert den Anwendungsstart. Es gibt keine endlose
-Schleife, keine Zertifikatsänderung und keine Firmwareaktion. Während die
-Anwendung läuft, bleibt die bestehende Verfügbarkeitsüberwachung erhalten; der
-SDK-Preflight löst dann ausdrücklich keinen WirePod-Neustart aus und wiederholt
-keine Sprache, Werkzeuge oder Robot-Aktionen.
+Ein ungültiger oder nach dem Neustart weiterhin nicht autorisierter Zustand
+blockiert den Anwendungsstart. Es gibt keine endlose Schleife, keine
+Zertifikatsänderung und keine Firmwareaktion. Während die Anwendung läuft,
+bleibt die bestehende Verfügbarkeitsüberwachung erhalten; der SDK-Preflight
+löst dann ausdrücklich keinen WirePod-Neustart aus und wiederholt keine
+Sprache, Werkzeuge oder Robot-Aktionen.
+
+Ollamas lokale Programmsuche berücksichtigt sowohl
+`%LOCALAPPDATA%\Programs\Ollama\ollama.exe` als auch die auf dem Zielrechner
+verwendete ARM64-Installation unter
+`%LOCALAPPDATA%\Programs\OllamaArm64\ollama.exe`. Der konfigurierte Pfad und ein
+bereits über `PATH` gefundenes Programm behalten Vorrang.
 
 Die erste Live-Abnahme von Punkt 34 meldete den SDK-Preflight als `ready` und
 konnte die lokale Chipper-Startzeit sicher bestimmen. Nach kontrolliertem

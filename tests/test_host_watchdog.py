@@ -383,14 +383,14 @@ class HostWatchdogTests(unittest.TestCase):
             self.assertEqual(1, wirepod.restart_calls)
             launcher.assert_not_called()
 
-    def test_unchanged_credentials_do_not_trigger_wirepod_restart(self):
+    def test_sdk_auth_failure_restarts_once_when_credentials_are_unchanged(self):
         with tempfile.TemporaryDirectory() as directory:
             wirepod = FakePreflightWirePod(
-                [True],
-                [WirePodSdkState.AUTHENTICATION_FAILED],
+                [True, True],
+                [WirePodSdkState.AUTHENTICATION_FAILED, WirePodSdkState.READY],
                 credentials_changed=False,
             )
-            launcher = MagicMock()
+            launcher = MagicMock(return_value=FakeProcess([0]))
             watchdog = HostWatchdog(
                 make_config(Path(directory)),
                 wirepod,
@@ -400,9 +400,9 @@ class HostWatchdogTests(unittest.TestCase):
                 instance_lock=FakeLock(),
             )
 
-            self.assertEqual(1, watchdog.run())
-            self.assertEqual(0, wirepod.restart_calls)
-            launcher.assert_not_called()
+            self.assertEqual(0, watchdog.run())
+            self.assertEqual(1, wirepod.restart_calls)
+            self.assertEqual(1, launcher.call_count)
 
     def test_active_conversation_does_not_repeat_sdk_preflight_or_restart(self):
         with tempfile.TemporaryDirectory() as directory:

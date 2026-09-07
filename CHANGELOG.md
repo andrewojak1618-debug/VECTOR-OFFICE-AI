@@ -6,6 +6,8 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
 
 ## [Unreleased]
 
+## [0.2.0-rc.4] – 2026-09-07
+
 ### Hinzugefügt
 
 - einmalige WirePod-Einzelinstanzkorrektur ausschließlich vor dem Start der
@@ -14,6 +16,13 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   Audioübertragung ohne automatische Wiederholung oder Prozessaktion
 - begrenzter lokaler Stabilitätslauf für Vector SDK, WirePod und Ollama mit
   ausschließlich aggregierten Verfügbarkeitskennzahlen
+
+### Geändert
+
+- einmalige WirePod-SDK-Startreparatur auch für eine beim Kaltstart blockierte
+  Sitzung mit unveränderter Zuordnungsdatei freigegeben
+- vorhandene lokale Ollama-Programmsuche für die verwendete ARM64-Installation
+  durch einen gezielten Regressionstest abgesichert
 
 ### Abnahme
 
@@ -29,6 +38,11 @@ werden ausdrücklich als Release-Kandidaten gekennzeichnet.
   automatisierten Tests sowie fünf von fünf Prüfschritten bestanden
 - fünfminütiger Standardlauf mit jeweils zehn erfolgreichen Messungen für
   Vector SDK, WirePod und Ollama ohne Ausfall oder Zustandswechsel bestanden
+- gezielten Kaltstart-Regressionstest und vollständige Kernabnahme nach der
+  begrenzten SDK-Reparatur mit 834 Tests sowie fünf von fünf Prüfschritten
+  bestanden
+- echten Windows-Kaltstart mit zehn von zehn Startprüfungen bestanden; Vector
+  beantwortete die anschließende Systemstatusfrage klar und verständlich
 
 ## [0.2.0-rc.3] – 2026-09-06
 

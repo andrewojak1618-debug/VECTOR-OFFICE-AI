@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import httpx
 
@@ -77,6 +78,30 @@ class OllamaRuntimeTests(unittest.TestCase):
         )
 
         self.assertFalse(runtime.ensure_available())
+
+    @patch("brain.ollama_runtime.shutil.which", return_value=None)
+    def test_discovers_arm64_installation_below_local_app_data(self, _which):
+        launches = []
+        with tempfile.TemporaryDirectory() as directory:
+            executable = (
+                Path(directory) / "Programs" / "OllamaArm64" / "ollama.exe"
+            )
+            executable.parent.mkdir(parents=True)
+            executable.touch()
+            runtime = OllamaRuntime(
+                "http://127.0.0.1:11434",
+                client=SequencedClient([False, True]),
+                startup_timeout=0.1,
+                poll_interval=0.001,
+                process_launcher=(
+                    lambda *args, **kwargs: launches.append((args, kwargs))
+                ),
+            )
+
+            with patch.dict("os.environ", {"LOCALAPPDATA": directory}):
+                self.assertTrue(runtime.ensure_available())
+
+        self.assertEqual(str(executable), launches[0][0][0][0])
 
     def test_preload_uses_empty_local_request_with_bounded_keep_alive(self):
         client = RecordingClient()

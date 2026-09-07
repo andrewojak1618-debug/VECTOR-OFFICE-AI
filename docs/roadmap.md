@@ -1,6 +1,18 @@
 # Roadmap
 
-## Aktueller Stand – RC2 abgeschlossen
+## Aktueller Stand – RC4 abgenommen
+
+- ✅ begrenzte WirePod-Einzelinstanzkorrektur beim Start geprüft
+- ✅ Vector-SDK-Verlust bei der Audioausgabe passiv abgesichert
+- ✅ fünfminütigen inhaltsfreien Stabilitätslauf ohne Ausfall bestanden
+- ✅ blockierte WirePod-SDK-Kaltstarts durch höchstens einen Neustart gehärtet
+- ✅ ARM64-Ollama-Installation dauerhaft durch einen Regressionstest abgedeckt
+- ✅ vollständige RC4-Kernabnahme mit 834 Tests und 5/5 Prüfschritten bestanden
+- ✅ Windows-Kaltstart mit 10/10 Prüfungen technisch bestanden
+- ✅ lokale Systemstatusfrage nach dem Kaltstart klar und verständlich beantwortet
+- ✅ RC4-Release-Commit und annotierten Tag `v0.2.0-rc.4` setzen
+
+## Historischer Stand – RC2 abgeschlossen
 
 - ✅ historischen Tag `v0.2.0-rc.1` unverändert erhalten
 - ✅ alle vorgesehenen Änderungen seit `v0.2.0-rc.1` integriert
@@ -38,7 +50,7 @@
   automatische Prozessbeendigung sicher behandeln
 - ✅ Karte 49: wiederholbaren lokalen Langzeitlauf mit inhaltsfreien
   Stabilitätskennzahlen ergänzen und im fünfminütigen Standardlauf abnehmen
-- ⏳ Karte 50: RC4-Kaltstart, Wiederherstellung und Langzeitbetrieb vollständig
+- ✅ Karte 50: RC4-Kaltstart, Wiederherstellung und Langzeitbetrieb vollständig
   abnehmen
 
 ## Release-Stabilisierung
@@ -55,6 +67,9 @@
 - ✅ automatischen RC3-Kern mit 820 Tests vollständig abnehmen
 - ✅ lokalen Ollama-Pfad und physischen Vector-Pfad für RC3 abnehmen
 - ✅ RC3-Release-Commit und annotierten Tag `v0.2.0-rc.3` setzen
+- ✅ automatischen RC4-Kern mit 834 Tests vollständig abnehmen
+- ✅ RC4-Kaltstart, Wiederherstellung und Langzeitbetrieb physisch bestätigen
+- ✅ RC4-Release-Commit und annotierten Tag `v0.2.0-rc.4` setzen
 
 ## Conversation Foundation
 

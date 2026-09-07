@@ -152,7 +152,7 @@ class HostWatchdog:
         return False
 
     def _ensure_wirepod_sdk(self) -> bool:
-        """Validiert den SDK-Lesezugriff und repariert nur veraltete Zuordnungen."""
+        """Validiert den SDK-Lesezugriff und erlaubt genau einen Reparaturversuch."""
         state = self._sdk_state()
         self.connections.observe("wirepod-sdk", state is WirePodSdkState.READY)
         if state is WirePodSdkState.READY:
@@ -164,10 +164,8 @@ class HostWatchdog:
         return self._wait_for_wirepod_sdk()
 
     def _repair_wirepod_sdk(self) -> bool:
-        """Lädt eine nach Prozessstart geänderte WirePod-Zuordnung genau einmal neu."""
+        """Ersetzt eine blockierte WirePod-SDK-Sitzung genau einmal."""
         if self._wirepod_restart_used:
-            return False
-        if not self._credentials_changed_after_start():
             return False
         self._wirepod_restart_used = True
         self._emit(DiagnosticLevel.WARNING, "watchdog.wirepod_sdk_restarting")
@@ -200,15 +198,6 @@ class HostWatchdog:
         """Liest den SDK-Zustand über eine rückwärtskompatible Dienstgrenze."""
         checker = getattr(self.wirepod, "sdk_state", None)
         return checker() if checker is not None else WirePodSdkState.READY
-
-    def _credentials_changed_after_start(self) -> bool:
-        """Fragt ausschließlich den inhaltsfreien Zeitvergleich des Dienstes ab."""
-        checker = getattr(
-            self.wirepod,
-            "credentials_changed_after_process_start",
-            None,
-        )
-        return bool(checker()) if checker is not None else False
 
     def _restart_wirepod(self) -> bool:
         """Ruft die fest begrenzte lokale WirePod-Neustartgrenze auf."""
